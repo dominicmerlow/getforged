@@ -1,0 +1,299 @@
+**FORGE**	Claude Code Handover — START HERE
+
+**FORGE.**
+
+**CLAUDE CODE HANDOVER**
+
+*Start Here — Complete Build Context for Claude Code Sessions*
+
+| **Project** | FORGE AI Builder Marketplace |
+| --- | --- |
+| **Operator** | Clifton — Chief Commercial Officer |
+| **Build Role** | Claude Code — primary implementation agent |
+| **Build Approach** | No-Code / Low-Code First (MVP) |
+| **Priority Module** | Seller Onboarding + AI Sales Page Generation |
+| **Date** | April 2026 |
+| **Document Version** | 1.0 — Handover Draft |
+
+|  | This document is your complete handover brief for Claude Code. It contains everything Claude Code needs to understand the project, the stack, and the build sequence — plus verbatim copy-paste prompts for each session. Start at Section 3 after completing the pre-requisites in Section 2. |
+| --- | --- |
+
+# **1. What We Are Building**
+
+FORGE is an AI builder marketplace. It connects two underserved audiences: entrepreneurs who have built apps, tools, and automations using AI coding tools (Claude Code, Cursor, Windsurf, Lovable, Bubble) and want to monetise their work — and small businesses that need affordable AI-powered tools but cannot justify agency or developer costs.
+
+## **1.1 The Core Value Proposition**
+
+| **FOR SELLERS (Builders)** | **FOR BUYERS (SME Owners)** |
+| --- | --- |
+| Submit your product URL — AI generates a full sales page automatically | Browse 300+ AI-built tools by business function |
+| Sell licensed (multi-buyer recurring) or exclusive (one buyer) versions | Try free trials, watch demos, test sandboxes before buying |
+| Earn passive income or sell the full business via Flippa integration | Buy working tools for £49–£1,200 instead of £5,000–£50,000 agency quotes |
+| Free to list — FORGE takes 15% commission on sales only | No technical skills needed — no-code setup wizard included |
+
+## **1.2 Product Scope — What Claude Code Will Build**
+
+The MVP is scoped to one critical pipeline: the Seller Onboarding and AI Sales Page Generation flow. This is the supply-side engine that makes the marketplace viable. Everything else depends on it working.
+
+- Seller registers and creates a profile (Supabase Auth + Webflow/Framer)
+
+- Seller submits their product URL via a form
+
+- Platform crawls the URL via Firecrawl API and extracts structured content
+
+- Claude API generates a full buyer-facing sales page from the extracted content
+
+- Seller reviews and edits the draft, then publishes the live listing
+
+- Buyer views the public product page, tries a demo, and purchases
+
+## **1.3 Flippa Integration (Phase 2)**
+
+FORGE integrates with Flippa.com — the world's largest online business marketplace. Sellers can cross-list products on Flippa for additional exposure, or initiate a full business sale/auction. This is a Phase 2 feature. Do not attempt to build this in the MVP sessions.
+
+# **2. Pre-Requisites — Complete Before Opening Claude Code**
+
+These tasks must be completed before Claude Code Session 1. Claude Code cannot proceed without the API keys and account credentials listed below. Estimated total time: 60–90 minutes.
+
+|  | IMPORTANT: Store every API key and credential in a secure password manager (1Password, Bitwarden, or Notion with restricted access) BEFORE starting. You will need to paste these into Claude Code in almost every session. |
+| --- | --- |
+
+## **2.1 Accounts to Create**
+
+| **Service** | **URL** | **Tier to Start** | **What You Need From It** |
+| --- | --- | --- | --- |
+| Supabase | supabase.com | Free | Project URL + anon key + service_role key |
+| Anthropic API | console.anthropic.com | Pay-as-you-go | API key — add $20 credit to start |
+| Framer | framer.com | Free | Account only — no keys needed |
+| Firecrawl | firecrawl.dev | Free (500/mo) | API key |
+| Resend | resend.com | Free (3k/mo) | API key + verify sending domain |
+| Stripe | stripe.com | Free / % per txn | Publishable key + secret key |
+| n8n (self-hosted) | railway.app | Free ($5 credit) | Deploy n8n template on Railway; note the URL |
+| GitHub | github.com | Free | Create repo: forge-mvp (private) |
+
+|  | Paid fallback: If self-hosting n8n on Railway feels complex, substitute Make.com Core plan at £9/month. The prompts in this document work for both. Just tell Claude Code which automation tool you are using at the start of each session. |
+| --- | --- |
+
+## **2.2 Environment Variables Document**
+
+Create a private Notion page (or secure text file) called 'FORGE ENV VARS'. Copy this template and fill in your real values before Session 1:
+
+| # FORGE — Environment Variables (KEEP PRIVATE) SUPABASE_URL=https://[your-project].supabase.co SUPABASE_ANON_KEY=[your anon key] SUPABASE_SERVICE_ROLE_KEY=[your service role key] ANTHROPIC_API_KEY=sk-ant-[your key] FIRECRAWL_API_KEY=fc-[your key] RESEND_API_KEY=re_[your key] RESEND_FROM_EMAIL=noreply@[your-domain].com STRIPE_PUBLISHABLE_KEY=pk_live_[your key] STRIPE_SECRET_KEY=sk_live_[your key] N8N_URL=https://[your-n8n-instance].railway.app # Domain FORGE_DOMAIN=https://[your-domain].com |
+| --- |
+
+## **2.3 Domain Registration**
+
+Register your domain before Session 1. DNS propagation can take up to 48 hours — starting this early prevents delays. Recommended options in priority order:
+
+- getforge.io — clean, tech-native, memorable
+
+- forge.market — marketplace positioning built into the TLD
+
+- forgemarket.co — fallback if .io/.market not available
+
+Connect the domain to Framer immediately after registering. Framer's DNS setup is guided and takes under 10 minutes.
+
+# **3. Tech Stack — Full Reference**
+
+Every tool in the MVP stack is listed below with its role, the free-tier limits, and when to upgrade. Claude Code must know this stack at the start of every session.
+
+| **Tool** | **Role** | **MVP Tier** | **Free Limit** | **Upgrade Trigger** |
+| --- | --- | --- | --- | --- |
+| Framer | Frontend / CMS | Free | 1 site, custom domain | Move to paid at 1,000+ CMS items |
+| Supabase | Database + Auth | Free | 500MB, 50k MAUs | Upgrade to Pro ($25) at launch |
+| n8n (Railway) | Automation / Logic | Free | 500MB RAM | Move to n8n Cloud at 10k+ runs/mo |
+| Firecrawl | URL Scraping | Free | 500 scrapes/mo | Upgrade at 500+ active sellers |
+| Claude API | AI Page Generation | Pay-as-you-go | None — ~$0.20/page | No upgrade needed; scales linearly |
+| Resend | Transactional Email | Free | 3,000 emails/mo | Upgrade ($20) at 3k+ emails/mo |
+| Stripe | Payments + Escrow | Free / % | No monthly fee | No upgrade needed |
+| GitHub | Code / Config Store | Free | Unlimited private repos | No upgrade needed |
+
+|  | Total MVP infrastructure cost: £5–15/month (Claude API only). Every other tool is free at the volumes needed for a founding-seller launch of 20–50 listings. |
+| --- | --- |
+
+# **4. Database Schema (Supabase)**
+
+The following tables form the complete MVP database. Paste the Claude Code prompt below into Session 1 to generate the full SQL migration automatically.
+
+## **4.1 Tables Overview**
+
+| **Table** | **Purpose** | **Key Fields** |
+| --- | --- | --- |
+| sellers | Seller profiles linked to Supabase auth users | id, user_id, display_name, bio, avatar_url, tool_tags[], stripe_account_id, verified |
+| products | Product listings — all states (draft/live/archived) | id, seller_id, title, tagline, description, features (jsonb), screenshots[], price_licensed, price_exclusive, status |
+| sales_pages | AI-generated copy for each product listing | id, product_id, headline, subheadline, body_copy, cta_primary, meta_title, meta_description, published_at |
+| purchases | Buyer transaction records | id, buyer_id, product_id, purchase_type (licensed/exclusive), amount, stripe_payment_id, created_at |
+| reviews | Buyer ratings and written reviews | id, product_id, buyer_id, rating (1-5), body, created_at |
+| error_log | Make/n8n automation failures for debugging | id, scenario, payload, error_message, created_at |
+
+## **4.2 Session 1 Prompt — Generate Full Schema**
+
+**COPY AND PASTE THIS ENTIRE PROMPT INTO CLAUDE CODE SESSION 1**
+
+| I am building an AI marketplace called FORGE. My stack is: - Database + Auth: Supabase (free tier) - Frontend: Framer - Automation: n8n self-hosted on Railway - AI: Claude API (Anthropic) - Scraping: Firecrawl - Email: Resend - Payments: Stripe Task: Generate a complete Supabase SQL migration file for the FORGE MVP. Create these tables with appropriate column types, constraints, and Row Level Security (RLS) policies: 1. sellers (id uuid PK, user_id uuid FK auth.users, display_name text,    bio text, avatar_url text, tool_tags text[], stripe_account_id text,    verified boolean default false, created_at timestamptz default now()) 2. products (id uuid PK, seller_id uuid FK sellers, title text NOT NULL,    tagline text, description text, features jsonb, use_cases jsonb,    screenshots text[], demo_url text, video_url text,    price_licensed numeric, price_exclusive numeric,    status text CHECK status IN ('draft','live','archived') default 'draft',    created_at timestamptz default now()) 3. sales_pages (id uuid PK, product_id uuid FK products UNIQUE,    headline text, subheadline text, problem_statement text,    body_copy jsonb, cta_primary text, cta_secondary text,    meta_title text, meta_description text, published_at timestamptz) 4. purchases (id uuid PK, buyer_id uuid FK auth.users,    product_id uuid FK products, purchase_type text,    amount numeric, stripe_payment_id text, created_at timestamptz default now()) 5. reviews (id uuid PK, product_id uuid FK products,    buyer_id uuid FK auth.users, rating int CHECK rating BETWEEN 1 AND 5,    body text, created_at timestamptz default now()) 6. error_log (id uuid PK, scenario text, payload jsonb,    error_message text, created_at timestamptz default now()) RLS rules: - sellers: owners can read/write their own row. Public can read verified=true rows. - products: sellers can CRUD their own. Public can SELECT where status='live'. - sales_pages: sellers can CRUD via their product. Public can read published. - purchases: buyers can read their own. Sellers can read purchases of their products. - reviews: anyone authenticated can insert. Public can read. - error_log: service_role only. Output: a single .sql file I can run in the Supabase SQL editor. |
+| --- |
+
+# **5. n8n Automation — Core Workflow**
+
+The heart of the MVP is a single n8n workflow that fires when a seller submits a product URL. It chains four API calls: Firecrawl (scrape) → Claude API (generate) → Supabase (store) → Resend (notify). Claude Code will build and test this workflow in Session 5.
+
+## **5.1 Workflow Map**
+
+| **Step** | **Node Type** | **Service** | **Action** |
+| --- | --- | --- | --- |
+| 1 | Webhook Trigger | n8n | Receives POST from Framer form: { seller_id, product_url, name, category, description } |
+| 2 | HTTP Request | Firecrawl API | POST /v1/scrape — returns markdown content + screenshot URL from product URL |
+| 3 | IF Node | n8n Logic | Check markdown length > 500 chars. If false: skip to error branch, email seller for manual input |
+| 4 | HTTP Request | Anthropic API | POST /v1/messages — sends system prompt + scraped content, returns structured JSON sales page |
+| 5 | HTTP Request | Supabase REST | POST /products — insert product row with status=draft |
+| 6 | HTTP Request | Supabase REST | POST /sales_pages — insert AI-generated copy linked to product_id |
+| 7 | HTTP Request | Resend API | POST /emails — send 'Your draft is ready' email to seller |
+| 8 | HTTP Request (Error) | Supabase REST | On any failure: POST /error_log with scenario name + payload + error |
+
+## **5.2 The Claude API System Prompt (Sales Page Generator)**
+
+This is the most important prompt in the entire build. It transforms raw scraped content into structured buyer-facing sales copy. Store this in an n8n credential or environment variable — do not hardcode it.
+
+**SYSTEM PROMPT — PASTE EXACTLY INTO N8N HTTP NODE BODY**
+
+| You are a senior SaaS copywriter for FORGE, a marketplace where AI builders sell apps and tools to small businesses. Your job is to write compelling, clear, and honest sales page copy from raw product content. AUDIENCE: SME business owners who are NOT technical. Write for them. TONE: Direct, benefit-led, jargon-free. No hype. Focus on outcomes. OUTPUT: Return valid JSON ONLY. No preamble. No markdown backticks. {   "headline": "8-12 words. Benefit-led. Not feature-led.",   "subheadline": "20-30 words elaborating the core benefit.",   "problem_statement": "2-3 sentences about the pain this solves.",   "features": [{ "title": "short", "description": "1-2 sentences" }],   "use_cases": ["3-5 short scenarios of who uses this and why"],   "cta_primary": "Action verb + benefit. Max 5 words.",   "cta_secondary": "Softer secondary action. Max 5 words.",   "meta_title": "SEO title under 60 chars.",   "meta_description": "SEO description under 155 chars." } |
+| --- |
+
+**USER MESSAGE TEMPLATE — DYNAMICALLY POPULATED BY N8N**
+
+| Product Name: {{ $json.product_name }} Product URL: {{ $json.product_url }} Category: {{ $json.category }} Seller's Description: {{ $json.seller_description }} Crawled Content: {{ $json.scraped_markdown }} Generate the sales page JSON now. |
+| --- |
+
+# **6. The 8 Claude Code Sessions**
+
+The MVP build is divided into 8 independent Claude Code sessions. Each session has one objective, one deliverable, and one test that must pass before you move to the next session. Do not combine sessions. Do not skip sessions.
+
+|  | How to start each session: Open a new Claude Code conversation. Paste the opening context block from Section 7 first. Then paste the session-specific prompt below. This gives Claude Code the project context it needs every time. |
+| --- | --- |
+
+| **1** | **Supabase Foundation — Schema + Auth** Run the SQL migration from Section 4.2. Enable email auth. Test by creating a user via Supabase dashboard. Confirm all 6 tables exist with correct columns and RLS policies active. DONE WHEN: SQL runs without errors + test user appears in auth.users. |
+| --- | --- |
+
+| **2** | **Framer Site Structure** Create a Framer project. Set up 5 page templates: Home, Product Listing (CMS), Seller Profile (CMS), Seller Dashboard, Registration. Connect custom domain. DONE WHEN: 5 pages exist, domain connected, CMS collections created for Products and Sellers. |
+| --- | --- |
+
+| **3** | **Seller Registration Flow** Build the Framer registration page. Embed Supabase Auth JS via Framer custom code. On successful signup, create a row in the sellers table via Supabase API. DONE WHEN: Test user registers via the Framer page and appears in both auth.users and sellers tables. |
+| --- | --- |
+
+| **4** | **Product Submission Form** Build the Framer product submission form. Fields: product URL, name, category (dropdown), short description. On submit, POST to n8n webhook URL. DONE WHEN: Form submits, n8n webhook receives the payload, visible in n8n execution log. |
+| --- | --- |
+
+| **5** | **n8n Workflow — Firecrawl + Claude API** Build the full n8n workflow from Section 5.1. Steps 1-4: Webhook → Firecrawl → length check → Claude API. Test with 3 real product URLs. DONE WHEN: 3 URLs produce valid JSON sales page output from Claude API, visible in n8n execution log. |
+| --- | --- |
+
+| **6** | **n8n Workflow — Supabase Write + Email** Add steps 5-8 to the n8n workflow: write to products table → write to sales_pages table → send email via Resend → log errors. DONE WHEN: Supabase rows created with correct data + Resend email arrives in your inbox. |
+| --- | --- |
+
+| **7** | **Seller Draft Review Interface** Build the Framer seller dashboard page that reads the draft sales page from Supabase. Seller can edit headline, subheadline, CTA, and pricing. Save button updates Supabase. Publish button sets status to 'live'. DONE WHEN: Editing and publishing works end-to-end in a browser. |
+| --- | --- |
+
+| **8** | **Public Product Listing Page** Build the public Framer product page template connected to the Supabase products + sales_pages tables. Renders: headline, features, screenshots, pricing, seller profile, CTA buttons. DONE WHEN: A live product URL loads correct content from the database. |
+| --- | --- |
+
+# **7. Opening Context Block — Use This Every Session**
+
+Paste this block at the very start of EVERY Claude Code session. It gives Claude Code the complete project context. Replace the placeholders with your real values before pasting.
+
+|  | Why this matters: Claude Code has no memory between sessions. Without this context, it will make incorrect assumptions about your stack, naming conventions, and architecture. Always paste this first. |
+| --- | --- |
+
+**COPY THIS BLOCK — PASTE AT THE START OF EVERY CLAUDE CODE SESSION**
+
+| PROJECT CONTEXT — FORGE AI Marketplace ====================================== I am building FORGE — an AI builder marketplace where developers sell AI-built apps and tools to small businesses. I am non-technical. I need step-by-step instructions I can follow without writing code myself. Explain every action clearly. MY TECH STACK: - Frontend / CMS: Framer (free tier) - Database + Auth: Supabase (free tier)   URL: [YOUR SUPABASE URL]   Anon Key: [YOUR ANON KEY] - Automation: n8n self-hosted on Railway   n8n URL: [YOUR N8N URL] - AI generation: Claude API (Anthropic)   Key: [YOUR ANTHROPIC API KEY] - Web scraping: Firecrawl   Key: [YOUR FIRECRAWL KEY] - Email: Resend   Key: [YOUR RESEND KEY] - Payments: Stripe   Keys: [YOUR STRIPE KEYS] - Domain: [YOUR DOMAIN] - GitHub repo: forge-mvp (private) DATABASE TABLES ALREADY CREATED: sellers, products, sales_pages, purchases, reviews, error_log (See schema in GitHub repo: /supabase/migrations/001_initial.sql) BUILD APPROACH: - No custom backend code unless absolutely necessary - Use n8n for all automation logic - Use Supabase REST API for all data reads/writes - Use Framer for all frontend — custom code embeds where needed CURRENT SESSION GOAL: [REPLACE THIS WITH THE GOAL FROM THE SESSION YOU ARE STARTING] |
+| --- |
+
+# **8. Quick Prompt Library**
+
+These are ready-to-use Claude Code prompts for common tasks you will encounter during the build. Each can be pasted directly after the opening context block.
+
+## **8.1 Supabase — Fetch Products for Framer**
+
+| Write a JavaScript fetch call I can embed in a Framer custom code component to load all products where status='live' from my Supabase products table. Include the seller display_name from the sellers table via a join. Return the results sorted by created_at descending. Use my SUPABASE_URL and SUPABASE_ANON_KEY environment variables. Show me exactly where to paste this in Framer. |
+| --- |
+
+## **8.2 n8n — Debug a Failed Execution**
+
+| My n8n workflow failed at step [STEP NAME]. Here is the error log entry from my Supabase error_log table: [PASTE ERROR HERE] My n8n workflow processes: Webhook → Firecrawl → Claude API → Supabase → Resend. Diagnose the failure and give me the exact fix to apply in n8n. |
+| --- |
+
+## **8.3 Framer — Build a CMS-Connected Component**
+
+| Build a Framer custom code component that displays a product card. It should accept these props: title, headline, price_licensed, price_exclusive, category, screenshot_url, seller_name. Style it with a dark (#1A1C24) background, amber (#E8920A) accent, Syne font for headings, clean minimal layout. Show me the complete component code and how to add it to Framer. |
+| --- |
+
+## **8.4 Stripe — Create a Payment Link for a Product**
+
+| I need to add a Stripe payment flow to FORGE. When a buyer clicks 'Buy Licence' on a product page, they should be sent to a Stripe Checkout session. Using n8n, create a workflow that: 1. Receives a POST with: product_id, buyer_email, purchase_type (licensed/exclusive) 2. Looks up the price from Supabase products table 3. Creates a Stripe Checkout session via the Stripe API 4. Returns the checkout URL to redirect the buyer After payment success, record the purchase in the Supabase purchases table. Show me the complete n8n workflow configuration. |
+| --- |
+
+## **8.5 Resend — Custom Email Template**
+
+| Create an HTML email template for FORGE to send when a seller's AI-generated draft listing is ready to review. Branding: dark background (#0C0B09), amber accent (#E8920A), clean sans-serif font, FORGE logo as text. Email should include: - Subject: 'Your FORGE listing draft is ready — [Product Name]' - Seller's first name personalisation - Product name and thumbnail (if available) - Clear CTA button: 'Review Your Draft' linking to dashboard URL - Estimated review time: 5 minutes - Footer with unsubscribe link Format for use with Resend API in n8n. Show me the complete HTML and the n8n HTTP node configuration to send it. |
+| --- |
+
+# **9. Launch Readiness Checklist**
+
+Use this checklist to track progress from first session to founding seller launch. Print it or copy to Notion.
+
+### **Pre-Build**
+
+| **Item** | **Status** | **Notes** |
+| --- | --- | --- |
+| Domain registered + connected to Framer | **→ Action** | *Do this first — DNS takes 48hrs* |
+| All 8 tool accounts created | **→ Action** | *Supabase, Anthropic, Firecrawl, Resend, Stripe, Railway* |
+| ENV VARS document created in Notion | **→ Action** | *Fill before Session 1* |
+| GitHub repo forge-mvp created (private) | **→ Action** |  |
+| 3-5 founding sellers identified for test URLs | **→ Action** | *Need real product URLs for Sessions 5+6* |
+
+### **Build Sessions**
+
+| **Item** | **Status** | **Notes** |
+| --- | --- | --- |
+| Session 1: Supabase schema deployed | **→ Action** |  |
+| Session 2: Framer site structure built | **→ Action** |  |
+| Session 3: Seller registration working | **→ Action** |  |
+| Session 4: Product submission form working | **→ Action** |  |
+| Session 5: Firecrawl + Claude API chain tested | **→ Action** | *Use 3 real product URLs* |
+| Session 6: Supabase write + email confirmed | **→ Action** |  |
+| Session 7: Seller draft review interface live | **→ Action** |  |
+| Session 8: Public product page rendering | **→ Action** |  |
+
+### **Pre-Launch**
+
+| **Item** | **Status** | **Notes** |
+| --- | --- | --- |
+| Legal: Seller ToS and Buyer ToS drafted | **→ Action** | *Commission lawyer for marketplace ToS* |
+| Stripe: Live mode keys activated | **→ Action** | *Switch from test keys* |
+| 10+ founding seller listings live | **→ Action** | *Quality check each one manually* |
+| End-to-end purchase flow tested | **→ Action** | *Test buy with real Stripe card* |
+| Error logging confirmed working | **→ Action** | *Trigger a deliberate failure to test* |
+| Mobile responsiveness checked (Framer) | **→ Action** |  |
+| Domain email (noreply@[domain]) configured | **→ Action** | *Via Resend domain verification* |
+
+# **10. Key Resources ****&**** Documentation**
+
+| **Resource** | **URL / Reference** |
+| --- | --- |
+| Supabase Docs | supabase.com/docs — especially Auth, REST API, RLS sections |
+| Framer Custom Code | framer.com/developers — custom code + CMS API docs |
+| n8n Docs | docs.n8n.io — HTTP Request node, Webhook trigger, IF node |
+| Firecrawl API Docs | docs.firecrawl.dev — /scrape endpoint + response format |
+| Anthropic API Docs | docs.anthropic.com — Messages API, model names, JSON mode |
+| Resend Docs | resend.com/docs — Emails API + HTML templates |
+| Stripe Checkout Docs | stripe.com/docs/checkout — Create Session endpoint |
+| n8n on Railway Guide | railway.app/template/n8n — one-click n8n deployment |
+| FORGE Strategic Concept | forge-concept.html — full marketplace strategy document |
+| FORGE Tech Spec | forge-tech-spec-v2.docx — detailed implementation spec |
+| FORGE Homepage Mockup | forge-homepage.html — visual design reference |
+
+|  | Final instruction: Do not try to build everything at once. Session 1 only. Validate it. Then Session 2. The stack was chosen so that each session is independently testable and produces a real output you can see and check. Trust the sequence. |
+| --- | --- |
+
+*FORGE — Claude Code Handover v1.0 — April 2026 — Confidential*
+
+	FORGE Handover Doc — v1.0 — April 2026 — Confidential	Page

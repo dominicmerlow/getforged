@@ -1,0 +1,327 @@
+**FORGE**	Claude Code Implementation Plan — Confidential
+
+**FORGE.**
+
+**CLAUDE CODE IMPLEMENTATION PLAN**
+
+*Seller Onboarding **&** AI Sales Page Generation — MVP Build Spec*
+
+| **Focus Area** | Seller Onboarding + AI Page Gen |
+| --- | --- |
+| **Build Approach** | No-Code / Low-Code First (MVP) |
+| **Primary Tool** | Claude Code |
+| **Target** | Founding Sellers — Pre-Launch |
+| **Document Version** | 1.0 Draft — April 2026 |
+
+# **1. Overview ****&**** Objectives**
+
+This document is a Claude Code implementation plan for the FORGE marketplace MVP — specifically the Seller Onboarding and AI Sales Page Generation module. It is written as a structured build brief: each section maps directly to a Claude Code prompt sequence, tool selection decision, or integration task.
+
+FORGE is a no-code / low-code first build. The goal is a working, sellable MVP using the fastest available tooling — not a custom-engineered system. Every tool decision in this spec reflects that constraint.
+
+|  | *Scope of this spec: Seller registration → product URL submission → AI crawl and extraction → auto-generated sales page draft → seller review and publish. This is the critical path that makes the marketplace viable.* |
+| --- | --- |
+
+## **1.1 Success Criteria for MVP**
+
+The seller onboarding module is complete when all of the following are true:
+
+- A seller can register, create a profile, and submit a product URL in under 10 minutes
+
+- The platform crawls the submitted URL and extracts: product name, description, feature list, use-cases, and screenshots
+
+- Claude API generates a structured sales page draft from extracted data automatically
+
+- Seller can review, edit, and publish the sales page without writing a single line of copy
+
+- Published page is live, publicly accessible, and includes pricing configuration
+
+- Entire flow functions without custom backend code — using no-code/low-code tooling
+
+# **2. Recommended Tech Stack**
+
+Stack decisions are optimised for three constraints: speed to MVP, non-technical operator (Clifton), and Claude Code as the primary implementation agent. Every tool below can be configured via Claude Code prompts without deep developer expertise.
+
+| **Layer** | **Tool** | **Tier** | **Rationale** |
+| --- | --- | --- | --- |
+| Frontend / UI | Webflow | Starter ($14/mo) | Visual builder, CMS-ready, no-code. Claude Code can generate embed scripts. |
+| Database / Auth | Supabase | Free → Pro | Postgres + Auth + Storage in one. Claude Code has strong Supabase pattern support. |
+| Automation / Logic | Make (Integromat) | Core ($9/mo) | No-code workflow engine. Handles crawl trigger → Claude API → page creation chain. |
+| AI Generation | Claude API (Sonnet) | Pay-as-you-go | Sales page generation, copy writing, feature extraction from crawled content. |
+| Web Scraping | Firecrawl | Hobby ($16/mo) | Purpose-built for LLM-ready content extraction from URLs. Make-compatible. |
+| Payments | Stripe | Pay-as-you-go | Industry standard. Supabase + Stripe integration well-documented for Claude Code. |
+| File Storage | Supabase Storage | Included | Screenshot uploads, seller assets. Supabase bucket with public URL generation. |
+| Email | Resend | Free → $20/mo | Transactional email. Simple API, Make-compatible, excellent deliverability. |
+
+|  | *Claude Code prompt tip: When starting each module, open Claude Code and begin with: **'**I am building a no-code marketplace MVP called FORGE. My stack is Webflow (frontend), Supabase (database/auth), Make (automation), and Claude API (AI generation). I am non-technical and need step-by-step implementation. Begin with [module name].**'* |
+| --- | --- |
+
+# **3. System Architecture**
+
+## **3.1 Data Flow — Seller Onboarding to Published Page**
+
+The end-to-end flow is a linear pipeline with five stages. Each stage maps to a specific tool and a Claude Code implementation task.
+
+| **Step** | **Stage** | **Tool** | **Output** |
+| --- | --- | --- | --- |
+| 1 | Seller Registration | Webflow + Supabase Auth | Seller account created, profile stored in Supabase sellers table |
+| 2 | Product URL Submission | Webflow Form → Make | Form submission triggers Make scenario with product URL payload |
+| 3 | Content Extraction | Make → Firecrawl API | Structured JSON: title, description, features, screenshots, meta |
+| 4 | AI Page Generation | Make → Claude API | Full sales page copy: headline, subhead, features, CTA, pricing block |
+| 5 | Draft Review & Publish | Webflow CMS + Supabase | Seller edits draft in Webflow editor, publishes — page goes live |
+
+## **3.2 Supabase Schema — Core Tables**
+
+The following tables form the MVP database. Claude Code can generate the full SQL migration script from this specification.
+
+**CLAUDE CODE PROMPT — GENERATE SCHEMA**
+
+| Create a Supabase SQL migration for a marketplace called FORGE. Generate these tables with appropriate column types and RLS policies: sellers (id, user_id, display_name, bio, avatar_url, tool_tags[],          stripe_account_id, created_at, verified boolean) products (id, seller_id, title, tagline, description, features jsonb,            use_cases jsonb, screenshots text[], demo_url, video_url,            price_licensed numeric, price_exclusive numeric,            status [draft│live│archived], created_at) sales_pages (id, product_id, headline, subheadline, body_copy text,              cta_text, meta_title, meta_description, published_at) Enable Row Level Security. Sellers can only read/write their own records. Products are publicly readable when status = live. |
+| --- |
+
+# **4. Seller Onboarding — Build Sequence**
+
+This section provides the exact implementation sequence for Claude Code. Each phase is an independent Claude Code session. Complete each phase fully before starting the next.
+
+| **1** | **Supabase Setup — Auth + Database** Configure Supabase project, enable email auth, run schema migration, configure RLS policies, generate API keys for Make integration. |
+| --- | --- |
+
+| **2** | **Webflow Seller Registration Flow** Build registration page in Webflow. Integrate Supabase Auth via Webflow embed. Create seller profile form. Connect form submission to Supabase sellers table via Make. |
+| --- | --- |
+
+| **3** | **Product Submission Form** Build product submission page in Webflow. Fields: product URL, product name (auto-populated), category, pricing, demo link. Form triggers Make on submit. |
+| --- | --- |
+
+| **4** | **Make Automation — URL Submission to Draft** Build Make scenario: receive form data → call Firecrawl API with URL → parse response → call Claude API with extracted content → write generated copy to Supabase sales_pages table → send confirmation email via Resend. |
+| --- | --- |
+
+| **5** | **Seller Draft Review Interface** Build Webflow CMS page that reads draft sales page from Supabase. Seller can edit inline fields (headline, body, pricing). Save triggers Supabase update. Publish button sets status to live. |
+| --- | --- |
+
+| **6** | **Public Product Listing Page** Build Webflow CMS template for live product pages. Pulls from Supabase via Make or direct API. Includes screenshot gallery, video embed slot, pricing, seller profile panel, CTA buttons. |
+| --- | --- |
+
+# **5. Firecrawl Integration — Content Extraction**
+
+## **5.1 What Firecrawl Does**
+
+Firecrawl crawls the seller's submitted product URL and returns clean, structured, LLM-ready markdown content — stripping navigation, ads, and boilerplate. This is the raw material for Claude API to generate the sales page.
+
+## **5.2 Make Scenario — Firecrawl Module**
+
+**CLAUDE CODE PROMPT — BUILD MAKE SCENARIO STEP**
+
+| I am building a Make (Integromat) scenario for FORGE marketplace. Step 3 of my scenario receives a product URL from a Webflow form submission. Build the Firecrawl API module configuration for Make: - Endpoint: POST https://api.firecrawl.dev/v1/scrape - Headers: Authorization: Bearer {{FIRECRAWL_API_KEY}} - Body: { url: {{form.product_url}}, formats: ['markdown','screenshot'],           onlyMainContent: true } Map the response to these Make variables: - scraped_markdown: response.data.markdown - screenshot_url: response.data.screenshot - page_title: response.data.metadata.title - page_description: response.data.metadata.description Show me the exact JSON module config I paste into Make. |
+| --- |
+
+## **5.3 Extraction Quality — Fallback Handling**
+
+Firecrawl works well for most modern web apps but may return thin content for single-page apps rendered client-side. Build these fallbacks into the Make scenario:
+
+- If scraped_markdown length < 500 characters: trigger email to seller requesting manual description input
+
+- If screenshot_url is null: flag product as screenshot-pending; seller uploads manually via dashboard
+
+- If page_title is null: use seller-entered product name from form as fallback
+
+# **6. Claude API — Sales Page Generation**
+
+## **6.1 The Generation Prompt**
+
+This is the core prompt sent to Claude API inside the Make scenario. It transforms Firecrawl's raw markdown into structured, buyer-facing sales copy. This prompt should be treated as a primary product asset — iterate it based on real seller output quality.
+
+**MASTER SYSTEM PROMPT — SALES PAGE GENERATOR**
+
+| You are a senior SaaS copywriter for FORGE, a marketplace where AI builders sell apps and tools to small businesses. Your job is to write compelling, clear, and honest sales page copy from raw product content. TONE: Direct, benefit-led, jargon-free. Written for an SME owner who is not technical. Avoid hype. Focus on what the buyer gains, not how it works. OUTPUT FORMAT — return valid JSON only, no preamble: {   "headline": "8-12 word headline — benefit-led, not feature-led",   "subheadline": "20-30 word elaboration of the core benefit",   "problem_statement": "2-3 sentences: the pain this product solves",   "features": [{ "title": "", "description": "" }],  // 4-6 items   "use_cases": ["Who uses this and for what — 3-5 scenarios"],   "social_proof_placeholder": "What kind of testimonial to request",   "cta_primary": "Button text — action verb + benefit",   "cta_secondary": "Secondary action text",   "meta_title": "SEO title under 60 chars",   "meta_description": "SEO description under 155 chars" } |
+| --- |
+
+**USER MESSAGE TEMPLATE (POPULATED BY MAKE)**
+
+| Product Name: {{page_title}} Product URL: {{form.product_url}} Category: {{form.category}} Seller Description: {{form.seller_description}} Crawled Content: {{scraped_markdown}} Generate the sales page JSON now. |
+| --- |
+
+## **6.2 Claude Code Prompt — Make API Module**
+
+**CLAUDE CODE PROMPT — WIRE CLAUDE API IN MAKE**
+
+| I am building step 4 of a Make scenario for FORGE marketplace. I have these variables from the previous step:   - scraped_markdown, page_title, screenshot_url, form.category,     form.product_url, form.seller_description Configure an HTTP module in Make to call the Anthropic Claude API: - URL: https://api.anthropic.com/v1/messages - Method: POST - Headers:     x-api-key: {{ANTHROPIC_API_KEY}}     anthropic-version: 2023-06-01     content-type: application/json - Body: use the system prompt and user message template I provide - Model: claude-sonnet-4-5-20251001 - Max tokens: 2000 Parse response.content[0].text as JSON. Map each field to Make variables for the next step. Show me the exact HTTP module configuration. |
+| --- |
+
+## **6.3 Storing Generated Output**
+
+**CLAUDE CODE PROMPT — WRITE TO SUPABASE**
+
+| In my Make scenario, step 5 receives these variables from Claude API:   headline, subheadline, problem_statement, features (JSON array),   use_cases (JSON array), cta_primary, cta_secondary,   meta_title, meta_description And from earlier steps: product_id (from Supabase insert in step 2), screenshot_url, seller_id Configure a Supabase HTTP module in Make to: 1. INSERT into products table: title, seller_id, status='draft',    screenshots=[screenshot_url], created_at=now() 2. INSERT into sales_pages table: product_id, headline, subheadline,    body_copy (stringify the full JSON), meta_title, meta_description Show me both Supabase API calls with exact request bodies. |
+| --- |
+
+# **7. Seller Draft Review — Webflow CMS**
+
+## **7.1 Architecture Decision**
+
+The seller draft review UI has two implementation options. Choose based on Webflow plan and comfort with embeds.
+
+|  | **Option A: Webflow CMS Native** | **Option B: Webflow + Custom Embed** |
+| --- | --- | --- |
+| Approach | Sales page fields mapped to Webflow CMS. Seller edits via Webflow Editor. | Webflow page embeds a lightweight JS editor that reads/writes Supabase directly. |
+| Pros | No custom code. Full Webflow support. Visual editor for seller. | Real-time. No Webflow CMS item limits. More control over UX. |
+| Cons | Webflow Editor access required for each seller (not scalable). CMS item limits. | Requires Claude Code to write embed JS. Slightly more complex. |
+| Recommendation | Use for first 20 founding sellers — manually managed. | Build from seller 21 onwards when volume demands it. |
+
+## **7.2 Webflow CMS Fields — Sales Page Template**
+
+Create a Webflow CMS Collection called 'Products' with the following fields. Claude Code can generate the Webflow Designer configuration steps.
+
+- Plain Text: Product Title, Headline, Subheadline, CTA Primary Text, CTA Secondary Text
+
+- Rich Text: Problem Statement, Feature Descriptions, Use Cases
+
+- Multi-Image: Screenshots (up to 8)
+
+- Video Link: Demo Video URL
+
+- Number: Price (Licensed), Price (Exclusive)
+
+- Option: Status (Draft / Live / Archived)
+
+- Reference: Seller (links to Sellers collection)
+
+**CLAUDE CODE PROMPT — WEBFLOW CMS SETUP**
+
+| I am building a marketplace called FORGE on Webflow. I need to create two CMS Collections: Collection 1: Sellers Fields: Name (Plain Text), Bio (Rich Text), Avatar (Image), Tool Tags (Multi-reference or Option), Verified (Switch) Collection 2: Products Fields: Title, Headline, Subheadline, Problem Statement (Rich Text), Screenshots (Multi-Image, max 8), Demo Video URL (Plain Text), Price Licensed (Number), Price Exclusive (Number), Status (Option: Draft/Live/Archived), Seller (Reference to Sellers) Give me step-by-step instructions to create these in Webflow Designer. Then show me how to connect a product detail page template to this CMS. |
+| --- |
+
+# **8. Email Notifications — Resend Integration**
+
+Two transactional emails are required for the MVP seller onboarding flow. Both are triggered by Make and sent via Resend.
+
+### **Email 1 — Draft Ready Notification**
+
+Sent when the AI sales page generation is complete. Seller clicks through to review their draft.
+
+- Trigger: Make step after successful Supabase write
+
+- To: seller email (from Supabase auth)
+
+- Subject: 'Your FORGE listing draft is ready to review'
+
+- Body: product name, link to draft in Webflow Editor, estimated review time (5 minutes)
+
+### **Email 2 — Listing Live Notification**
+
+Sent when seller publishes their listing. Includes the public URL and share prompt.
+
+- Trigger: Supabase webhook when products.status changes to 'live'
+
+- To: seller email
+
+- Subject: 'Your FORGE listing is live — [Product Name]'
+
+- Body: public listing URL, share on LinkedIn/X prompt, dashboard link
+
+**CLAUDE CODE PROMPT — RESEND IN MAKE**
+
+| Configure a Resend email module in Make (using HTTP module with Resend API). Resend API endpoint: POST https://api.resend.com/emails Auth: Bearer {{RESEND_API_KEY}} Email 1 — Draft Ready:   from: noreply@getforge.io   to: {{seller_email}}   subject: 'Your FORGE listing draft is ready — {{product_title}}'   html: [clean HTML email with product name, review link, FORGE branding] Generate the HTML email template and the Make HTTP module config. Keep the email minimal and professional — dark header, amber CTA button. |
+| --- |
+
+# **9. Claude Code Session Plan**
+
+The build is organised into 8 Claude Code sessions. Each session has a single clear objective and produces a testable output before the next session begins. Do not combine sessions — this prevents context bleed and failed implementations.
+
+| **#** | **Session** | **Objective** | **Done When** |
+| --- | --- | --- | --- |
+| 1 | Supabase Foundation | Create project, run schema migration, configure RLS, test auth signup | Can register user via Supabase dashboard + SQL runs without errors |
+| 2 | Webflow Structure | Create CMS collections, build page templates, connect domain | Products + Sellers CMS collections exist with correct fields |
+| 3 | Registration Flow | Build Webflow registration + profile form, connect to Supabase Auth via Make | Test user can register and row appears in Supabase sellers table |
+| 4 | Product Submission Form | Build Webflow product form, trigger Make on submit, log payload | Form submits, Make receives payload, logged in Make history |
+| 5 | Firecrawl Module | Add Firecrawl step to Make, test with 3 real product URLs | 3 test URLs return structured markdown + screenshot URL |
+| 6 | Claude API Module | Add Claude API step to Make, test sales page generation end-to-end | 3 test products generate valid JSON sales page output |
+| 7 | Supabase Write + Email | Write generated content to Supabase, trigger draft-ready email | Supabase rows created, Resend email arrives in inbox |
+| 8 | Publish Flow + Live Page | Seller edits draft in Webflow, publishes, live page renders correctly | Public product URL loads correct content from CMS |
+
+# **10. Risks ****&**** Mitigations**
+
+| **Risk** | **Impact** | **Mitigation** |
+| --- | --- | --- |
+| Firecrawl returns empty/thin content for SPAs | Claude has nothing to generate from — poor output quality | Add manual description field to product form as fallback. Validate markdown length before Claude step. |
+| Claude API generates generic copy | Seller rejects draft, trust in platform drops | Invest in prompt iteration. Add seller context fields (target customer, key differentiator) to submission form to enrich Claude input. |
+| Webflow CMS item limits hit at scale | Cannot add new product listings | Webflow CMS limit is 10,000 items on Business plan. Migrate to Supabase-driven custom front-end at 500+ products. |
+| Make scenario fails silently | Seller submits URL, nothing happens, no feedback | Add error handling branch in Make. If any step fails: log to Supabase error_log table + send internal alert email. |
+| Seller publishes low-quality listing | Damages buyer trust at launch | Manual QA review by FORGE ops before first 50 listings go live. Status requires ops approval, not just seller action. |
+
+# **11. Infrastructure Cost — Three Tiers**
+
+The stack is presented across three spend tiers: a near-zero bootstrapped option for pre-revenue validation, the recommended paid MVP, and a scale tier. Start at Tier 1, move to Tier 2 when you onboard your first 10 paying sellers.
+
+## **11A. Tier 1 — Near-Zero (£0–15/month)**
+
+For pre-revenue validation, founder testing, and recruiting founding sellers before any money changes hands. Every tool below has a free plan sufficient for the first 30–50 product listings.
+
+| **Tool** | **Free Alternative** | **Cost** | **Free Tier Limits** |
+| --- | --- | --- | --- |
+| Webflow (frontend) | Framer | $0 | 1 site, custom domain, up to 1,000 pages — enough for MVP |
+| Supabase (database/auth) | Supabase Free | $0 | 500MB DB, 50,000 MAUs, 1GB storage — plenty for MVP |
+| Make (automation) | n8n (self-hosted) | $0 | Self-host on Railway free tier. Unlimited workflows. 500MB RAM limit. |
+| Firecrawl (scraping) | Firecrawl Free | $0 | 500 scrapes/month — sufficient for first 500 seller submissions |
+| Claude API | Claude API | ~$5-15 | Pay-as-you-go only. No free tier — but 50 page gens costs ~$2-3 |
+| Resend (email) | Resend Free | $0 | 3,000 emails/month, 1 domain — more than enough for MVP |
+| Stripe (payments) | Stripe | 2.9%+30c | No monthly fee — purely transaction-funded |
+| Railway (n8n hosting) | Railway Free | $0 | $5 credit/month free — covers n8n at low usage |
+| TOTAL |  | ~£5–15/mo | Only Claude API costs money at this tier |
+
+|  | *Tier 1 trade-off: n8n requires a one-time Claude Code setup session to self-host on Railway (~45 minutes). Framer has less CMS flexibility than Webflow but is fully capable for an MVP product catalogue. The saving is ~£90/month versus the paid stack.* |
+| --- | --- |
+
+## **11B. Tier 2 — Recommended MVP (£90–120/month)**
+
+Switch to this stack when you have 5+ paying sellers. The paid tools remove friction, increase reliability, and free you from self-hosting maintenance.
+
+| **Tool** | **Plan** | **Monthly Cost** | **Upgrade Reason** |
+| --- | --- | --- | --- |
+| Webflow | Basic ($14) or CMS ($23) | $14–23 | Custom domain + CMS collections. Upgrade to CMS when >20 products. |
+| Supabase | Pro | $25 | Daily backups, 8GB DB, no cold starts, email support |
+| Make | Core | $9 | Hosted, reliable, 10,000 ops/mo, no self-hosting overhead |
+| Firecrawl | Hobby | $16 | 500 scrapes + faster response times + priority support |
+| Claude API | Pay-as-you-go | ~$15–40 | Scales with usage. Budget $0.20 per sales page generated. |
+| Resend | Free → Starter ($20) | $0–20 | Stay free until >3,000 emails/month |
+| Stripe | Pay-as-you-go | 2.9%+30c | Revenue-funded — not a cost |
+| TOTAL |  | ~£80–120/mo | Break-even at 4 sellers on £29/mo plan |
+
+## **11C. Tier 3 — Scale (£250–500/month)**
+
+Relevant at 200+ active sellers or 1,000+ product listings. By this point the platform should be generating £5,000+/month in commission and subscription revenue.
+
+- Webflow Business ($39) or migrate to Next.js on Vercel ($20+) for full CMS flexibility
+
+- Supabase Pro with add-ons — compute upgrades as query volume increases
+
+- Make Teams ($29) — higher operation limits, team access
+
+- Firecrawl Standard ($83) — 3,000 scrapes/month
+
+- Claude API usage scales linearly — budget 15-20% of gross revenue for AI costs
+
+|  | *Recommendation: Launch on Tier 1 (free stack). Recruit 10 founding sellers. The moment you charge your first seller subscription, move to Tier 2. Never pay for infrastructure you have not yet outgrown.* |
+| --- | --- |
+
+# **12. Immediate Next Steps**
+
+Before opening Claude Code, complete these prerequisite actions in order:
+
+- Create accounts: Supabase, Webflow, Make, Firecrawl, Resend, Stripe, Anthropic API. Have all API keys ready in a secure password manager before Session 1.
+
+- Register domain (e.g. getforge.io or forge.market). Connect to Webflow immediately — DNS propagation takes up to 48 hours.
+
+- Set up a shared environment variables document (Notion or similar) listing every API key, project URL, and credential. Claude Code will need these in every session.
+
+- Create a Supabase project. Name it forge-mvp. Note the project URL and anon key. This is the first Claude Code session input.
+
+- Brief 3-5 founding sellers before the platform is live. Their real product URLs will be used as test cases in Sessions 5 and 6 — real data produces better prompts than fabricated examples.
+
+- Open Claude Code. Start Session 1 with the Supabase prompt from Section 4. Work through all 8 sessions sequentially.
+
+|  | *Final note: This spec is written to be handed directly to Claude Code. Each labelled prompt block in this document is a verbatim (or near-verbatim) Claude Code instruction. Work session by session, validate each output before proceeding, and resist the urge to combine steps. The no-code stack was chosen specifically so that Claude Code can implement each module independently without a developer.* |
+| --- | --- |
+
+FORGE — Claude Code Implementation Plan — v1.0 — Confidential
+
+	v1.0 — April 2026	Page
