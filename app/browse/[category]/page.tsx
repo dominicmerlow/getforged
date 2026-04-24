@@ -5,6 +5,7 @@ import Footer from '@/components/footer'
 import ScrollReveal from '@/components/scroll-reveal'
 import { listLiveProducts } from '@/lib/products'
 import BrowseClient from '@/components/BrowseClient'
+import CategoryHeroIllustration from '@/components/CategoryHeroIllustration'
 
 export const revalidate = 60
 
@@ -193,73 +194,88 @@ export default async function CategoryPage({
             color: 'var(--paper)',
           }}
         >
-          <div style={{ maxWidth: 900, margin: '0 auto' }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 12,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                opacity: 0.6,
-                marginBottom: 16,
-              }}
-            >
-              {cat.label}
-            </div>
-            <p
-              style={{
-                fontFamily: 'var(--font-serif)',
-                fontStyle: 'italic',
-                fontSize: 'clamp(18px, 2.5vw, 26px)',
-                opacity: 0.7,
-                marginBottom: 12,
-                fontWeight: 400,
-              }}
-            >
-              {cat.tagline}
-            </p>
-            <h1
-              style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: 'clamp(32px, 5vw, 64px)',
-                fontWeight: 600,
-                lineHeight: 1.1,
-                marginBottom: 24,
-              }}
-            >
-              {cat.h1}
-            </h1>
-            <p
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 18,
-                lineHeight: 1.6,
-                opacity: 0.8,
-                maxWidth: 680,
-                marginBottom: 36,
-              }}
-            >
-              {cat.description}
-            </p>
+          <div
+            style={{
+              maxWidth: 1200,
+              margin: '0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'clamp(32px, 5vw, 72px)',
+              flexWrap: 'wrap',
+            }}
+          >
+            {/* Left — text */}
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  opacity: 0.6,
+                  marginBottom: 16,
+                }}
+              >
+                {cat.label}
+              </div>
+              <p
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontStyle: 'italic',
+                  fontSize: 'clamp(18px, 2.5vw, 26px)',
+                  opacity: 0.7,
+                  marginBottom: 12,
+                  fontWeight: 400,
+                }}
+              >
+                {cat.tagline}
+              </p>
+              <h1
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 'clamp(32px, 4.5vw, 58px)',
+                  fontWeight: 600,
+                  lineHeight: 1.1,
+                  marginBottom: 24,
+                }}
+              >
+                {cat.h1}
+              </h1>
+              <p
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 18,
+                  lineHeight: 1.6,
+                  opacity: 0.8,
+                  maxWidth: 560,
+                  marginBottom: 36,
+                }}
+              >
+                {cat.description}
+              </p>
 
-            {/* Use-case chips */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {cat.useCases.map(uc => (
-                <span
-                  key={uc}
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 13,
-                    padding: '6px 14px',
-                    border: '1px solid rgba(255,255,255,0.3)',
-                    color: 'var(--paper)',
-                    opacity: 0.85,
-                  }}
-                >
-                  {uc}
-                </span>
-              ))}
+              {/* Use-case chips */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {cat.useCases.map(uc => (
+                  <span
+                    key={uc}
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 13,
+                      padding: '6px 14px',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      color: 'var(--paper)',
+                      opacity: 0.85,
+                    }}
+                  >
+                    {uc}
+                  </span>
+                ))}
+              </div>
             </div>
+
+            {/* Right — animated illustration */}
+            <CategoryHeroIllustration slug={cat.slug} />
           </div>
         </section>
 
