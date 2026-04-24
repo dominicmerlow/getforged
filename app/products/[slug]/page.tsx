@@ -11,6 +11,7 @@ import WishlistButton from '@/components/WishlistButton'
 import ViewTracker from '@/components/ViewTracker'
 import ContactSellerButton from '@/components/ContactSellerButton'
 import ReviewForm from '@/components/ReviewForm'
+import ProductScreenshot from '@/components/ProductScreenshot'
 import { createClient } from '@/lib/supabase/server'
 
 export const dynamicParams = true
@@ -200,34 +201,16 @@ export default async function ProductPage(
 
             <div className="product-hero-grid">
               <div className="product-hero-media">
-                {heroImage ? (
-                  <div
-                    style={{
-                      position: 'relative',
-                      width: '100%',
-                      aspectRatio: '16 / 10',
-                      overflow: 'hidden',
-                      border: '1px solid rgba(42,39,32,0.12)',
-                      background: 'var(--paper, #fafaf5)',
-                    }}
-                  >
-                    <Image
-                      src={heroImage}
-                      alt={product.title}
-                      fill
-                      sizes="(max-width: 900px) 100vw, 50vw"
-                      style={{ objectFit: 'cover' }}
-                      unoptimized
-                    />
-                  </div>
-                ) : (
-                  <div className={`product-thumb-bg ${product.thumb}`} style={{ height: 440 }}>
-                    <span style={{ fontSize: 96 }}>{product.emoji}</span>
-                  </div>
-                )}
-                <div className="product-hero-tags" style={{ marginTop: 24 }}>
-                  <span className="product-category-tag">{product.category}</span>
-                  <span className={`product-licensed-tag${product.type === 'Exclusive' ? ' exclusive' : ''}`}>
+                <ProductScreenshot
+                  src={heroImage}
+                  title={product.title}
+                  emoji={product.emoji}
+                  category={product.category}
+                  size="hero"
+                />
+                <div className="product-hero-tags" style={{ marginTop: 20 }}>
+                  <span className="product-category-tag" style={{ position: 'static', display: 'inline-block' }}>{product.category}</span>
+                  <span className={`product-licensed-tag${product.type === 'Exclusive' ? ' exclusive' : ''}`} style={{ position: 'static', display: 'inline-block', marginLeft: 8 }}>
                     {product.type}
                   </span>
                 </div>

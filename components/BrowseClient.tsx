@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import type { ProductListItem } from '@/lib/products'
+import ProductScreenshot from '@/components/ProductScreenshot'
 
 const CATEGORIES = ['All', 'AI Automation', 'Web App', 'CRM & Sales', 'Marketing', 'E-Commerce', 'Operations']
 
@@ -79,19 +79,14 @@ export default function BrowseClient({ products, initialCategory = 'All' }: Prop
         <div className="product-grid">
           {filtered.map(product => (
             <div key={product.slug} className="product-card">
-              <div className="product-thumb" style={{ position: 'relative' }}>
-                {product.heroImage ? (
-                  <Image
-                    src={product.heroImage}
-                    alt={product.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    style={{ objectFit: 'cover' }}
-                    unoptimized
-                  />
-                ) : (
-                  <div className={`product-thumb-bg ${product.thumb}`}>{product.emoji}</div>
-                )}
+              <div className="product-thumb" style={{ position: 'relative', height: 190 }}>
+                <ProductScreenshot
+                  src={product.heroImage}
+                  title={product.title}
+                  emoji={product.emoji}
+                  category={product.category}
+                  size="card"
+                />
                 <span className="product-category-tag">{product.category}</span>
                 <span className={`product-licensed-tag${product.type === 'Exclusive' ? ' exclusive' : ''}`}>
                   {product.type}
