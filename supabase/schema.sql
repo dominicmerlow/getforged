@@ -153,15 +153,26 @@ create trigger products_updated_at    before update on products    for each row 
 create trigger sales_pages_updated_at before update on sales_pages for each row execute function update_updated_at();
 
 -- Auto-create seller profile on user signup
-create or replace function handle_new_user()
-returns trigger language plpgsql security definer as $$
+-- IMPORTANT: `security definer` + `set search_path = ''` is required.
+-- Supabase forces an empty search_path on definer functions, so all
+-- table names must be schema-qualified (public.sellers).
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
 begin
-  insert into sellers (user_id, display_name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)));
+  insert into public.sellers (user_id, display_name)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1))
+  );
   return new;
 end;
 $$;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
-  for each row execute function handle_new_user();
+  for each row execute function public.handle_new_user();

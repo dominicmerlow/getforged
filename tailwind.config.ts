@@ -25,7 +25,7 @@ const config: Config = {
         display: ['var(--font-bebas)', 'sans-serif'],
         serif:   ['var(--font-serif)', 'serif'],
         mono:    ['var(--font-mono)', 'monospace'],
-        ui:      ['var(--font-syne)', 'sans-serif'],
+        ui:      ['var(--font-sans)', 'sans-serif'],
       },
     },
   },

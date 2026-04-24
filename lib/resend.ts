@@ -35,3 +35,48 @@ export async function sendDraftReadyEmail(
     `,
   })
 }
+
+export async function sendPurchaseReceiptEmail(
+  buyerEmail: string,
+  productTitle: string,
+  purchaseType: 'licensed' | 'exclusive' | 'subscription',
+  amountGBP: number,
+  productSlug: string
+): Promise<void> {
+  const productUrl = `${APP_URL}/products/${productSlug}`
+  const formattedAmount = new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 0,
+  }).format(amountGBP)
+  const label =
+    purchaseType === 'exclusive'
+      ? 'exclusive buy-out'
+      : purchaseType === 'subscription'
+        ? 'subscription'
+        : 'one-time licence'
+
+  if (!resend) {
+    console.log(`[RESEND MOCK] Purchase receipt → ${buyerEmail}`, {
+      productTitle,
+      formattedAmount,
+      label,
+      productUrl,
+    })
+    return
+  }
+
+  await resend.emails.send({
+    from: `GetForged <${FROM}>`,
+    to: buyerEmail,
+    subject: `You bought ${productTitle} on FORGE`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 24px; background: #0c0b09; color: #f8f4ee;">
+        <h1 style="font-size: 32px; color: #e8920a; margin-bottom: 8px;">You're in.</h1>
+        <p style="color: #b8b0a4; margin-bottom: 24px;">Thanks for buying <strong style="color: #f8f4ee;">${productTitle}</strong> (${label}, ${formattedAmount}). The seller has been notified and will be in touch with access details shortly.</p>
+        <a href="${productUrl}" style="display: inline-block; padding: 14px 28px; background: #e8920a; color: #0c0b09; font-weight: 700; text-decoration: none; border-radius: 3px; letter-spacing: 0.1em; text-transform: uppercase; font-size: 13px;">View Product →</a>
+        <p style="color: #7a7670; font-size: 12px; margin-top: 40px;">GetForged · <a href="${APP_URL}" style="color: #7a7670;">getforged.io</a></p>
+      </div>
+    `,
+  })
+}

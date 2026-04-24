@@ -25,7 +25,7 @@ html { scroll-behavior: smooth; }
 body {
   background: var(--ink);
   color: var(--white);
-  font-family: var(--font-syne), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   overflow-x: hidden;
   cursor: none;
 }
@@ -103,7 +103,7 @@ body::after {
   padding: 9px 20px;
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 3px;
-  font-family: var(--font-syne), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: 12px; font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -119,7 +119,7 @@ body::after {
   background: var(--amber);
   border: none;
   border-radius: 3px;
-  font-family: var(--font-syne), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: 12px; font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -136,7 +136,7 @@ body::after {
   background: var(--amber);
   border: none;
   border-radius: 3px;
-  font-family: var(--font-syne), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: 13px; font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -159,7 +159,7 @@ body::after {
   padding: 14px 32px;
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: 3px;
-  font-family: var(--font-syne), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: 13px; font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -276,7 +276,7 @@ body::after {
   font-size: 10px; color: var(--amber);
   letter-spacing: 0.1em; margin-bottom: 12px;
 }
-.hcard-title { font-family: var(--font-syne), sans-serif; font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+.hcard-title { font-family: var(--font-sans), sans-serif; font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
 .hcard-desc { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
 .hcard-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
 .hcard-price { font-family: var(--font-bebas), sans-serif; font-size: 22px; color: var(--amber); letter-spacing: 0.04em; }
@@ -450,7 +450,7 @@ body::after {
   padding: 8px 16px; background: transparent;
   border: 1px solid rgba(232,146,10,0.3);
   border-radius: 3px;
-  font-family: var(--font-syne), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--amber);
   cursor: none; transition: all 0.2s;
@@ -618,4 +618,495 @@ body::after {
   .dual-half { padding: 50px 28px; }
   .flippa-strip { padding: 40px 24px; }
   .footer { padding: 50px 24px 32px; }
+}
+
+/* ─── LIGHT & ELEGANT THEME OVERRIDE ──────────────────────────────
+   Flips the dark industrial look to a warm cream palette with
+   muted amber accents and serif-led typography. Appended so it
+   wins via cascade order — original tokens still exist for any
+   legacy components that reference them directly.
+   ──────────────────────────────────────────────────────────────── */
+:root {
+  --cream:         #fbf6ec;
+  --cream-2:       #f4ece0;
+  --warm-ink:      #2a2217;
+  --warm-ink-dim:  #5d513f;
+  --warm-muted:    #8a7d69;
+  --warm-border:   rgba(42,34,23,0.12);
+  --warm-border-2: rgba(42,34,23,0.06);
+  --soft-amber:    #b97314;
+  --soft-amber-2:  #d89333;
+  --hairline:      rgba(42,34,23,0.08);
+}
+
+html { background: var(--cream); }
+
+body {
+  background: var(--cream);
+  color: var(--warm-ink);
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+body::after { opacity: 0.04; }
+
+/* Nav */
+.nav {
+  background: rgba(251,246,236,0.85);
+  border-bottom: 1px solid var(--hairline);
+  padding: 18px 48px;
+}
+.nav-logo {
+  font-family: var(--font-bebas), sans-serif;
+  color: var(--warm-ink);
+  letter-spacing: 0.08em;
+}
+.nav-logo span { color: var(--soft-amber); }
+.nav-links a {
+  color: var(--warm-ink-dim);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+.nav-links a:hover { color: var(--warm-ink); }
+
+/* Buttons */
+.btn-hero-primary,
+.btn-amber {
+  background: var(--soft-amber);
+  color: var(--cream);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--soft-amber);
+  transition: all 0.2s;
+  padding: 12px 22px;
+  border-radius: 2px;
+}
+.btn-hero-primary:hover,
+.btn-amber:hover {
+  background: var(--warm-ink);
+  border-color: var(--warm-ink);
+  color: var(--cream);
+}
+.btn-hero-secondary,
+.btn-ghost {
+  background: transparent;
+  color: var(--warm-ink);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--warm-ink);
+  padding: 12px 22px;
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+.btn-hero-secondary:hover,
+.btn-ghost:hover {
+  background: var(--warm-ink);
+  color: var(--cream);
+}
+
+/* Sections + titles */
+.section { padding: 72px 48px; }
+.section-tag {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--soft-amber);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--font-serif), Georgia, serif;
+  color: var(--warm-ink);
+  letter-spacing: -0.015em;
+  line-height: 1.08;
+  font-weight: 400;
+  font-style: italic;
+}
+.section-title span {
+  color: var(--soft-amber);
+  font-style: italic;
+}
+
+/* Cards */
+.product-card {
+  background: var(--cream-2);
+  border: 1px solid var(--warm-border);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 1px 2px rgba(42,34,23,0.04);
+  border-radius: 3px;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.product-card:hover {
+  border-color: var(--warm-border);
+  box-shadow: 0 4px 16px rgba(42,34,23,0.08);
+  transform: translateY(-2px);
+}
+.product-title {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 22px;
+  color: var(--warm-ink);
+  font-style: italic;
+}
+.product-desc {
+  font-family: var(--font-serif), Georgia, serif;
+  color: var(--warm-ink-dim);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.product-tag {
+  background: transparent;
+  border: 1px solid var(--warm-border);
+  color: var(--warm-ink-dim);
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 2px;
+}
+.product-price-main {
+  font-family: var(--font-bebas), sans-serif;
+  color: var(--warm-ink);
+  letter-spacing: 0.02em;
+}
+.product-price-sub {
+  font-family: var(--font-mono), monospace;
+  color: var(--warm-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.product-btn {
+  color: var(--soft-amber);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+.product-category-tag,
+.product-licensed-tag {
+  background: rgba(251,246,236,0.9);
+  color: var(--warm-ink);
+  border: 1px solid var(--warm-border);
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 2px;
+  backdrop-filter: blur(6px);
+}
+.product-licensed-tag.exclusive {
+  background: var(--soft-amber);
+  color: var(--cream);
+  border-color: var(--soft-amber);
+}
+
+/* Filters */
+.filter-chip {
+  background: transparent;
+  border: 1px solid var(--warm-border);
+  color: var(--warm-ink-dim);
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.filter-chip.active {
+  background: var(--warm-ink);
+  color: var(--cream);
+  border-color: var(--warm-ink);
+}
+
+/* Cursor on light bg */
+.cursor { background: var(--soft-amber); }
+.cursor-ring { border-color: rgba(185,115,20,0.4); }
+
+/* Footer + nav glyphs */
+.footer {
+  background: var(--cream-2);
+  color: var(--warm-ink-dim);
+  border-top: 1px solid var(--warm-border);
+}
+.footer a { color: var(--warm-ink); }
+.footer-col li { color: var(--warm-muted); }
+.footer-legal span { color: var(--warm-muted); }
+
+/* Ticker + hero (light bg) */
+.ticker {
+  background: var(--cream-2);
+  color: var(--warm-ink);
+  border-top: 1px solid var(--warm-border);
+  border-bottom: 1px solid var(--warm-border);
+}
+.hero {
+  background: var(--cream);
+  color: var(--warm-ink);
+}
+
+/* Forms — inputs on light */
+input[type="text"],
+input[type="email"],
+input[type="url"],
+input[type="number"],
+input[type="password"],
+select,
+textarea {
+  background: var(--cream-2);
+  border: 1px solid var(--warm-border);
+  color: var(--warm-ink);
+  font-family: var(--font-mono), monospace;
+  border-radius: 2px;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--soft-amber);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(185,115,20,0.12);
+}
+
+/* ─── LIGHT-THEME CONTRAST FIXES (homepage sections) ──────────────
+   The original CSS painted hero / how-it-works / dual-persona /
+   flippa / pricing as dark-on-slate sections with `color: var(--white)`
+   inside. The new cream palette flipped their backgrounds, which left
+   white text on cream (invisible). These overrides re-ink every
+   previously-white heading, body, and stat back to warm-ink.
+   ──────────────────────────────────────────────────────────────── */
+
+/* Kill the slate clip-path overlay on the hero */
+.hero::before { display: none; }
+
+/* Hero text */
+.hero { background: var(--cream); color: var(--warm-ink); }
+.hero-title { color: var(--warm-ink); font-family: var(--font-serif), Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -0.02em; }
+.hero-title em { color: var(--soft-amber); font-style: italic; }
+.hero-sub { color: var(--warm-ink-dim); }
+.hero-sub strong { color: var(--warm-ink); font-style: italic; }
+.hero-eyebrow span { color: var(--soft-amber); }
+.hero-eyebrow-dot { background: var(--soft-amber); }
+.hero-stats { border-top-color: var(--warm-border); }
+.hero-stat-num { color: var(--soft-amber); }
+.hero-stat-label { color: var(--warm-muted); }
+
+/* Hero floating cards — reskin from dark glass to cream surface */
+.hcard {
+  background: var(--cream-2);
+  border: 1px solid var(--warm-border);
+  backdrop-filter: none;
+  box-shadow: 0 2px 6px rgba(42,34,23,0.06);
+}
+.hcard:hover { box-shadow: 0 12px 36px rgba(42,34,23,0.12); }
+.hcard-title { color: var(--warm-ink); font-family: var(--font-sans), sans-serif; }
+.hcard-desc { color: var(--warm-ink-dim); }
+.hcard-foot { border-top-color: var(--warm-border); }
+.hcard-badge {
+  background: rgba(185,115,20,0.08);
+  border-color: rgba(185,115,20,0.25);
+  color: var(--soft-amber);
+}
+.hcard-price { color: var(--soft-amber); }
+.hcard-price-label { color: var(--warm-muted); }
+.hcard-avatar { color: var(--cream); background: linear-gradient(135deg, var(--soft-amber), #a0361a); }
+.hcard-seller-name { color: var(--warm-ink-dim); }
+
+/* Ticker */
+.ticker-wrap {
+  background: rgba(185,115,20,0.05);
+  border-top-color: var(--warm-border);
+  border-bottom-color: var(--warm-border);
+}
+
+/* How it works section */
+.how-it-works, section.how-it-works { background: var(--cream); }
+.how-card {
+  background: var(--cream-2);
+  border: 1px solid var(--warm-border);
+  color: var(--warm-ink);
+}
+.how-card h3 { color: var(--warm-ink); font-family: var(--font-sans), sans-serif; }
+.how-card p { color: var(--warm-ink-dim); }
+
+/* Dual persona */
+.dual-persona { background: var(--cream); }
+.dual-half { background: var(--cream); color: var(--warm-ink); }
+.dual-half + .dual-half { border-left: 1px solid var(--warm-border); }
+.dual-half h2 { color: var(--warm-ink); font-family: var(--font-serif), Georgia, serif; font-style: italic; font-weight: 400; }
+.dual-half p { color: var(--warm-ink-dim); }
+.dual-list li { color: var(--warm-ink-dim); }
+
+/* Flippa strip */
+.flippa-strip { background: var(--cream-2); border-top: 1px solid var(--warm-border); border-bottom: 1px solid var(--warm-border); }
+.flippa-left h3 { color: var(--warm-ink); font-family: var(--font-serif), Georgia, serif; font-style: italic; font-weight: 400; }
+.flippa-left p { color: var(--warm-ink-dim); }
+.flippa-badge { background: var(--cream); border: 1px solid var(--warm-border); }
+.flippa-badge-logo { color: var(--warm-ink); }
+.flippa-badge-text { color: var(--warm-ink-dim); }
+.flippa-badge-sub { color: var(--warm-muted); }
+
+/* Pricing */
+.pricing, section.pricing { background: var(--cream); }
+.pricing-card {
+  background: var(--cream-2);
+  border: 1px solid var(--warm-border);
+  color: var(--warm-ink);
+}
+.pricing-card.featured {
+  background: var(--warm-ink);
+  color: var(--cream);
+  border-color: var(--warm-ink);
+}
+.pricing-card.featured .pricing-price,
+.pricing-card.featured h3 { color: var(--cream); }
+.pricing-card.featured .pricing-cadence { color: rgba(251,246,236,0.7); }
+.pricing-card.featured .pricing-features li { color: rgba(251,246,236,0.85); }
+.pricing-card.featured .pricing-features li .cross { color: rgba(251,246,236,0.4); }
+.pricing-price { color: var(--warm-ink); }
+.pricing-cadence { color: var(--warm-muted); }
+.pricing-features li { color: var(--warm-ink-dim); }
+.pricing-features li .cross { color: var(--warm-muted); }
+
+/* CTA section */
+.cta-section { background: var(--warm-ink); color: var(--cream); }
+.cta-section h2 { color: var(--cream); }
+.cta-section p { color: rgba(251,246,236,0.75); }
+
+/* Footer — relink to cream */
+.footer { background: var(--cream-2); color: var(--warm-ink-dim); border-top: 1px solid var(--warm-border); }
+.footer-brand-name { color: var(--warm-ink); }
+.footer-tagline { color: var(--warm-muted); }
+.footer-col li { color: var(--warm-muted); cursor: pointer; }
+.footer-col li:hover { color: var(--warm-ink); }
+.footer a { color: var(--warm-ink); }
+.footer-copy { color: var(--warm-muted); }
+.footer-legal span { color: var(--warm-muted); }
+.footer-legal span:hover { color: var(--warm-ink); }
+.footer-bottom { border-top: 1px solid var(--warm-border); }
+
+/* Default product card title/desc when not overridden earlier */
+.product-title { color: var(--warm-ink); }
+.product-desc { color: var(--warm-ink-dim); }
+
+/* Section titles (homepage numbered section labels) */
+.section-num { color: var(--warm-muted); }
+
+/* Filter chip active */
+.filter-chip.active { background: var(--soft-amber); border-color: var(--soft-amber); color: var(--cream); }
+
+/* Body font: Montserrat primary, keep serif for display headlines */
+body { font-family: var(--font-sans), 'Montserrat', sans-serif; }
+
+/* Subtle refinements */
+:focus-visible { outline: 2px solid var(--soft-amber); outline-offset: 3px; }
+
+/* ─── FRAUNCES DISPLAY REFINEMENTS ────────────────────────────────
+   Replaced Instrument Serif (italic, calligraphic) with Fraunces
+   (structured, modern, variable). Default to upright with a
+   semibold weight for section headings; reserve italic for small
+   accent words inside spans. Activates Fraunces opsz for display.
+   ──────────────────────────────────────────────────────────────── */
+.section-title,
+.hero-title,
+.dual-half h2,
+.flippa-left h3,
+h1.section-title,
+h2.section-title,
+h3.section-title {
+  font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+  font-style: normal;
+  font-weight: 600;
+  font-variation-settings: 'opsz' 96, 'SOFT' 30;
+  letter-spacing: -0.02em;
+  line-height: 1.06;
+}
+
+/* Accent words inside headings stay italic for flavour, but not scripty */
+.section-title span,
+.hero-title span,
+.hero-title em,
+.dual-half h2 span,
+.flippa-left h3 span {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--soft-amber);
+  font-variation-settings: 'opsz' 96, 'SOFT' 50;
+}
+
+/* Body-level italic use (taglines, pull quotes) — softer weight */
+.product-title {
+  font-style: normal;
+  font-weight: 500;
+  font-variation-settings: 'opsz' 20;
+}
+
+/* ─── HERO LAYOUT — COMPACT VERSION ───────────────────────────────
+   Original hero used min-height: 100vh with centered content, which
+   leaves large empty space when the headline is short. Shrinks the
+   vertical footprint, reduces headline scale, and raises the
+   floating cards so the composition reads as a balanced rectangle.
+   ──────────────────────────────────────────────────────────────── */
+.hero {
+  min-height: auto;
+  padding: 96px 0 72px;
+  grid-template-columns: minmax(420px, 1.1fr) minmax(360px, 0.9fr);
+  align-items: center;
+  gap: 32px;
+}
+.hero-left {
+  padding: 0 48px 0 56px;
+  justify-content: center;
+  gap: 0;
+}
+.hero-right {
+  padding: 0 56px 0 32px;
+  align-items: center;
+  justify-content: center;
+}
+.hero-eyebrow { margin-bottom: 20px; }
+.hero-title {
+  font-size: clamp(52px, 7vw, 88px);
+  line-height: 1;
+  margin-bottom: 24px;
+  letter-spacing: -0.025em;
+}
+.hero-sub {
+  font-size: 18px;
+  margin-bottom: 32px;
+  max-width: 480px;
+  line-height: 1.5;
+}
+.hero-stats {
+  margin-top: 40px;
+  padding-top: 28px;
+}
+.hero-stat-num { font-size: 30px; }
+
+/* Tighten the card stack and lift it up */
+.hero-card-stack {
+  width: 340px;
+  height: 360px;
+  margin: 0 auto;
+}
+.hcard { width: 280px; padding: 18px; }
+.hcard:nth-child(1) { top: 0; left: 40px; transform: rotate(2deg) scale(0.95); }
+.hcard:nth-child(2) { top: 66px; left: 0; transform: rotate(-1.5deg); z-index: 2; }
+.hcard:nth-child(3) { top: 148px; left: 30px; transform: rotate(1deg) scale(0.95); }
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 80px 0 40px;
+  }
+  .hero-left { padding: 0 28px; }
+  .hero-right { padding: 32px 28px 0; }
+  .hero-title { font-size: clamp(44px, 9vw, 64px); }
+  .hero-card-stack { height: 320px; }
+}
+
+/* Hero em — flow inline with the line above, not its own line */
+.hero-title em {
+  display: inline;
+  color: var(--soft-amber);
+  font-style: italic;
+  font-weight: 500;
 }

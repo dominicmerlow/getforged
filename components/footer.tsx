@@ -25,11 +25,10 @@ export default function Footer() {
           <div className="footer-col">
             <h4>For Sellers</h4>
             <ul>
-              <li><Link href="/register">List Your App</Link></li>
+              <li><Link href="/submit">List Your App</Link></li>
               <li><Link href="/dashboard">Seller Dashboard</Link></li>
-              <li><Link href="/#pricing">Pricing Plans</Link></li>
-              <li><Link href="/#exit">Flippa Exit</Link></li>
-              <li><Link href="/guide">Seller Guide</Link></li>
+              <li><Link href="/seller-agreement">Seller Agreement</Link></li>
+              <li><Link href="/how-it-works/sellers">How It Works</Link></li>
             </ul>
           </div>
           <div className="footer-col">
@@ -51,8 +50,8 @@ export default function Footer() {
         <div className="footer-legal">
           <span><Link href="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</Link></span>
           <span><Link href="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>Terms</Link></span>
-          <span><Link href="/seller-tos" style={{ color: 'inherit', textDecoration: 'none' }}>Seller ToS</Link></span>
-          <span><Link href="/cookies" style={{ color: 'inherit', textDecoration: 'none' }}>Cookies</Link></span>
+          <span><Link href="/refund-policy" style={{ color: 'inherit', textDecoration: 'none' }}>Refunds</Link></span>
+          <span><Link href="/seller-agreement" style={{ color: 'inherit', textDecoration: 'none' }}>Seller Agreement</Link></span>
         </div>
       </div>
     </footer>

@@ -1,4 +1,3 @@
-import Cursor      from '@/components/cursor'
 import Nav         from '@/components/nav'
 import Hero        from '@/components/hero'
 import Ticker      from '@/components/ticker'
@@ -14,7 +13,6 @@ import ScrollReveal from '@/components/scroll-reveal'
 export default function HomePage() {
   return (
     <>
-      <Cursor />
       <Nav />
       <main>
         <Hero />

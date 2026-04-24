@@ -11,38 +11,34 @@ export default function Hero() {
         </div>
 
         <h1 className="hero-title">
-          Built by<br />
-          <em>Builders.</em>
-          Made for<br />Business.
+          Buy the AI tool you would have <em>hired</em> a developer to build.
         </h1>
 
         <p className="hero-sub">
-          <strong>AI-built apps, automations &amp; websites</strong> — made by
-          Claude Code &amp; Cursor experts, priced for small businesses.
-          No agencies. No six-figure dev budgets.
+          Pre-built apps, automations and internal tools — installed in hours, priced like software, owned like assets.
         </p>
 
         <div className="hero-ctas">
           <Link href="/browse" className="btn-hero-primary">
             Browse the Marketplace
           </Link>
-          <Link href="/register" className="btn-hero-secondary">
+          <Link href="/submit" className="btn-hero-secondary">
             Sell Your Creation
           </Link>
         </div>
 
         <div className="hero-stats">
           <div className="hero-stat">
-            <div className="hero-stat-num">340+</div>
-            <div className="hero-stat-label">AI Products</div>
+            <div className="hero-stat-num">Under 1 day</div>
+            <div className="hero-stat-label">Avg. install time</div>
           </div>
           <div className="hero-stat">
-            <div className="hero-stat-num">£199</div>
-            <div className="hero-stat-label">Avg. Price</div>
+            <div className="hero-stat-num">Stripe</div>
+            <div className="hero-stat-label">Powered by Stripe</div>
           </div>
           <div className="hero-stat">
-            <div className="hero-stat-num">48h</div>
-            <div className="hero-stat-label">List to Live</div>
+            <div className="hero-stat-num">Supabase</div>
+            <div className="hero-stat-label">Backed by Supabase</div>
           </div>
         </div>
       </div>

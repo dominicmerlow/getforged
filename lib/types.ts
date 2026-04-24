@@ -28,10 +28,25 @@ export interface Product {
   price_exclusive: number | null
   status: ProductStatus
   slug: string | null
+  source_url: string | null
+  category: string | null
+  tool_tags: string[] | null
+  // ── Spec-sheet fields (migration 001) ────────────────
+  platform: string[] | null
+  architecture: string | null
+  ai_models: string[] | null
+  integrations: string[] | null
+  monthly_cost: number | null
+  deploy_time: string | null
+  docs_url: string | null
+  repo_url: string | null
+  support_terms: string | null
+  // ────────────────────────────────────────────────────
   created_at: string
+  updated_at?: string
   // joined
   seller?: Seller
-  sales_page?: SalesPage
+  sales_page?: SalesPage | SalesPage[]
 }
 
 export interface SalesPage {

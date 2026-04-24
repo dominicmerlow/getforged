@@ -2,94 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { SEED_PRODUCTS } from '@/lib/seed-products'
 
-interface ProductCardData {
-  title: string
-  desc: string
-  category: string
-  tags: string[]
-  priceMain: string
-  priceSub: string
-  type: 'Licensed' | 'Exclusive'
-  thumb: string
-  emoji: string
-  slug: string
-}
-
-const PRODUCTS: ProductCardData[] = [
-  {
-    title: 'InvoiceBot Pro',
-    desc: 'Automatically generates, sends and chases invoices from your Notion workspace. Zero manual effort.',
-    category: 'AI Automation',
-    tags: ['Claude Code', 'Notion API', 'Stripe'],
-    priceMain: '£149',
-    priceSub: 'one-time licence',
-    type: 'Licensed',
-    thumb: 't1',
-    emoji: '⚡',
-    slug: 'invoicebot-pro',
-  },
-  {
-    title: 'ClientPortal.ai',
-    desc: 'White-label client portal with project updates, secure file sharing, and two-way messaging.',
-    category: 'Web App',
-    tags: ['Cursor', 'Supabase', 'React'],
-    priceMain: '£1,200',
-    priceSub: 'exclusive buy-out',
-    type: 'Exclusive',
-    thumb: 't2',
-    emoji: '🌐',
-    slug: 'clientportal-ai',
-  },
-  {
-    title: 'LeadTrackr',
-    desc: "Lightweight CRM for service businesses. Tracks leads, follow-ups, and pipeline without the bloat of Salesforce.",
-    category: 'CRM & Sales',
-    tags: ['Airtable', 'Make', 'No-Code'],
-    priceMain: '£89',
-    priceSub: 'per month',
-    type: 'Licensed',
-    thumb: 't3',
-    emoji: '📊',
-    slug: 'leadtrackr',
-  },
-  {
-    title: 'ReviewRadar',
-    desc: 'Monitors Google & Trustpilot reviews. Alerts you instantly. Drafts AI-generated responses for your approval.',
-    category: 'Marketing',
-    tags: ['Lovable', 'Claude API', 'Resend'],
-    priceMain: '£49',
-    priceSub: 'per month',
-    type: 'Licensed',
-    thumb: 't4',
-    emoji: '📧',
-    slug: 'reviewradar',
-  },
-  {
-    title: 'ShopBot Assistant',
-    desc: 'AI chatbot trained on your product catalogue. Answers customer questions, recommends products, reduces support tickets by 60%.',
-    category: 'E-Commerce',
-    tags: ['Windsurf', 'Shopify', 'Claude API'],
-    priceMain: '£199',
-    priceSub: 'one-time licence',
-    type: 'Licensed',
-    thumb: 't5',
-    emoji: '🏪',
-    slug: 'shopbot-assistant',
-  },
-  {
-    title: 'BookingBridge',
-    desc: 'Embeddable booking system for service businesses. Syncs with Google Calendar. SMS reminders. Zero monthly fees.',
-    category: 'Operations',
-    tags: ['Bubble', 'Google API', 'Twilio'],
-    priceMain: '£299',
-    priceSub: 'one-time licence',
-    type: 'Licensed',
-    thumb: 't6',
-    emoji: '📅',
-    slug: 'bookingbridge',
-  },
-]
+const PRODUCTS = SEED_PRODUCTS
 
 const FILTERS = ['All', 'AI Automation', 'Web Apps', 'CRM & Sales', 'E-Commerce']
 
@@ -137,7 +52,7 @@ export default function ProductGrid() {
             </div>
             <div className="product-body">
               <div className="product-title">{product.title}</div>
-              <div className="product-desc">{product.desc}</div>
+              <div className="product-desc">{product.description}</div>
               <div className="product-tags">
                 {product.tags.map(tag => (
                   <span key={tag} className="product-tag">{tag}</span>
