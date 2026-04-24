@@ -104,6 +104,19 @@ export default async function ProductPage(
   const vimeoId = parseVimeoId(product.video_url)
   const hasEmbed = !!(ytId || vimeoId)
 
+  // Drop empty / whitespace-only features so we never render an empty section
+  const cleanFeatures = product.features
+    .map(f => (typeof f === 'string' ? f.trim() : ''))
+    .filter(f => f.length > 0)
+  const cleanUseCases = product.use_cases
+    .map(u => (typeof u === 'string' ? u.trim() : ''))
+    .filter(u => u.length > 0)
+
+  // Deterministic, unambiguous primary CTA — never trust an AI-generated verb
+  const buyLabel = product.type === 'Exclusive'
+    ? `Buy Exclusive — ${product.priceMain}`
+    : `Buy Licence — ${product.priceMain}`
+
   // Fetch reviews for this product (public read, no auth needed)
   const supabase = await createClient()
   const { data: reviewsData } = await supabase
@@ -252,14 +265,25 @@ export default async function ProductPage(
                       value={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
                     />
                     <button type="submit" className="btn-hero-primary" style={{ cursor: 'pointer', border: 'none' }}>
-                      {product.cta_primary}
+                      {buyLabel}
                     </button>
                   </form>
+                  {product.demo_url && (
+                    <a
+                      href={product.demo_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-hero-secondary"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      See Live Demo ↗
+                    </a>
+                  )}
                   {!product.isPreview && (
                     <ContactSellerButton
                       productId={product.id}
                       productTitle={product.title}
-                      label={product.cta_secondary}
+                      label={product.cta_secondary || 'Talk to Builder'}
                     />
                   )}
                   {!product.isPreview && (
@@ -300,27 +324,35 @@ export default async function ProductPage(
           </section>
         )}
 
-        {product.features.length > 0 && (
+        {cleanFeatures.length > 0 && (
           <section className="section">
             <div className="section-tag">What it does</div>
             <h2 className="section-title" style={{ fontSize: 'clamp(32px,4vw,48px)' }}>Features</h2>
             <ul className="product-features-list" style={{ marginTop: 32, display: 'grid', gap: 20, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', listStyle: 'none', padding: 0 }}>
-              {product.features.map((f, i) => (
-                <li key={i} className="product-card reveal" style={{ padding: 24 }}>
-                  <div className="product-title" style={{ fontSize: 20 }}>—</div>
-                  <div className="product-desc" style={{ marginTop: 8 }}>{f}</div>
+              {cleanFeatures.map((f, i) => (
+                <li key={i} className="product-card reveal" style={{ padding: 24, display: 'grid', gap: 8 }}>
+                  <div style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'var(--soft-amber, #b97314)',
+                  }}>
+                    Feature {String(i + 1).padStart(2, '0')}
+                  </div>
+                  <div className="product-desc" style={{ fontSize: 16, lineHeight: 1.5 }}>{f}</div>
                 </li>
               ))}
             </ul>
           </section>
         )}
 
-        {product.use_cases.length > 0 && (
+        {cleanUseCases.length > 0 && (
           <section className="section">
             <div className="section-tag">Who it&apos;s for</div>
             <h2 className="section-title" style={{ fontSize: 'clamp(32px,4vw,48px)' }}>Use cases</h2>
             <ul style={{ marginTop: 32, display: 'grid', gap: 16, maxWidth: 820, listStyle: 'none', padding: 0 }}>
-              {product.use_cases.map((u, i) => (
+              {cleanUseCases.map((u, i) => (
                 <li key={i} style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1.5 }}>
                   · {u}
                 </li>
@@ -463,33 +495,36 @@ export default async function ProductPage(
           </section>
         )}
 
-        {/* Task 1: "What you get" callout box */}
-        {product.support_terms && (
-          <section className="section">
-            <div className="section-tag">What you get</div>
-            <div style={{
-              marginTop: 24,
-              maxWidth: 820,
-              border: '2px solid var(--warm-ink, #2a2217)',
-              padding: '28px 32px',
-              display: 'grid',
-              gap: 16,
-            }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#b97314' }}>
-                Included with purchase
-              </div>
+        {/* Always show "What you get" — buyers need delivery clarity before paying */}
+        <section className="section">
+          <div className="section-tag">What you get</div>
+          <div style={{
+            marginTop: 24,
+            maxWidth: 820,
+            border: '2px solid var(--warm-ink, #2a2217)',
+            padding: '28px 32px',
+            display: 'grid',
+            gap: 16,
+          }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#b97314' }}>
+              Included with purchase
+            </div>
+            {product.support_terms && (
               <p style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1.6, margin: 0 }}>
                 {product.support_terms}
               </p>
-              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-                {product.repo_url && <span>✓ Source code access</span>}
-                {product.docs_url && <span>✓ Documentation</span>}
-                {product.demo_url && <span>✓ Live demo</span>}
-                <span>✓ 7-day money-back guarantee</span>
-              </div>
+            )}
+            <div style={{ display: 'grid', gap: 10, fontFamily: 'var(--font-serif)', fontSize: 17 }}>
+              <div>✓ {product.type === 'Exclusive' ? 'Exclusive ownership — listing is removed from the marketplace after purchase' : 'Perpetual licence — use it forever, no recurring fees'}</div>
+              {product.repo_url && <div>✓ Full source code access</div>}
+              {product.docs_url && <div>✓ Setup documentation &amp; deploy guide</div>}
+              {product.demo_url && <div>✓ Live working demo to inspect before you buy</div>}
+              {product.deploy_time && <div>✓ Estimated time to deploy: {product.deploy_time}</div>}
+              <div>✓ Direct line to the builder for questions</div>
+              <div>✓ 7-day money-back guarantee, no questions asked</div>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         {product.seller?.display_name && (
           <section className="section">
@@ -585,7 +620,7 @@ export default async function ProductPage(
                 value={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
               />
               <button type="submit" className="btn-hero-primary" style={{ padding: '16px 48px', cursor: 'pointer', border: 'none' }}>
-                {product.cta_primary} — {product.priceMain}
+                {buyLabel}
               </button>
             </form>
             <Link href="/browse" className="btn-hero-secondary" style={{ padding: '16px 48px' }}>

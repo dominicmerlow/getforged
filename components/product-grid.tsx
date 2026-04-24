@@ -1,82 +1,55 @@
-'use client'
-
-import { useState } from 'react'
 import Link from 'next/link'
-import { SEED_PRODUCTS } from '@/lib/seed-products'
+import type { ProductListItem } from '@/lib/products'
+import ProductGridFilter from '@/components/product-grid-filter'
 
-const PRODUCTS = SEED_PRODUCTS
+interface ProductGridProps {
+  products: ProductListItem[]
+}
 
-const FILTERS = ['All', 'AI Automation', 'Web Apps', 'CRM & Sales', 'E-Commerce']
-
-export default function ProductGrid() {
-  const [activeFilter, setActiveFilter] = useState('All')
-
-  const filtered = activeFilter === 'All'
-    ? PRODUCTS
-    : PRODUCTS.filter(p =>
-        p.category.toLowerCase().includes(activeFilter.toLowerCase()) ||
-        activeFilter.toLowerCase().includes(p.category.toLowerCase())
-      )
+export default function ProductGrid({ products }: ProductGridProps) {
+  const count = products.length
 
   return (
-    <section className="section" style={{ paddingTop: 0 }}>
+    <section className="section" id="featured" style={{ paddingTop: 0 }}>
       <div className="products-header">
         <div>
           <div className="section-tag">Featured Listings</div>
           <h2 className="section-title" style={{ fontSize: 'clamp(36px,5vw,56px)' }}>
-            Browse <span>340+</span> Products
+            {count > 0
+              ? <>Browse <span>{count}</span> {count === 1 ? 'product' : 'products'}</>
+              : <>The forge is <span>warming up</span></>}
           </h2>
         </div>
-        <div className="filter-row">
-          {FILTERS.map(f => (
-            <button
-              key={f}
-              className={`filter-chip${activeFilter === f ? ' active' : ''}`}
-              onClick={() => setActiveFilter(f)}
-            >
-              {f}
-            </button>
-          ))}
+      </div>
+
+      {count === 0 ? (
+        <div style={{
+          marginTop: 32,
+          padding: '48px 32px',
+          border: '1px dashed rgba(42,39,32,0.2)',
+          textAlign: 'center',
+          maxWidth: 720,
+          marginInline: 'auto',
+        }}>
+          <p style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1.5 }}>
+            We&apos;re hand-picking the first wave of builders.
+            Be the first to list — every founding seller gets a verified badge and free featured placement for 90 days.
+          </p>
+          <Link href="/submit" className="btn-hero-primary" style={{ marginTop: 24, display: 'inline-block' }}>
+            Become a Founding Builder →
+          </Link>
         </div>
-      </div>
+      ) : (
+        <ProductGridFilter products={products} />
+      )}
 
-      <div className="product-grid">
-        {filtered.map(product => (
-          <div key={product.slug} className="product-card reveal">
-            <div className="product-thumb">
-              <div className={`product-thumb-bg ${product.thumb}`}>{product.emoji}</div>
-              <span className="product-category-tag">{product.category}</span>
-              <span className={`product-licensed-tag${product.type === 'Exclusive' ? ' exclusive' : ''}`}>
-                {product.type}
-              </span>
-            </div>
-            <div className="product-body">
-              <div className="product-title">{product.title}</div>
-              <div className="product-desc">{product.description}</div>
-              <div className="product-tags">
-                {product.tags.map(tag => (
-                  <span key={tag} className="product-tag">{tag}</span>
-                ))}
-              </div>
-              <div className="product-foot">
-                <div className="product-price">
-                  <div className="product-price-main">{product.priceMain}</div>
-                  <div className="product-price-sub">{product.priceSub}</div>
-                </div>
-                <Link href={`/products/${product.slug}`} className="product-btn">
-                  View →
-                </Link>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ textAlign: 'center', marginTop: '48px' }}>
-        <Link href="/browse" className="btn-hero-secondary" style={{ padding: '14px 40px' }}>
-          Browse All 340+ Products
-        </Link>
-      </div>
+      {count > 0 && (
+        <div style={{ textAlign: 'center', marginTop: 48 }}>
+          <Link href="/browse" className="btn-hero-secondary" style={{ padding: '14px 40px' }}>
+            Browse All {count} {count === 1 ? 'Product' : 'Products'} →
+          </Link>
+        </div>
+      )}
     </section>
   )
 }

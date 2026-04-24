@@ -11,8 +11,8 @@ export default function DualPersona() {
           <h2>Turn Your Code Into Cash.</h2>
           <p>
             You built something remarkable with Claude Code, Cursor, or Lovable.
-            Stop leaving it on your hard drive. List it on GetForged and let
-            50,000 SME buyers find it.
+            Stop leaving it on your hard drive. List it on GetForged and get in front
+            of the first wave of SME buyers actively hunting AI-built tools.
           </p>
           <ul className="dual-list">
             <li>Submit your URL — AI writes your full sales page automatically</li>

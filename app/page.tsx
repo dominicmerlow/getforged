@@ -9,16 +9,22 @@ import Pricing     from '@/components/pricing'
 import CTASection  from '@/components/cta-section'
 import Footer      from '@/components/footer'
 import ScrollReveal from '@/components/scroll-reveal'
+import { listLiveProducts } from '@/lib/products'
 
-export default function HomePage() {
+export const revalidate = 60
+
+export default async function HomePage() {
+  const products = await listLiveProducts()
+  const heroCards = products.slice(0, 3)
+
   return (
     <>
       <Nav />
       <main>
-        <Hero />
+        <Hero cards={heroCards} totalCount={products.length} />
         <Ticker />
         <HowItWorks />
-        <ProductGrid />
+        <ProductGrid products={products} />
         <DualPersona />
         <FlippaStrip />
         <Pricing />

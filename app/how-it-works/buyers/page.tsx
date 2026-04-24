@@ -254,7 +254,7 @@ export default function BuyersPage() {
             Find the tool your business needs.
           </h2>
           <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, marginTop: 16, color: 'rgba(251,246,236,0.75)' }}>
-            340+ apps. 90-second checkout. Deploy by dinner.
+            Curated apps. 90-second checkout. Deploy by dinner.
           </p>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}>
             <Link

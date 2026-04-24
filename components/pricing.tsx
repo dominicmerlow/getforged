@@ -1,110 +1,125 @@
 import Link from 'next/link'
 
-const PLANS = [
-  {
-    tier: 'Starter',
-    price: '0',
-    cadence: 'forever free',
-    featured: false,
-    features: [
-      { text: '2 active listings',           included: true },
-      { text: 'AI sales page generation',    included: true },
-      { text: 'Screenshot gallery',          included: true },
-      { text: 'Basic seller dashboard',      included: true },
-      { text: 'Video walkthrough',           included: false },
-      { text: 'Sandbox demo',                included: false },
-      { text: 'Flippa cross-listing',        included: false },
-    ],
-    cta: 'Get Started Free',
-    ctaClass: 'btn-ghost',
-    href: '/register',
-  },
-  {
-    tier: 'Pro',
-    price: '29',
-    cadence: 'per month',
-    featured: true,
-    features: [
-      { text: '10 active listings',          included: true },
-      { text: 'AI sales page generation',    included: true },
-      { text: 'Video walkthrough',           included: true },
-      { text: 'Free trial tier management',  included: true },
-      { text: 'Full analytics dashboard',    included: true },
-      { text: 'Flippa cross-listing',        included: true },
-      { text: 'Sponsored placement',         included: false },
-    ],
-    cta: 'Start Pro Trial',
-    ctaClass: 'btn-amber',
-    href: '/register?plan=pro',
-  },
-  {
-    tier: 'Studio',
-    price: '79',
-    cadence: 'per month',
-    featured: false,
-    features: [
-      { text: 'Unlimited listings',          included: true },
-      { text: 'Live sandbox demos',          included: true },
-      { text: 'Featured placement slots',    included: true },
-      { text: 'Priority buyer matching',     included: true },
-      { text: 'Full analytics + exports',    included: true },
-      { text: 'Flippa exit listing support', included: true },
-      { text: 'Dedicated account manager',   included: true },
-    ],
-    cta: 'Go Studio',
-    ctaClass: 'btn-ghost',
-    href: '/register?plan=studio',
-  },
-]
-
 export default function Pricing() {
   return (
     <section className="section" id="pricing">
       <div className="section-tag">Seller Plans</div>
       <h2 className="section-title">
-        List Free.<br />Grow on <span>Your Terms.</span>
+        Free to List.<br />We Earn <span>Only When You Do.</span>
       </h2>
 
-      <div className="pricing-grid">
-        {PLANS.map(plan => (
-          <div
-            key={plan.tier}
-            className={`pricing-card reveal${plan.featured ? ' featured' : ''}`}
+      <div
+        style={{
+          marginTop: 32,
+          maxWidth: 720,
+          marginInline: 'auto',
+          border: '2px solid var(--warm-ink, #2a2217)',
+          padding: '40px 32px',
+          display: 'grid',
+          gap: 20,
+          textAlign: 'center',
+        }}
+      >
+        <div
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'var(--soft-amber, #b97314)',
+          }}
+        >
+          Founding Builder · Launch Offer
+        </div>
+
+        <div
+          style={{
+            fontFamily: 'var(--font-bebas, "Bebas Neue", sans-serif)',
+            fontSize: 'clamp(56px, 8vw, 96px)',
+            lineHeight: 1,
+            letterSpacing: '0.02em',
+          }}
+        >
+          £0
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 14,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--muted, #6b6b6b)',
+              marginLeft: 12,
+            }}
           >
-            <div className="pricing-tier">{plan.tier}</div>
-            <div className="pricing-price"><sup>£</sup>{plan.price}</div>
-            <div className="pricing-cadence">{plan.cadence}</div>
-            <div className="pricing-divider" />
-            <ul className="pricing-features">
-              {plan.features.map(f => (
-                <li key={f.text}>
-                  <span className={f.included ? 'check' : 'cross'}>
-                    {f.included ? '✓' : '✗'}
-                  </span>
-                  {f.text}
-                </li>
-              ))}
-            </ul>
-            <Link
-              href={plan.href}
-              className={plan.ctaClass}
-              style={{ width: '100%', padding: '12px', display: 'block', textAlign: 'center' }}
-            >
-              {plan.cta}
-            </Link>
-          </div>
-        ))}
+            to list, forever
+          </span>
+        </div>
+
+        <ul
+          style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0,
+            display: 'grid',
+            gap: 12,
+            maxWidth: 480,
+            marginInline: 'auto',
+            fontFamily: 'var(--font-serif)',
+            fontSize: 18,
+            textAlign: 'left',
+          }}
+        >
+          {[
+            'Unlimited listings',
+            'AI-generated sales page from your URL',
+            'Spec-sheet, screenshots & video walkthrough',
+            'Verified Builder badge for the first 50 sellers',
+            'Stripe payouts direct to your account',
+            'Featured placement during launch window',
+          ].map(line => (
+            <li key={line} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <span style={{ color: '#3fa85a', fontSize: 18, flexShrink: 0 }}>✓</span>
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
+
+        <p
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'var(--muted, #6b6b6b)',
+            margin: 0,
+          }}
+        >
+          15% commission only when you make a sale · No subscription · No card on file
+        </p>
+
+        <div>
+          <Link
+            href="/submit"
+            className="btn-amber"
+            style={{ display: 'inline-block', padding: '14px 36px', fontSize: 16 }}
+          >
+            Become a Founding Builder →
+          </Link>
+        </div>
       </div>
 
-      <p style={{
-        textAlign: 'center',
-        marginTop: '28px',
-        fontFamily: 'var(--font-mono)',
-        fontSize: '11px',
-        color: 'var(--muted)',
-        letterSpacing: '0.1em',
-      }}>
-        All plans include 15% commission on sales. No hidden fees.
+      <p
+        style={{
+          textAlign: 'center',
+          marginTop: 24,
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          color: 'var(--muted, #6b6b6b)',
+          letterSpacing: '0.1em',
+        }}
+      >
+        Pro &amp; Studio tiers (analytics, Flippa cross-listing, sandbox demos)
+        unlock once we hit 50 verified builders.
       </p>
     </section>
   )
