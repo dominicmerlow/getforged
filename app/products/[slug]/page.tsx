@@ -9,6 +9,8 @@ import { getProductBySlug, listLiveProductSlugs } from '@/lib/products'
 import { parseYouTubeId, parseVimeoId } from '@/lib/video'
 import WishlistButton from '@/components/WishlistButton'
 import ContactSellerButton from '@/components/ContactSellerButton'
+import ReviewForm from '@/components/ReviewForm'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -100,6 +102,30 @@ export default async function ProductPage(
   const ytId = parseYouTubeId(product.video_url)
   const vimeoId = parseVimeoId(product.video_url)
   const hasEmbed = !!(ytId || vimeoId)
+
+  // Fetch reviews for this product (public read, no auth needed)
+  const supabase = await createClient()
+  const { data: reviewsData } = await supabase
+    .from('reviews')
+    .select('id, rating, body, created_at, buyer:buyer_id(email)')
+    .eq('product_id', product.id)
+    .order('created_at', { ascending: false })
+    .limit(20)
+  const reviews = (reviewsData ?? []) as unknown as { id: string; rating: number; body: string | null; created_at: string; buyer: { email: string } | null }[]
+  const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null
+
+  // Check if current user has purchased (to show review form)
+  const { data: userData } = await supabase.auth.getUser()
+  let hasPurchased = false
+  if (userData.user && product.id && !product.id.startsWith('seed-')) {
+    const { data: purchase } = await supabase
+      .from('purchases')
+      .select('id')
+      .eq('product_id', product.id)
+      .eq('buyer_id', userData.user.id)
+      .maybeSingle()
+    hasPurchased = !!purchase
+  }
 
   const rawPrice = product.type === 'Exclusive'
     ? product.price_exclusive
@@ -237,6 +263,26 @@ export default async function ProductPage(
                   {!product.isPreview && (
                     <WishlistButton productId={product.id} returnTo={`/products/${product.slug}`} />
                   )}
+                </div>
+
+                {/* Task 2: Refund guarantee badge */}
+                <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b' }}>
+                  <span style={{ color: '#3fa85a', fontSize: 16 }}>✓</span>
+                  7-day money-back guarantee
+                  <span style={{ margin: '0 4px' }}>·</span>
+                  <span style={{ color: '#3fa85a', fontSize: 16 }}>✓</span>
+                  Secure checkout via Stripe
+                </div>
+
+                {/* Task 3: Trust logo strip */}
+                <div style={{ marginTop: 20, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6b6b' }}>Powered by</span>
+                  {(['Stripe', 'Supabase', 'Claude'] as const).map(name => (
+                    <span key={name} style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.06em',
+                      border: '1px solid rgba(42,39,32,0.2)', padding: '4px 10px', color: '#2a2217'
+                    }}>{name}</span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -415,12 +461,31 @@ export default async function ProductPage(
           </section>
         )}
 
+        {/* Task 1: "What you get" callout box */}
         {product.support_terms && (
           <section className="section">
-            <div className="section-tag">What&apos;s included</div>
-            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1.5, maxWidth: 820 }}>
-              {product.support_terms}
-            </p>
+            <div className="section-tag">What you get</div>
+            <div style={{
+              marginTop: 24,
+              maxWidth: 820,
+              border: '2px solid var(--warm-ink, #2a2217)',
+              padding: '28px 32px',
+              display: 'grid',
+              gap: 16,
+            }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#b97314' }}>
+                Included with purchase
+              </div>
+              <p style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1.6, margin: 0 }}>
+                {product.support_terms}
+              </p>
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
+                {product.repo_url && <span>✓ Source code access</span>}
+                {product.docs_url && <span>✓ Documentation</span>}
+                {product.demo_url && <span>✓ Live demo</span>}
+                <span>✓ 7-day money-back guarantee</span>
+              </div>
+            </div>
           </section>
         )}
 
@@ -454,6 +519,56 @@ export default async function ProductPage(
             </div>
           </section>
         )}
+
+        <section className="section">
+          <div className="section-tag">Reviews</div>
+          <h2 className="section-title" style={{ fontSize: 'clamp(28px,3.5vw,42px)' }}>
+            {reviews.length > 0
+              ? <>{reviews.length} review{reviews.length !== 1 ? 's' : ''}{avgRating ? ` · ${'★'.repeat(Math.round(avgRating))}${'☆'.repeat(5 - Math.round(avgRating))} ${avgRating.toFixed(1)}` : ''}</>
+              : 'No reviews yet'}
+          </h2>
+
+          {reviews.length > 0 && (
+            <div style={{ marginTop: 32, display: 'grid', gap: 16, maxWidth: 820 }}>
+              {reviews.map(r => (
+                <div key={r.id} className="product-card" style={{ padding: 24, display: 'grid', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <span style={{ color: '#b97314', fontSize: 20, letterSpacing: 2 }}>
+                      {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b' }}>
+                      {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                  {r.body && (
+                    <p style={{ fontFamily: 'var(--font-serif)', fontSize: 18, lineHeight: 1.5, margin: 0 }}>
+                      {r.body}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {hasPurchased && !product.isPreview && (
+            <div style={{ marginTop: 32, maxWidth: 520 }}>
+              <div className="section-tag" style={{ marginBottom: 12 }}>Leave a review</div>
+              <ReviewForm productId={product.id} productSlug={product.slug} />
+            </div>
+          )}
+
+          {!hasPurchased && !product.isPreview && userData.user && (
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#6b6b6b', marginTop: 16 }}>
+              Only verified buyers can leave reviews.
+            </p>
+          )}
+
+          {!userData.user && reviews.length === 0 && (
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#6b6b6b', marginTop: 16 }}>
+              Purchase this product to leave a review.
+            </p>
+          )}
+        </section>
 
         <section className="section" style={{ textAlign: 'center' }}>
           <h2 className="section-title" style={{ fontSize: 'clamp(32px,4vw,56px)' }}>

@@ -1,11 +1,9 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import Image from 'next/image'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 import ScrollReveal from '@/components/scroll-reveal'
 import { listLiveProducts } from '@/lib/products'
-import WishlistButton from '@/components/WishlistButton'
+import BrowseClient from '@/components/BrowseClient'
 
 export const revalidate = 60
 
@@ -34,56 +32,8 @@ export default async function BrowsePage() {
             </div>
           </div>
 
-          <div className="product-grid" style={{ marginTop: 48 }}>
-            {products.map(product => (
-              <div key={product.slug} className="product-card reveal">
-                <div className="product-thumb" style={{ position: 'relative' }}>
-                  {product.heroImage ? (
-                    <Image
-                      src={product.heroImage}
-                      alt={product.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      style={{ objectFit: 'cover' }}
-                      unoptimized
-                    />
-                  ) : (
-                    <div className={`product-thumb-bg ${product.thumb}`}>{product.emoji}</div>
-                  )}
-                  <span className="product-category-tag">{product.category}</span>
-                  <span className={`product-licensed-tag${product.type === 'Exclusive' ? ' exclusive' : ''}`}>
-                    {product.type}
-                  </span>
-                </div>
-                <div className="product-body">
-                  <div className="product-title">{product.title}</div>
-                  <div className="product-desc">{product.description}</div>
-                  <div className="product-tags">
-                    {product.tags.map(tag => (
-                      <span key={tag} className="product-tag">{tag}</span>
-                    ))}
-                  </div>
-                  <div className="product-foot">
-                    <div className="product-price">
-                      <div className="product-price-main">{product.priceMain}</div>
-                      <div className="product-price-sub">{product.priceSub}</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      {product.id && (
-                        <WishlistButton
-                          productId={product.id}
-                          returnTo="/browse"
-                          compact
-                        />
-                      )}
-                      <Link href={`/products/${product.slug}`} className="product-btn">
-                        View →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div style={{ marginTop: 48 }}>
+            <BrowseClient products={products} />
           </div>
         </section>
       </main>

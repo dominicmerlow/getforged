@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type Stripe from 'stripe'
 import { getStripe, stripeConfigured } from '@/lib/stripe'
 import { createServiceClient } from '@/lib/supabase/server'
-import { sendPurchaseReceiptEmail } from '@/lib/resend'
+import { sendPurchaseReceiptEmail, sendSellerSaleNotification } from '@/lib/resend'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
   if (buyerEmail && productSlug) {
     const { data: productRow } = await supabase
       .from('products')
-      .select('title')
+      .select('title, price_licensed, price_exclusive, seller:sellers!inner(user_id, display_name)')
       .eq('id', productId)
       .maybeSingle()
     const title = productRow?.title ?? 'your new product'
@@ -107,6 +107,32 @@ export async function POST(request: NextRequest) {
         payload: { session_id: session.id } as object,
         error_message: err instanceof Error ? err.message : 'unknown',
       })
+    }
+
+    // Notify seller of sale
+    if (productRow) {
+      const sellerObj = Array.isArray(productRow.seller) ? productRow.seller[0] : productRow.seller
+      if (sellerObj) {
+        try {
+          const { data: sellerUser } = await supabase.auth.admin.getUserById(sellerObj.user_id)
+          if (sellerUser?.user?.email) {
+            await sendSellerSaleNotification(
+              sellerUser.user.email,
+              sellerObj.display_name,
+              title,
+              purchaseType as 'licensed' | 'exclusive',
+              amountGBP,
+              session.customer_email ?? buyerEmail,
+            )
+          }
+        } catch (err) {
+          await supabase.from('error_log').insert({
+            scenario: 'stripe-webhook-seller-email',
+            payload: { session_id: session.id } as object,
+            error_message: err instanceof Error ? err.message : 'unknown',
+          })
+        }
+      }
     }
   }
 

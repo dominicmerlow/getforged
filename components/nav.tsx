@@ -30,6 +30,7 @@ export default async function Nav() {
 
       <ul className="nav-links">
         <li><Link href="/browse">Browse</Link></li>
+        <li><Link href="/concierge">Concierge</Link></li>
         <li><Link href="/how-it-works/buyers">For Buyers</Link></li>
         <li><Link href="/how-it-works/sellers">For Sellers</Link></li>
         <li><Link href="/#pricing">Pricing</Link></li>

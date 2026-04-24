@@ -234,3 +234,93 @@ export async function generateSalesPageSmart(
 export function llmConfigured(): boolean {
   return !!(process.env.OPENROUTER_API_KEY || process.env.ANTHROPIC_API_KEY)
 }
+
+// ─── Simple text generation (raw string output) ───────────────────
+// Used by the AI Concierge and other features that need a raw text
+// response from a prompt, without structured JSON parsing.
+export async function generateSmall(prompt: string): Promise<string> {
+  const errors: string[] = []
+
+  // Tier 1: OpenRouter with a lightweight free model
+  if (process.env.OPENROUTER_API_KEY) {
+    const smallModels = [
+      'deepseek/deepseek-chat-v3.1:free',
+      'google/gemini-2.5-flash-exp:free',
+      'meta-llama/llama-3.3-70b-instruct:free',
+    ]
+    const apiKey = process.env.OPENROUTER_API_KEY
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.vercel.app'
+
+    for (const model of smallModels) {
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': appUrl,
+            'X-Title': 'GetForged',
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 1024,
+            temperature: 0.3,
+          }),
+        })
+
+        if (!response.ok) {
+          const body = await response.text().catch(() => '')
+          throw new Error(`OpenRouter ${response.status}: ${body.slice(0, 200)}`)
+        }
+
+        const data = (await response.json()) as {
+          choices?: { message?: { content?: string } }[]
+          error?: { message?: string }
+        }
+
+        if (data.error) throw new Error(`OpenRouter error: ${data.error.message ?? 'unknown'}`)
+
+        const text = data.choices?.[0]?.message?.content ?? ''
+        if (!text.trim()) throw new Error('OpenRouter returned empty content')
+
+        return text
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        errors.push(`openrouter[${model}]: ${msg}`)
+        console.warn(`[llm] generateSmall OpenRouter ${model} failed:`, msg)
+      }
+    }
+  }
+
+  // Tier 2: Anthropic direct
+  if (process.env.ANTHROPIC_API_KEY) {
+    try {
+      const apiKey = process.env.ANTHROPIC_API_KEY
+      if (!apiKey.startsWith('sk-ant-')) throw new Error('ANTHROPIC_API_KEY not set')
+
+      const client = new Anthropic({ apiKey })
+      const model = process.env.ANTHROPIC_MODEL ?? DEFAULT_ANTHROPIC_MODEL
+
+      const message = await client.messages.create({
+        model,
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      })
+
+      const block = message.content[0]
+      const text = block && block.type === 'text' ? block.text : ''
+      if (!text.trim()) throw new Error('Anthropic returned empty content')
+      return text
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      errors.push(`anthropic: ${msg}`)
+    }
+  }
+
+  throw new Error(
+    errors.length > 0
+      ? `generateSmall: all providers failed — ${errors.join(' | ')}`
+      : 'generateSmall: no LLM provider configured (set OPENROUTER_API_KEY or ANTHROPIC_API_KEY)'
+  )
+}
