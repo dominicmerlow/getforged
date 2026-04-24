@@ -125,6 +125,23 @@ export default async function DashboardPage() {
               : `You have ${products.length} product${products.length === 1 ? '' : 's'} — ${byStatus.live.length} live, ${byStatus.draft.length} in draft.`}
           </p>
 
+          {products.length > 0 && (() => {
+            const totalViews = (products as (Product & { views?: number })[]).reduce((s, p) => s + (p.views ?? 0), 0)
+            const liveCount = byStatus.live.length
+            return (
+              <div style={{ display: 'flex', gap: 32, marginTop: 20, flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-bebas)', fontSize: 40, letterSpacing: '0.02em', lineHeight: 1 }}>{totalViews}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total views</div>
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-bebas)', fontSize: 40, letterSpacing: '0.02em', lineHeight: 1 }}>{liveCount}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Live listings</div>
+                </div>
+              </div>
+            )
+          })()}
+
           <div style={{ marginTop: 24 }}>
             <Link href="/submit" className="btn-hero-primary" style={{ padding: '14px 28px' }}>
               + Submit a product
@@ -138,6 +155,22 @@ export default async function DashboardPage() {
             <Link href="/dashboard/profile" className="btn-ghost" style={{ padding: '10px 20px' }}>
               Edit profile
             </Link>
+          </div>
+
+          <div className="product-card" style={{ padding: 20, marginTop: 24, display: 'grid', gap: 12 }}>
+            <div className="section-tag">Your referral link</div>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#6b6b6b', margin: 0 }}>
+              Share this link. If someone buys through it, you earn a 5% kickback on the platform fee.
+            </p>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <code style={{
+                fontFamily: 'var(--font-mono)', fontSize: 13,
+                background: 'rgba(42,39,32,0.06)', padding: '8px 12px',
+                flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.io'}/?ref=${sellerRow.id}`}
+              </code>
+            </div>
           </div>
         </section>
 
@@ -176,6 +209,9 @@ export default async function DashboardPage() {
                         {p.price_licensed != null && <span>{formatPrice(p.price_licensed)} licence</span>}
                         {p.price_exclusive != null && <span>{formatPrice(p.price_exclusive)} exclusive</span>}
                         {p.category && <span>· {p.category}</span>}
+                        {(p as Product & { views?: number }).views != null && (
+                          <span>· {(p as Product & { views?: number }).views} view{(p as Product & { views?: number }).views === 1 ? '' : 's'}</span>
+                        )}
                       </div>
                     </div>
 

@@ -41,6 +41,9 @@ export default async function Nav() {
           <>
             <Link href="/wishlist" className="btn-ghost" aria-label="Wishlist" title="Wishlist">♥</Link>
             <Link href="/dashboard" className="btn-ghost">Dashboard</Link>
+            {user.email === process.env.ADMIN_EMAIL && (
+              <Link href="/admin" className="btn-ghost">Admin</Link>
+            )}
             <form action={signOut} style={{ display: 'inline' }}>
               <button type="submit" className="btn-ghost" style={{ cursor: 'pointer', border: 'none', background: 'transparent' }}>
                 Sign Out

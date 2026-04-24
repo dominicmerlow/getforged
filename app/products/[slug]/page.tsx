@@ -8,6 +8,7 @@ import ScrollReveal from '@/components/scroll-reveal'
 import { getProductBySlug, listLiveProductSlugs } from '@/lib/products'
 import { parseYouTubeId, parseVimeoId } from '@/lib/video'
 import WishlistButton from '@/components/WishlistButton'
+import ViewTracker from '@/components/ViewTracker'
 import ContactSellerButton from '@/components/ContactSellerButton'
 import ReviewForm from '@/components/ReviewForm'
 import { createClient } from '@/lib/supabase/server'
@@ -155,6 +156,7 @@ export default async function ProductPage(
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Nav />
+      <ViewTracker productId={product.id} />
       <main className="product-detail">
         {product.isPreview && (
           <div
