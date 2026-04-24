@@ -437,6 +437,15 @@ export default async function ProductPage(
               >
                 {product.seller.display_name}
               </div>
+              {product.seller?.verified && (
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.08em',
+                  textTransform: 'uppercase', background: 'var(--soft-amber, #b97314)',
+                  color: '#fff', padding: '4px 10px',
+                }}>
+                  ✓ Verified
+                </span>
+              )}
               <ContactSellerButton
                 productId={product.id}
                 productTitle={product.title}

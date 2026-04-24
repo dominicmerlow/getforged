@@ -98,6 +98,11 @@ export default async function DashboardPage() {
     .eq('seller_id', sellerRow.id)
     .order('created_at', { ascending: false })
 
+  const { count: messageCount } = await supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', sellerRow.id)
+
   const products = (productsRaw ?? []) as Product[]
   const byStatus = {
     draft: products.filter(p => p.status === 'draft'),
@@ -123,6 +128,15 @@ export default async function DashboardPage() {
           <div style={{ marginTop: 24 }}>
             <Link href="/submit" className="btn-hero-primary" style={{ padding: '14px 28px' }}>
               + Submit a product
+            </Link>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+            <Link href="/dashboard/messages" className="btn-ghost" style={{ padding: '10px 20px' }}>
+              Messages {messageCount ? `(${messageCount})` : ''}
+            </Link>
+            <Link href="/dashboard/profile" className="btn-ghost" style={{ padding: '10px 20px' }}>
+              Edit profile
             </Link>
           </div>
         </section>

@@ -72,6 +72,7 @@ export async function submitProduct(
   const priceLicensedRaw = String(formData.get('price_licensed') ?? '').trim()
   const priceExclusiveRaw = String(formData.get('price_exclusive') ?? '').trim()
   const notes = String(formData.get('notes') ?? '').trim()
+  const demo_url = String(formData.get('demo_url') ?? '').trim() || null
 
   if (!productUrl || !/^https?:\/\//i.test(productUrl)) {
     return { error: 'Enter a valid http(s) URL for your product.' }
@@ -161,6 +162,7 @@ export async function submitProduct(
       source_url: productUrl,
       category,
       screenshots,
+      demo_url,
     })
     .select('id')
     .single()

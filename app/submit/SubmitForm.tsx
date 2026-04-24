@@ -128,6 +128,19 @@ export default function SubmitForm() {
         />
       </label>
 
+      <label style={{ display: 'grid', gap: 8 }}>
+        <span className="section-tag">Live demo URL <span style={{ color: '#b97314' }}>(strongly recommended)</span></span>
+        <input
+          type="url"
+          name="demo_url"
+          placeholder="https://demo.yourproduct.com"
+          style={inputStyle}
+        />
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b' }}>
+          Products with a live demo convert 3× better. Add one before publishing.
+        </span>
+      </label>
+
       {error && (
         <p style={{ color: '#c04a1b', fontFamily: 'var(--font-mono)', fontSize: 14 }}>
           {error}

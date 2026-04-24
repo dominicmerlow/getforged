@@ -47,6 +47,7 @@ export interface ProductDetail extends ProductListItem {
   seller?: {
     display_name: string
     email: string | null
+    verified: boolean
   }
 }
 
@@ -171,7 +172,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
 
     const liveRes = await supabase
       .from('products')
-      .select('*, sales_page:sales_pages(*), seller:sellers!inner(display_name, user_id)')
+      .select('*, sales_page:sales_pages(*), seller:sellers!inner(display_name, user_id, verified)')
       .eq('slug', slug)
       .eq('status', 'live')
       .maybeSingle()
@@ -187,7 +188,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
       if (userData.user) {
         const ownedRes = await supabase
           .from('products')
-          .select('*, sales_page:sales_pages(*), seller:sellers!inner(display_name, user_id)')
+          .select('*, sales_page:sales_pages(*), seller:sellers!inner(display_name, user_id, verified)')
           .eq('slug', slug)
           .maybeSingle()
         if (ownedRes.data) {
@@ -242,7 +243,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
       support_terms: row.support_terms ?? null,
       screenshots: row.screenshots ?? [],
       seller: sellerObj
-        ? { display_name: sellerObj.display_name, email: null }
+        ? { display_name: sellerObj.display_name, email: null, verified: (sellerObj as { verified?: boolean }).verified ?? false }
         : undefined,
     }
   } catch {
