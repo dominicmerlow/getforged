@@ -20,11 +20,12 @@ const inputStyle: React.CSSProperties = {
 
 interface Props {
   products: ProductListItem[]
+  initialCategory?: string
 }
 
-export default function BrowseClient({ products }: Props) {
+export default function BrowseClient({ products, initialCategory = 'All' }: Props) {
   const [search, setSearch] = useState('')
-  const [activeCategory, setActiveCategory] = useState('All')
+  const [activeCategory, setActiveCategory] = useState(initialCategory)
 
   const filtered = products.filter(p => {
     const matchesCategory = activeCategory === 'All' || p.category === activeCategory

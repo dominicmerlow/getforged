@@ -3,7 +3,11 @@
     "allow": [
       "Bash(git clone *)",
       "PowerShell(gh auth status 2>&1)",
-      "PowerShell(gh auth token 2>&1)"
+      "PowerShell(gh auth token 2>&1)",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot"
     ]
   }
 }

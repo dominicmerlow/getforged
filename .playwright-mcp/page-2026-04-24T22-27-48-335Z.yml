@@ -1,0 +1,100 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "GETFORGED" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Browse" [ref=e6]:
+          - /url: /browse
+      - listitem [ref=e7]:
+        - link "Concierge" [ref=e8]:
+          - /url: /concierge
+      - listitem [ref=e9]:
+        - link "For Buyers" [ref=e10]:
+          - /url: /how-it-works/buyers
+      - listitem [ref=e11]:
+        - link "For Sellers" [ref=e12]:
+          - /url: /how-it-works/sellers
+      - listitem [ref=e13]:
+        - link "Pricing" [ref=e14]:
+          - /url: /#pricing
+    - generic [ref=e15]:
+      - link "Sign In" [ref=e16]:
+        - /url: /login
+      - link "List Your App" [ref=e17]:
+        - /url: /login
+  - main [ref=e18]:
+    - generic [ref=e20]:
+      - generic [ref=e21]: AI Concierge
+      - heading "Find your perfect tool" [level=1] [ref=e22]
+      - paragraph [ref=e23]: Describe what your business needs in plain English. Our AI will scan the catalogue and pick the 3 best matches — no browsing required.
+      - generic [ref=e25]:
+        - textbox "Describe what you need" [ref=e27]:
+          - /placeholder: Describe what you need — e.g. 'I need something to automate my client invoices and send reminders'
+        - button "Find my match → →" [ref=e28] [cursor=pointer]
+  - contentinfo [ref=e29]:
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - generic [ref=e32]: GETFORGED.
+        - generic [ref=e33]: Built by builders. Made for business.
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - heading "Marketplace" [level=4] [ref=e36]
+          - list [ref=e37]:
+            - listitem [ref=e38] [cursor=pointer]:
+              - link "Browse Products" [ref=e39]:
+                - /url: /browse
+            - listitem [ref=e40] [cursor=pointer]:
+              - link "AI Automation" [ref=e41]:
+                - /url: /browse?category=ai-automation
+            - listitem [ref=e42] [cursor=pointer]:
+              - link "Web Apps" [ref=e43]:
+                - /url: /browse?category=web-apps
+            - listitem [ref=e44] [cursor=pointer]:
+              - link "CRM & Sales Tools" [ref=e45]:
+                - /url: /browse?category=crm-sales
+            - listitem [ref=e46] [cursor=pointer]:
+              - link "E-Commerce" [ref=e47]:
+                - /url: /browse?category=ecommerce
+        - generic [ref=e48]:
+          - heading "For Sellers" [level=4] [ref=e49]
+          - list [ref=e50]:
+            - listitem [ref=e51] [cursor=pointer]:
+              - link "List Your App" [ref=e52]:
+                - /url: /submit
+            - listitem [ref=e53] [cursor=pointer]:
+              - link "Seller Dashboard" [ref=e54]:
+                - /url: /dashboard
+            - listitem [ref=e55] [cursor=pointer]:
+              - link "Seller Agreement" [ref=e56]:
+                - /url: /seller-agreement
+            - listitem [ref=e57] [cursor=pointer]:
+              - link "How It Works" [ref=e58]:
+                - /url: /how-it-works/sellers
+        - generic [ref=e59]:
+          - heading "Company" [level=4] [ref=e60]
+          - list [ref=e61]:
+            - listitem [ref=e62] [cursor=pointer]:
+              - link "About GetForged" [ref=e63]:
+                - /url: /about
+            - listitem [ref=e64] [cursor=pointer]:
+              - link "Blog" [ref=e65]:
+                - /url: /blog
+            - listitem [ref=e66] [cursor=pointer]:
+              - link "Press" [ref=e67]:
+                - /url: /press
+            - listitem [ref=e68] [cursor=pointer]:
+              - link "Contact" [ref=e69]:
+                - /url: /contact
+    - generic [ref=e70]:
+      - generic [ref=e71]: © 2026 GETFORGED — ALL RIGHTS RESERVED
+      - generic [ref=e72]:
+        - link "Privacy" [ref=e74] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms" [ref=e76] [cursor=pointer]:
+          - /url: /terms
+        - link "Refunds" [ref=e78] [cursor=pointer]:
+          - /url: /refund-policy
+        - link "Seller Agreement" [ref=e80] [cursor=pointer]:
+          - /url: /seller-agreement
+  - alert [ref=e81]

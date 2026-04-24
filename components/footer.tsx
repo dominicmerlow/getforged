@@ -15,11 +15,13 @@ export default function Footer() {
           <div className="footer-col">
             <h4>Marketplace</h4>
             <ul>
-              <li><Link href="/browse">Browse Products</Link></li>
-              <li><Link href="/browse?category=ai-automation">AI Automation</Link></li>
-              <li><Link href="/browse?category=web-apps">Web Apps</Link></li>
-              <li><Link href="/browse?category=crm-sales">CRM &amp; Sales Tools</Link></li>
-              <li><Link href="/browse?category=ecommerce">E-Commerce</Link></li>
+              <li><Link href="/browse">Browse All</Link></li>
+              <li><Link href="/browse/ai-automation">AI Automation</Link></li>
+              <li><Link href="/browse/web-apps">Web Apps</Link></li>
+              <li><Link href="/browse/crm-sales">CRM &amp; Sales Tools</Link></li>
+              <li><Link href="/browse/ecommerce">E-Commerce</Link></li>
+              <li><Link href="/browse/marketing">Marketing</Link></li>
+              <li><Link href="/browse/operations">Operations</Link></li>
             </ul>
           </div>
           <div className="footer-col">

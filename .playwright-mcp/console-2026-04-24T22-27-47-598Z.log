@@ -1,0 +1,4 @@
+[    1418ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://getforged.vercel.app/contact?_rsc=12zto:0
+[    1440ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://getforged.vercel.app/press?_rsc=12zto:0
+[    1467ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://getforged.vercel.app/about?_rsc=12zto:0
+[    1525ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://getforged.vercel.app/blog?_rsc=12zto:0

@@ -1,0 +1,162 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "GETFORGED" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Browse" [ref=e6]:
+          - /url: /browse
+      - listitem [ref=e7]:
+        - link "Concierge" [ref=e8]:
+          - /url: /concierge
+      - listitem [ref=e9]:
+        - link "For Buyers" [ref=e10]:
+          - /url: /how-it-works/buyers
+      - listitem [ref=e11]:
+        - link "For Sellers" [ref=e12]:
+          - /url: /how-it-works/sellers
+      - listitem [ref=e13]:
+        - link "Pricing" [ref=e14]:
+          - /url: /#pricing
+    - generic [ref=e15]:
+      - link "Sign In" [ref=e16]:
+        - /url: /login
+      - link "List Your App" [ref=e17]:
+        - /url: /login
+  - main [ref=e18]:
+    - generic [ref=e19]:
+      - generic [ref=e21]:
+        - generic [ref=e22]: Catalogue
+        - heading "All 3 products" [level=1] [ref=e23]
+        - paragraph [ref=e24]: Every tool below was built by an AI developer and is ready to ship. Licence for a one-time fee or buy exclusive rights.
+      - generic [ref=e26]:
+        - textbox "Search products" [ref=e28]:
+          - /placeholder: Search products...
+        - generic [ref=e29]:
+          - button "All" [ref=e30] [cursor=pointer]
+          - button "AI Automation" [ref=e31] [cursor=pointer]
+          - button "Web App" [ref=e32] [cursor=pointer]
+          - button "CRM & Sales" [ref=e33] [cursor=pointer]
+          - button "Marketing" [ref=e34] [cursor=pointer]
+          - button "E-Commerce" [ref=e35] [cursor=pointer]
+          - button "Operations" [ref=e36] [cursor=pointer]
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - generic [ref=e40]: ⚡
+              - generic [ref=e41]: Marketing
+              - generic [ref=e42]: Licensed
+            - generic [ref=e43]:
+              - generic [ref=e44]: Content Generator
+              - generic [ref=e45]: Transform academic papers and clinical data into polished, buyer-ready content in minutes.
+              - generic [ref=e46]:
+                - generic [ref=e47]: Claude Code
+                - generic [ref=e48]: Firebase
+                - generic [ref=e49]: Next.js
+                - generic [ref=e50]: OpenRouter
+                - generic [ref=e51]: Postgres
+                - generic [ref=e52]: Tailwind CSS
+                - generic [ref=e53]: Vercel
+              - generic [ref=e54]:
+                - generic [ref=e55]:
+                  - generic [ref=e56]: £100
+                  - generic [ref=e57]: one-time licence
+                - link "View →" [ref=e59]:
+                  - /url: /products/content-generator
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - generic [ref=e62]: ⚡
+              - generic [ref=e63]: AI Automation
+              - generic [ref=e64]: Licensed
+            - generic [ref=e65]:
+              - generic [ref=e66]: SLA Clinical Servives
+              - generic [ref=e67]: AI-powered literature search that saves your clinical team hours of manual research every week.
+              - generic [ref=e68]:
+                - generic [ref=e69]: next.js
+                - generic [ref=e70]: Python
+              - generic [ref=e71]:
+                - generic [ref=e72]:
+                  - generic [ref=e73]: £70
+                  - generic [ref=e74]: one-time licence
+                - link "View →" [ref=e76]:
+                  - /url: /products/sla-clinical-servives
+          - generic [ref=e77]:
+            - generic [ref=e78]:
+              - generic [ref=e79]: ⚡
+              - generic [ref=e80]: Operations
+              - generic [ref=e81]: Licensed
+            - generic [ref=e82]:
+              - generic [ref=e83]: SLA Bibliography Generator
+              - generic [ref=e84]: Stop manually hunting medical papers. Get comprehensive bibliographies automatically.
+              - generic [ref=e85]:
+                - generic [ref=e86]:
+                  - generic [ref=e87]: £10
+                  - generic [ref=e88]: one-time licence
+                - link "View →" [ref=e90]:
+                  - /url: /products/sla-bibliography-generator
+  - contentinfo [ref=e91]:
+    - generic [ref=e92]:
+      - generic [ref=e93]:
+        - generic [ref=e94]: GETFORGED.
+        - generic [ref=e95]: Built by builders. Made for business.
+      - generic [ref=e96]:
+        - generic [ref=e97]:
+          - heading "Marketplace" [level=4] [ref=e98]
+          - list [ref=e99]:
+            - listitem [ref=e100] [cursor=pointer]:
+              - link "Browse Products" [ref=e101]:
+                - /url: /browse
+            - listitem [ref=e102] [cursor=pointer]:
+              - link "AI Automation" [ref=e103]:
+                - /url: /browse?category=ai-automation
+            - listitem [ref=e104] [cursor=pointer]:
+              - link "Web Apps" [ref=e105]:
+                - /url: /browse?category=web-apps
+            - listitem [ref=e106] [cursor=pointer]:
+              - link "CRM & Sales Tools" [ref=e107]:
+                - /url: /browse?category=crm-sales
+            - listitem [ref=e108] [cursor=pointer]:
+              - link "E-Commerce" [ref=e109]:
+                - /url: /browse?category=ecommerce
+        - generic [ref=e110]:
+          - heading "For Sellers" [level=4] [ref=e111]
+          - list [ref=e112]:
+            - listitem [ref=e113] [cursor=pointer]:
+              - link "List Your App" [ref=e114]:
+                - /url: /submit
+            - listitem [ref=e115] [cursor=pointer]:
+              - link "Seller Dashboard" [ref=e116]:
+                - /url: /dashboard
+            - listitem [ref=e117] [cursor=pointer]:
+              - link "Seller Agreement" [ref=e118]:
+                - /url: /seller-agreement
+            - listitem [ref=e119] [cursor=pointer]:
+              - link "How It Works" [ref=e120]:
+                - /url: /how-it-works/sellers
+        - generic [ref=e121]:
+          - heading "Company" [level=4] [ref=e122]
+          - list [ref=e123]:
+            - listitem [ref=e124] [cursor=pointer]:
+              - link "About GetForged" [ref=e125]:
+                - /url: /about
+            - listitem [ref=e126] [cursor=pointer]:
+              - link "Blog" [ref=e127]:
+                - /url: /blog
+            - listitem [ref=e128] [cursor=pointer]:
+              - link "Press" [ref=e129]:
+                - /url: /press
+            - listitem [ref=e130] [cursor=pointer]:
+              - link "Contact" [ref=e131]:
+                - /url: /contact
+    - generic [ref=e132]:
+      - generic [ref=e133]: © 2026 GETFORGED — ALL RIGHTS RESERVED
+      - generic [ref=e134]:
+        - link "Privacy" [ref=e136] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms" [ref=e138] [cursor=pointer]:
+          - /url: /terms
+        - link "Refunds" [ref=e140] [cursor=pointer]:
+          - /url: /refund-policy
+        - link "Seller Agreement" [ref=e142] [cursor=pointer]:
+          - /url: /seller-agreement
+  - alert [ref=e143]

@@ -1,0 +1,205 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "GETFORGED" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Browse" [ref=e6]:
+          - /url: /browse
+      - listitem [ref=e7]:
+        - link "Concierge" [ref=e8]:
+          - /url: /concierge
+      - listitem [ref=e9]:
+        - link "For Buyers" [ref=e10]:
+          - /url: /how-it-works/buyers
+      - listitem [ref=e11]:
+        - link "For Sellers" [ref=e12]:
+          - /url: /how-it-works/sellers
+      - listitem [ref=e13]:
+        - link "Pricing" [ref=e14]:
+          - /url: /#pricing
+    - generic [ref=e15]:
+      - link "Sign In" [ref=e16]:
+        - /url: /login
+      - link "List Your App" [ref=e17]:
+        - /url: /login
+  - main [ref=e18]:
+    - generic [ref=e20]:
+      - link "← All products" [ref=e21] [cursor=pointer]:
+        - /url: /browse
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e25]: ⚡
+          - generic:
+            - generic [ref=e26]: Marketing
+            - generic [ref=e27]: Licensed
+        - generic [ref=e28]:
+          - generic [ref=e29]: Marketing
+          - heading "Content Generator" [level=1] [ref=e30]
+          - paragraph [ref=e31]: Turn research into marketing gold instantly
+          - paragraph [ref=e32]: Transform academic papers and clinical data into polished, buyer-ready content in minutes.
+          - generic [ref=e33]:
+            - generic [ref=e34]: Claude Code
+            - generic [ref=e35]: Firebase
+            - generic [ref=e36]: Next.js
+            - generic [ref=e37]: OpenRouter
+            - generic [ref=e38]: Postgres
+            - generic [ref=e39]: Tailwind CSS
+            - generic [ref=e40]: Vercel
+          - generic [ref=e41]:
+            - generic [ref=e42]: £100
+            - generic [ref=e43]: one-time licence
+          - generic [ref=e44]:
+            - button "Generate content now →" [ref=e46] [cursor=pointer]
+            - button "See how it works" [ref=e47] [cursor=pointer]
+            - link "Save" [ref=e48] [cursor=pointer]:
+              - /url: /login?next=%2Fproducts%2Fcontent-generator
+              - generic [ref=e49]: ♡
+              - text: Save
+          - generic [ref=e50]:
+            - generic [ref=e51]: ✓
+            - text: 7-day money-back guarantee
+            - generic [ref=e52]: ·
+            - generic [ref=e53]: ✓
+            - text: Secure checkout via Stripe
+          - generic [ref=e54]:
+            - generic [ref=e55]: Powered by
+            - generic [ref=e56]: Stripe
+            - generic [ref=e57]: Supabase
+            - generic [ref=e58]: Claude
+    - generic [ref=e59]:
+      - generic [ref=e60]: The problem
+      - paragraph [ref=e61]: Small businesses waste hours manually summarising research, clinical trials, and industry reports into marketing-ready content. Your team lacks the medical writing expertise to maintain accuracy and credibility. You're stuck choosing between hiring expensive copywriters or publishing poorly researched material that damages trust.
+    - generic [ref=e62]:
+      - generic [ref=e63]: What it does
+      - heading "Features" [level=2] [ref=e64]
+      - list [ref=e65]:
+        - listitem [ref=e66]:
+          - generic [ref=e67]: —
+          - generic [ref=e68]: AI-powered research summarisation
+        - listitem [ref=e69]:
+          - generic [ref=e70]: —
+          - generic [ref=e71]: Multiple content formats
+        - listitem [ref=e72]:
+          - generic [ref=e73]: —
+          - generic [ref=e74]: Customisable prompts and tone
+        - listitem [ref=e75]:
+          - generic [ref=e76]: —
+          - generic [ref=e77]: Batch processing and saved templates
+        - listitem [ref=e78]:
+          - generic [ref=e79]: —
+          - generic [ref=e80]: Medical accuracy built in
+    - generic [ref=e81]:
+      - generic [ref=e82]: Who it's for
+      - heading "Use cases" [level=2] [ref=e83]
+      - list [ref=e84]:
+        - listitem [ref=e85]: · Healthcare and pharma marketing
+        - listitem [ref=e86]: · Industry thought leadership
+        - listitem [ref=e87]: · Regulatory and compliance content
+        - listitem [ref=e88]: · Content hub and resource libraries
+    - generic [ref=e89]:
+      - generic [ref=e90]: Spec sheet
+      - heading "Under the hood" [level=2] [ref=e91]
+      - generic [ref=e92]:
+        - generic [ref=e93]:
+          - term [ref=e94]: Platform
+          - definition [ref=e95]: Web
+        - generic [ref=e96]:
+          - term [ref=e97]: Architecture
+          - definition [ref=e98]: Self-hosted
+        - generic [ref=e99]:
+          - term [ref=e100]: Native AI
+          - definition [ref=e101]: Claude Sonnet 4.5 · GPT-4o · Gemini 2.5 Pro · Llama 3.3 70B
+        - generic [ref=e102]:
+          - term [ref=e103]: Integrations
+          - definition [ref=e104]: Cloudflare R2 · GitHub · Google Calendar · Google Sheets · Resend
+        - generic [ref=e105]:
+          - term [ref=e106]: Tech stack
+          - definition [ref=e107]: Claude Code · Firebase · Next.js · OpenRouter · Postgres · Tailwind CSS · Vercel
+        - generic [ref=e108]:
+          - term [ref=e109]: Monthly cost to run
+          - definition [ref=e110]: £25/mo approx
+        - generic [ref=e111]:
+          - term [ref=e112]: Time to deploy
+          - definition [ref=e113]: "60"
+    - generic [ref=e114]:
+      - generic [ref=e115]: Built by
+      - generic [ref=e116]:
+        - generic [ref=e117]: cliftonflack
+        - button "Message seller →" [ref=e118] [cursor=pointer]
+    - generic [ref=e119]:
+      - generic [ref=e120]: Reviews
+      - heading "No reviews yet" [level=2] [ref=e121]
+      - paragraph [ref=e122]: Purchase this product to leave a review.
+    - generic [ref=e123]:
+      - heading "Ready to ship?" [level=2] [ref=e124]
+      - generic [ref=e125]:
+        - button "Generate content now — £100 →" [ref=e127] [cursor=pointer]
+        - link "See more products" [ref=e128]:
+          - /url: /browse
+  - contentinfo [ref=e129]:
+    - generic [ref=e130]:
+      - generic [ref=e131]:
+        - generic [ref=e132]: GETFORGED.
+        - generic [ref=e133]: Built by builders. Made for business.
+      - generic [ref=e134]:
+        - generic [ref=e135]:
+          - heading "Marketplace" [level=4] [ref=e136]
+          - list [ref=e137]:
+            - listitem [ref=e138] [cursor=pointer]:
+              - link "Browse Products" [ref=e139]:
+                - /url: /browse
+            - listitem [ref=e140] [cursor=pointer]:
+              - link "AI Automation" [ref=e141]:
+                - /url: /browse?category=ai-automation
+            - listitem [ref=e142] [cursor=pointer]:
+              - link "Web Apps" [ref=e143]:
+                - /url: /browse?category=web-apps
+            - listitem [ref=e144] [cursor=pointer]:
+              - link "CRM & Sales Tools" [ref=e145]:
+                - /url: /browse?category=crm-sales
+            - listitem [ref=e146] [cursor=pointer]:
+              - link "E-Commerce" [ref=e147]:
+                - /url: /browse?category=ecommerce
+        - generic [ref=e148]:
+          - heading "For Sellers" [level=4] [ref=e149]
+          - list [ref=e150]:
+            - listitem [ref=e151] [cursor=pointer]:
+              - link "List Your App" [ref=e152]:
+                - /url: /submit
+            - listitem [ref=e153] [cursor=pointer]:
+              - link "Seller Dashboard" [ref=e154]:
+                - /url: /dashboard
+            - listitem [ref=e155] [cursor=pointer]:
+              - link "Seller Agreement" [ref=e156]:
+                - /url: /seller-agreement
+            - listitem [ref=e157] [cursor=pointer]:
+              - link "How It Works" [ref=e158]:
+                - /url: /how-it-works/sellers
+        - generic [ref=e159]:
+          - heading "Company" [level=4] [ref=e160]
+          - list [ref=e161]:
+            - listitem [ref=e162] [cursor=pointer]:
+              - link "About GetForged" [ref=e163]:
+                - /url: /about
+            - listitem [ref=e164] [cursor=pointer]:
+              - link "Blog" [ref=e165]:
+                - /url: /blog
+            - listitem [ref=e166] [cursor=pointer]:
+              - link "Press" [ref=e167]:
+                - /url: /press
+            - listitem [ref=e168] [cursor=pointer]:
+              - link "Contact" [ref=e169]:
+                - /url: /contact
+    - generic [ref=e170]:
+      - generic [ref=e171]: © 2026 GETFORGED — ALL RIGHTS RESERVED
+      - generic [ref=e172]:
+        - link "Privacy" [ref=e174] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms" [ref=e176] [cursor=pointer]:
+          - /url: /terms
+        - link "Refunds" [ref=e178] [cursor=pointer]:
+          - /url: /refund-policy
+        - link "Seller Agreement" [ref=e180] [cursor=pointer]:
+          - /url: /seller-agreement
+  - alert [ref=e181]

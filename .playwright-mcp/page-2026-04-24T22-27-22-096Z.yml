@@ -1,0 +1,472 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "GETFORGED" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Browse" [ref=e6]:
+          - /url: /browse
+      - listitem [ref=e7]:
+        - link "Concierge" [ref=e8]:
+          - /url: /concierge
+      - listitem [ref=e9]:
+        - link "For Buyers" [ref=e10]:
+          - /url: /how-it-works/buyers
+      - listitem [ref=e11]:
+        - link "For Sellers" [ref=e12]:
+          - /url: /how-it-works/sellers
+      - listitem [ref=e13]:
+        - link "Pricing" [ref=e14]:
+          - /url: /#pricing
+    - generic [ref=e15]:
+      - link "Sign In" [ref=e16]:
+        - /url: /login
+      - link "List Your App" [ref=e17]:
+        - /url: /login
+  - main [ref=e18]:
+    - generic [ref=e19]:
+      - generic [ref=e20]:
+        - generic [ref=e23]: The AI Builder Marketplace
+        - heading "Buy the AI tool you would have hired a developer to build." [level=1] [ref=e24]:
+          - text: Buy the AI tool you would have
+          - emphasis [ref=e25]: hired
+          - text: a developer to build.
+        - paragraph [ref=e26]: Pre-built apps, automations and internal tools — installed in hours, priced like software, owned like assets.
+        - generic [ref=e27]:
+          - link "Browse the Marketplace →" [ref=e28]:
+            - /url: /browse
+          - link "Sell Your Creation" [ref=e29]:
+            - /url: /submit
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: Under 1 day
+            - generic [ref=e33]: Avg. install time
+          - generic [ref=e34]:
+            - generic [ref=e35]: Stripe
+            - generic [ref=e36]: Powered by Stripe
+          - generic [ref=e37]:
+            - generic [ref=e38]: Supabase
+            - generic [ref=e39]: Backed by Supabase
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]: ⚡ AI Automation
+          - generic [ref=e44]: InvoiceBot Pro
+          - generic [ref=e45]: Auto-generates, sends and follows up invoices from a simple Notion database.
+          - generic [ref=e46]:
+            - generic [ref=e47]:
+              - generic [ref=e48]: £149
+              - generic [ref=e49]: Licensed
+            - generic [ref=e50]:
+              - generic [ref=e51]: JK
+              - generic [ref=e52]: "@jakek.dev"
+        - generic [ref=e53]:
+          - generic [ref=e54]: 🌐 Web App
+          - generic [ref=e55]: ClientPortal.ai
+          - generic [ref=e56]: White-label client dashboard with project updates, files and messaging.
+          - generic [ref=e57]:
+            - generic [ref=e58]:
+              - generic [ref=e59]: £399
+              - generic [ref=e60]: Exclusive
+            - generic [ref=e61]:
+              - generic [ref=e62]: SR
+              - generic [ref=e63]: "@sara_builds"
+        - generic [ref=e64]:
+          - generic [ref=e65]: 📊 CRM Tool
+          - generic [ref=e66]: LeadTrackr
+          - generic [ref=e67]: Lightweight CRM built for service businesses. Airtable-powered, zero code.
+          - generic [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e70]: £89
+              - generic [ref=e71]: /month
+            - generic [ref=e72]:
+              - generic [ref=e73]: ML
+              - generic [ref=e74]: "@mattlowe"
+    - generic [ref=e76]:
+      - generic [ref=e77]: Claude Code
+      - generic [ref=e79]: Cursor
+      - generic [ref=e81]: Windsurf
+      - generic [ref=e83]: Lovable
+      - generic [ref=e85]: Bubble
+      - generic [ref=e87]: Webflow
+      - generic [ref=e89]: v0.dev
+      - generic [ref=e91]: No-Code
+      - generic [ref=e93]: AI Automation
+      - generic [ref=e95]: Web Apps
+      - generic [ref=e97]: SaaS Tools
+      - generic [ref=e99]: Claude Code
+      - generic [ref=e101]: Cursor
+      - generic [ref=e103]: Windsurf
+      - generic [ref=e105]: Lovable
+      - generic [ref=e107]: Bubble
+      - generic [ref=e109]: Webflow
+      - generic [ref=e111]: v0.dev
+      - generic [ref=e113]: No-Code
+      - generic [ref=e115]: AI Automation
+      - generic [ref=e117]: Web Apps
+      - generic [ref=e119]: SaaS Tools
+    - generic [ref=e121]:
+      - generic [ref=e122]: How it works
+      - generic [ref=e123]:
+        - heading "From URL to listed in 48 hours." [level=2] [ref=e124]:
+          - text: From URL
+          - text: to listed
+          - text: in 48 hours.
+        - paragraph [ref=e125]: Submit your app URL. Our AI crawls it, writes the sales page, and publishes your listing. Buyers find you. You earn.
+      - generic [ref=e126]:
+        - generic [ref=e127]:
+          - generic [ref=e128]: "01"
+          - generic [ref=e129]: 🔗
+          - heading "Connect Your App" [level=3] [ref=e130]
+          - paragraph [ref=e131]: Submit your product URL. GetForged crawls your app, extracts features, screenshots and copy automatically.
+        - generic [ref=e132]:
+          - generic [ref=e133]: "02"
+          - generic [ref=e134]: ✨
+          - heading "AI Writes Your Page" [level=3] [ref=e135]
+          - paragraph [ref=e136]: Claude API generates a full buyer-facing sales page — headline, benefits, use-cases, SEO. You review and publish.
+        - generic [ref=e137]:
+          - generic [ref=e138]: "03"
+          - generic [ref=e139]: 🛒
+          - heading "Buyers Discover & Buy" [level=3] [ref=e140]
+          - paragraph [ref=e141]: SME buyers browse by category, watch demos, try free trials, and purchase licensed or exclusive versions.
+        - generic [ref=e142]:
+          - generic [ref=e143]: "04"
+          - generic [ref=e144]: 💸
+          - heading "You Get Paid" [level=3] [ref=e145]
+          - paragraph [ref=e146]: Revenue lands in your Stripe account. Sell licences for recurring income — or list your full business for exit via Flippa.
+    - generic [ref=e147]:
+      - generic [ref=e148]:
+        - generic [ref=e149]:
+          - generic [ref=e150]: Featured Listings
+          - heading "Browse 340+ Products" [level=2] [ref=e151]
+        - generic [ref=e152]:
+          - button "All" [ref=e153]
+          - button "AI Automation" [ref=e154]
+          - button "Web Apps" [ref=e155]
+          - button "CRM & Sales" [ref=e156]
+          - button "E-Commerce" [ref=e157]
+      - generic [ref=e158]:
+        - generic [ref=e159]:
+          - generic [ref=e160]:
+            - generic [ref=e161]: ⚡
+            - generic [ref=e162]: AI Automation
+            - generic [ref=e163]: Licensed
+          - generic [ref=e164]:
+            - generic [ref=e165]: InvoiceBot Pro
+            - generic [ref=e166]: Automatically generates, sends and chases invoices from your Notion workspace. Zero manual effort.
+            - generic [ref=e167]:
+              - generic [ref=e168]: Claude Code
+              - generic [ref=e169]: Notion API
+              - generic [ref=e170]: Stripe
+            - generic [ref=e171]:
+              - generic [ref=e172]:
+                - generic [ref=e173]: £149
+                - generic [ref=e174]: one-time licence
+              - link "View →" [ref=e175]:
+                - /url: /products/invoicebot-pro
+        - generic [ref=e176]:
+          - generic [ref=e177]:
+            - generic [ref=e178]: 🌐
+            - generic [ref=e179]: Web App
+            - generic [ref=e180]: Exclusive
+          - generic [ref=e181]:
+            - generic [ref=e182]: ClientPortal.ai
+            - generic [ref=e183]: White-label client portal with project updates, secure file sharing, and two-way messaging.
+            - generic [ref=e184]:
+              - generic [ref=e185]: Cursor
+              - generic [ref=e186]: Supabase
+              - generic [ref=e187]: React
+            - generic [ref=e188]:
+              - generic [ref=e189]:
+                - generic [ref=e190]: £1,200
+                - generic [ref=e191]: exclusive buy-out
+              - link "View →" [ref=e192]:
+                - /url: /products/clientportal-ai
+        - generic [ref=e193]:
+          - generic [ref=e194]:
+            - generic [ref=e195]: 📊
+            - generic [ref=e196]: CRM & Sales
+            - generic [ref=e197]: Licensed
+          - generic [ref=e198]:
+            - generic [ref=e199]: LeadTrackr
+            - generic [ref=e200]: Lightweight CRM for service businesses. Tracks leads, follow-ups, and pipeline without the bloat of Salesforce.
+            - generic [ref=e201]:
+              - generic [ref=e202]: Airtable
+              - generic [ref=e203]: Make
+              - generic [ref=e204]: No-Code
+            - generic [ref=e205]:
+              - generic [ref=e206]:
+                - generic [ref=e207]: £89
+                - generic [ref=e208]: per month
+              - link "View →" [ref=e209]:
+                - /url: /products/leadtrackr
+        - generic [ref=e210]:
+          - generic [ref=e211]:
+            - generic [ref=e212]: 📧
+            - generic [ref=e213]: Marketing
+            - generic [ref=e214]: Licensed
+          - generic [ref=e215]:
+            - generic [ref=e216]: ReviewRadar
+            - generic [ref=e217]: Monitors Google & Trustpilot reviews. Alerts you instantly. Drafts AI-generated responses for your approval.
+            - generic [ref=e218]:
+              - generic [ref=e219]: Lovable
+              - generic [ref=e220]: Claude API
+              - generic [ref=e221]: Resend
+            - generic [ref=e222]:
+              - generic [ref=e223]:
+                - generic [ref=e224]: £49
+                - generic [ref=e225]: per month
+              - link "View →" [ref=e226]:
+                - /url: /products/reviewradar
+        - generic [ref=e227]:
+          - generic [ref=e228]:
+            - generic [ref=e229]: 🏪
+            - generic [ref=e230]: E-Commerce
+            - generic [ref=e231]: Licensed
+          - generic [ref=e232]:
+            - generic [ref=e233]: ShopBot Assistant
+            - generic [ref=e234]: AI chatbot trained on your product catalogue. Answers customer questions, recommends products, reduces support tickets by 60%.
+            - generic [ref=e235]:
+              - generic [ref=e236]: Windsurf
+              - generic [ref=e237]: Shopify
+              - generic [ref=e238]: Claude API
+            - generic [ref=e239]:
+              - generic [ref=e240]:
+                - generic [ref=e241]: £199
+                - generic [ref=e242]: one-time licence
+              - link "View →" [ref=e243]:
+                - /url: /products/shopbot-assistant
+        - generic [ref=e244]:
+          - generic [ref=e245]:
+            - generic [ref=e246]: 📅
+            - generic [ref=e247]: Operations
+            - generic [ref=e248]: Licensed
+          - generic [ref=e249]:
+            - generic [ref=e250]: BookingBridge
+            - generic [ref=e251]: Embeddable booking system for service businesses. Syncs with Google Calendar. SMS reminders. Zero monthly fees.
+            - generic [ref=e252]:
+              - generic [ref=e253]: Bubble
+              - generic [ref=e254]: Google API
+              - generic [ref=e255]: Twilio
+            - generic [ref=e256]:
+              - generic [ref=e257]:
+                - generic [ref=e258]: £299
+                - generic [ref=e259]: one-time licence
+              - link "View →" [ref=e260]:
+                - /url: /products/bookingbridge
+      - link "Browse All 340+ Products" [ref=e262]:
+        - /url: /browse
+    - generic [ref=e264]:
+      - generic [ref=e265]:
+        - generic [ref=e266]: For Builders
+        - heading "Turn Your Code Into Cash." [level=2] [ref=e267]
+        - paragraph [ref=e268]: You built something remarkable with Claude Code, Cursor, or Lovable. Stop leaving it on your hard drive. List it on GetForged and let 50,000 SME buyers find it.
+        - list [ref=e269]:
+          - listitem [ref=e270]: ✓ Submit your URL — AI writes your full sales page automatically
+          - listitem [ref=e271]: "✓ Set your price: licensed, exclusive, or subscription"
+          - listitem [ref=e272]: ✓ Earn passive income or list your business for full exit via Flippa
+          - listitem [ref=e273]: ✓ Dashboard tracks revenue, conversion, and buyer geography
+          - listitem [ref=e274]: ✓ Free to list — we only earn when you do (15% commission)
+        - link "Start Selling Free →" [ref=e275]:
+          - /url: /register
+      - generic [ref=e276]:
+        - generic [ref=e277]: For Businesses
+        - heading "Powerful Tools. Honest Prices." [level=2] [ref=e278]
+        - paragraph [ref=e279]: You need automation, a web app, or an AI tool. But you're not paying £15,000 to an agency or £500/day to a developer. GetForged is your shortcut.
+        - list [ref=e280]:
+          - listitem [ref=e281]: ✓ Browse by category — find exactly what your business needs
+          - listitem [ref=e282]: "✓ Try before you buy: free trials, live demos, video walkthroughs"
+          - listitem [ref=e283]: ✓ Buy a licence (multi-use) or exclusive ownership (yours alone)
+          - listitem [ref=e284]: ✓ No-code setup wizard — live in hours, not months
+          - listitem [ref=e285]: ✓ Real builders, real products, real reviews
+        - link "Browse the Marketplace" [ref=e286]:
+          - /url: /browse
+    - generic [ref=e288]:
+      - generic [ref=e289]:
+        - generic [ref=e290]: Exit Strategy
+        - heading "Ready to Sell the Whole Business?" [level=3] [ref=e291]:
+          - text: Ready to Sell
+          - text: the Whole Business?
+        - paragraph [ref=e292]: GetForged integrates directly with Flippa — the world's largest marketplace for buying and selling online businesses. Cross-list your product for maximum exposure, or initiate a full business auction with Flippa's verified buyer network.
+      - generic [ref=e293]:
+        - generic [ref=e294]:
+          - generic [ref=e295]: FLIPPA
+          - generic [ref=e296]:
+            - text: Official Integration Partner
+            - text: Cross-listing + Full Exit Auctions
+        - button "Learn About Exits →" [ref=e297]
+    - generic [ref=e298]:
+      - generic [ref=e299]: Seller Plans
+      - heading "List Free. Grow on Your Terms." [level=2] [ref=e300]:
+        - text: List Free.
+        - text: Grow on Your Terms.
+      - generic [ref=e301]:
+        - generic [ref=e302]:
+          - generic [ref=e303]: Starter
+          - generic [ref=e304]:
+            - superscript: £
+            - text: "0"
+          - generic [ref=e305]: forever free
+          - list [ref=e307]:
+            - listitem [ref=e308]:
+              - generic [ref=e309]: ✓
+              - text: 2 active listings
+            - listitem [ref=e310]:
+              - generic [ref=e311]: ✓
+              - text: AI sales page generation
+            - listitem [ref=e312]:
+              - generic [ref=e313]: ✓
+              - text: Screenshot gallery
+            - listitem [ref=e314]:
+              - generic [ref=e315]: ✓
+              - text: Basic seller dashboard
+            - listitem [ref=e316]:
+              - generic [ref=e317]: ✗
+              - text: Video walkthrough
+            - listitem [ref=e318]:
+              - generic [ref=e319]: ✗
+              - text: Sandbox demo
+            - listitem [ref=e320]:
+              - generic [ref=e321]: ✗
+              - text: Flippa cross-listing
+          - link "Get Started Free" [ref=e322]:
+            - /url: /register
+        - generic [ref=e323]:
+          - text: MOST POPULAR
+          - generic [ref=e324]: Pro
+          - generic [ref=e325]:
+            - superscript: £
+            - text: "29"
+          - generic [ref=e326]: per month
+          - list [ref=e328]:
+            - listitem [ref=e329]:
+              - generic [ref=e330]: ✓
+              - text: 10 active listings
+            - listitem [ref=e331]:
+              - generic [ref=e332]: ✓
+              - text: AI sales page generation
+            - listitem [ref=e333]:
+              - generic [ref=e334]: ✓
+              - text: Video walkthrough
+            - listitem [ref=e335]:
+              - generic [ref=e336]: ✓
+              - text: Free trial tier management
+            - listitem [ref=e337]:
+              - generic [ref=e338]: ✓
+              - text: Full analytics dashboard
+            - listitem [ref=e339]:
+              - generic [ref=e340]: ✓
+              - text: Flippa cross-listing
+            - listitem [ref=e341]:
+              - generic [ref=e342]: ✗
+              - text: Sponsored placement
+          - link "Start Pro Trial" [ref=e343]:
+            - /url: /register?plan=pro
+        - generic [ref=e344]:
+          - generic [ref=e345]: Studio
+          - generic [ref=e346]:
+            - superscript: £
+            - text: "79"
+          - generic [ref=e347]: per month
+          - list [ref=e349]:
+            - listitem [ref=e350]:
+              - generic [ref=e351]: ✓
+              - text: Unlimited listings
+            - listitem [ref=e352]:
+              - generic [ref=e353]: ✓
+              - text: Live sandbox demos
+            - listitem [ref=e354]:
+              - generic [ref=e355]: ✓
+              - text: Featured placement slots
+            - listitem [ref=e356]:
+              - generic [ref=e357]: ✓
+              - text: Priority buyer matching
+            - listitem [ref=e358]:
+              - generic [ref=e359]: ✓
+              - text: Full analytics + exports
+            - listitem [ref=e360]:
+              - generic [ref=e361]: ✓
+              - text: Flippa exit listing support
+            - listitem [ref=e362]:
+              - generic [ref=e363]: ✓
+              - text: Dedicated account manager
+          - link "Go Studio" [ref=e364]:
+            - /url: /register?plan=studio
+      - paragraph [ref=e365]: All plans include 15% commission on sales. No hidden fees.
+    - generic [ref=e366]:
+      - text: GETFORGED
+      - generic [ref=e367]: Get Started
+      - heading "The Window Is Open." [level=2] [ref=e368]:
+        - text: The Window
+        - text: Is Open.
+      - paragraph [ref=e369]: AI builders are creating a new asset class. Small businesses need exactly what you've made. GetForged is where they meet.
+      - generic [ref=e370]:
+        - link "List Your First App Free →" [ref=e371]:
+          - /url: /register
+        - link "Browse Products" [ref=e372]:
+          - /url: /browse
+  - contentinfo [ref=e373]:
+    - generic [ref=e374]:
+      - generic [ref=e375]:
+        - generic [ref=e376]: GETFORGED.
+        - generic [ref=e377]: Built by builders. Made for business.
+      - generic [ref=e378]:
+        - generic [ref=e379]:
+          - heading "Marketplace" [level=4] [ref=e380]
+          - list [ref=e381]:
+            - listitem [ref=e382] [cursor=pointer]:
+              - link "Browse Products" [ref=e383]:
+                - /url: /browse
+            - listitem [ref=e384] [cursor=pointer]:
+              - link "AI Automation" [ref=e385]:
+                - /url: /browse?category=ai-automation
+            - listitem [ref=e386] [cursor=pointer]:
+              - link "Web Apps" [ref=e387]:
+                - /url: /browse?category=web-apps
+            - listitem [ref=e388] [cursor=pointer]:
+              - link "CRM & Sales Tools" [ref=e389]:
+                - /url: /browse?category=crm-sales
+            - listitem [ref=e390] [cursor=pointer]:
+              - link "E-Commerce" [ref=e391]:
+                - /url: /browse?category=ecommerce
+        - generic [ref=e392]:
+          - heading "For Sellers" [level=4] [ref=e393]
+          - list [ref=e394]:
+            - listitem [ref=e395] [cursor=pointer]:
+              - link "List Your App" [ref=e396]:
+                - /url: /submit
+            - listitem [ref=e397] [cursor=pointer]:
+              - link "Seller Dashboard" [ref=e398]:
+                - /url: /dashboard
+            - listitem [ref=e399] [cursor=pointer]:
+              - link "Seller Agreement" [ref=e400]:
+                - /url: /seller-agreement
+            - listitem [ref=e401] [cursor=pointer]:
+              - link "How It Works" [ref=e402]:
+                - /url: /how-it-works/sellers
+        - generic [ref=e403]:
+          - heading "Company" [level=4] [ref=e404]
+          - list [ref=e405]:
+            - listitem [ref=e406] [cursor=pointer]:
+              - link "About GetForged" [ref=e407]:
+                - /url: /about
+            - listitem [ref=e408] [cursor=pointer]:
+              - link "Blog" [ref=e409]:
+                - /url: /blog
+            - listitem [ref=e410] [cursor=pointer]:
+              - link "Press" [ref=e411]:
+                - /url: /press
+            - listitem [ref=e412] [cursor=pointer]:
+              - link "Contact" [ref=e413]:
+                - /url: /contact
+    - generic [ref=e414]:
+      - generic [ref=e415]: © 2026 GETFORGED — ALL RIGHTS RESERVED
+      - generic [ref=e416]:
+        - link "Privacy" [ref=e418] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms" [ref=e420] [cursor=pointer]:
+          - /url: /terms
+        - link "Refunds" [ref=e422] [cursor=pointer]:
+          - /url: /refund-policy
+        - link "Seller Agreement" [ref=e424] [cursor=pointer]:
+          - /url: /seller-agreement
+  - alert [ref=e425]
