@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/utils'
+import { scrapeUrl } from '@/lib/firecrawl'
 
 function parseCsv(raw: string): string[] | null {
   const items = raw
@@ -198,4 +199,67 @@ export async function deleteProduct(productId: string) {
   await supabase.from('products').delete().eq('id', productId)
   revalidatePath('/dashboard')
   redirect('/dashboard')
+}
+
+// Re-scrape the product's source URL via Firecrawl and persist the new full-page
+// screenshot as the hero image. Existing screenshots are kept (new one becomes [0]).
+export type ScreenshotState =
+  | { error: string }
+  | { ok: true; screenshot: string }
+  | null
+
+export async function regenerateScreenshot(
+  productId: string,
+  _prev: ScreenshotState,
+  _formData: FormData
+): Promise<ScreenshotState> {
+  const supabase = await createClient()
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData.user) return { error: 'You must be signed in.' }
+
+  const { data: product, error: fetchErr } = await supabase
+    .from('products')
+    .select('id, slug, source_url, screenshots, seller:sellers!inner(user_id)')
+    .eq('id', productId)
+    .single()
+
+  if (fetchErr || !product) return { error: 'Product not found.' }
+  const seller = Array.isArray(product.seller) ? product.seller[0] : product.seller
+  if (!seller || seller.user_id !== userData.user.id) {
+    return { error: 'Not authorised to edit this product.' }
+  }
+  if (!product.source_url) {
+    return { error: 'No source URL on file. Add one in the Source URL field first.' }
+  }
+
+  let scraped
+  try {
+    scraped = await scrapeUrl(product.source_url)
+  } catch (err) {
+    return {
+      error: `Could not capture screenshot: ${err instanceof Error ? err.message : 'unknown error'}`,
+    }
+  }
+  if (!scraped.screenshot) {
+    return { error: 'Scraper returned no screenshot. Check the URL is publicly reachable.' }
+  }
+
+  // Prepend the new screenshot; keep prior ones as gallery thumbs (max 6).
+  const existing = (product.screenshots ?? []).filter(
+    (s: string) => s !== scraped.screenshot
+  )
+  const next = [scraped.screenshot, ...existing].slice(0, 6)
+
+  const { error: updateErr } = await supabase
+    .from('products')
+    .update({ screenshots: next })
+    .eq('id', productId)
+
+  if (updateErr) return { error: `Save failed: ${updateErr.message}` }
+
+  revalidatePath('/dashboard')
+  revalidatePath('/browse')
+  if (product.slug) revalidatePath(`/products/${product.slug}`)
+
+  return { ok: true, screenshot: scraped.screenshot }
 }

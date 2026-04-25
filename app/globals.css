@@ -81,8 +81,18 @@ body::after {
   letter-spacing: 0.06em;
   color: var(--white);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1;
 }
 .nav-logo span { color: var(--amber); }
+.nav-logo-mark {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: block;
+}
 .nav-links {
   display: flex; gap: 36px; list-style: none;
 }
