@@ -1,0 +1,16 @@
+<svg viewBox="0 0 320 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GetForged">
+  <defs>
+    <linearGradient id="gfAmberLockup" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5a623"/>
+      <stop offset="100%" stop-color="#e8920a"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <path d="M30 4 L38 15 L32 12 L26 15 Z" fill="url(#gfAmberLockup)" opacity="0.95"/>
+    <path d="M2 24 L6 18 L52 18 L52 28 L42 28 L42 40 L58 40 Q60 40 60 42 L60 48 Q60 50 58 50 L6 50 Q4 50 4 48 L4 42 Q4 40 6 40 L22 40 L22 28 L6 28 Z" fill="url(#gfAmberLockup)"/>
+  </g>
+  <g transform="translate(84 0)" font-family="'Bebas Neue', 'Arial Narrow', sans-serif" font-size="44" font-weight="500" letter-spacing="2.6">
+    <text x="0" y="46" fill="#f0ebe2">GET</text>
+    <text x="80" y="46" fill="url(#gfAmberLockup)">FORGED</text>
+  </g>
+</svg>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { Product, SalesPage } from '@/lib/types'
 import MultiSelect from '@/components/MultiSelect'
 import { saveProduct, deleteProduct, type EditState } from './actions'
+import RegenerateScreenshotButton from './RegenerateScreenshotButton'
 
 const PLATFORM_OPTIONS = [
   'Web', 'iOS', 'Android',
@@ -276,7 +277,10 @@ export default function EditForm({
             </label>
           </div>
           <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)' }}>Screenshot URLs (one per line)</span>
+            <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)' }}>
+              Screenshot URLs (one per line)
+              <span style={{ color: '#6b6b6b', marginLeft: 8 }}>· first URL becomes the hero image</span>
+            </span>
             <textarea
               name="screenshots"
               defaultValue={(product.screenshots ?? []).join('\n')}
@@ -284,6 +288,7 @@ export default function EditForm({
               style={{ ...textareaStyle, fontFamily: 'var(--font-mono)', fontSize: 13 }}
               placeholder="https://example.com/shot1.png"
             />
+            <RegenerateScreenshotButton productId={product.id} />
           </label>
         </div>
 
