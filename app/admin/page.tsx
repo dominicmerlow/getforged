@@ -5,6 +5,7 @@ import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 import { formatPrice } from '@/lib/utils'
 import { adminUpdateStatus } from './actions'
+import AdminBatchScreenshotButton from '@/components/AdminBatchScreenshotButton'
 
 type DraftProduct = {
   id: string
@@ -136,6 +137,20 @@ export default async function AdminPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Operational tools */}
+          <div style={{ marginTop: 32, display: 'grid', gap: 12 }}>
+            <div style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'var(--soft-amber, #b97314)',
+            }}>
+              Operations
+            </div>
+            <AdminBatchScreenshotButton />
           </div>
         </section>
 

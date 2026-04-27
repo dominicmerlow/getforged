@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
+import PurchaseTracker from '@/components/PurchaseTracker'
 import { getStripe, stripeConfigured } from '@/lib/stripe'
 
 export const metadata: Metadata = {
@@ -19,6 +20,8 @@ export default async function CheckoutSuccessPage({
 
   let productName: string | null = null
   let amountLabel: string | null = null
+  let amountTotal: number | null = null
+  let currency: string | null = null
 
   if (session_id && stripeConfigured()) {
     try {
@@ -27,11 +30,13 @@ export default async function CheckoutSuccessPage({
         expand: ['line_items'],
       })
       productName = session.line_items?.data[0]?.description ?? null
-      if (session.amount_total != null) {
+      amountTotal = session.amount_total ?? null
+      currency = session.currency ?? null
+      if (amountTotal != null) {
         amountLabel = new Intl.NumberFormat('en-GB', {
           style: 'currency',
-          currency: (session.currency ?? 'gbp').toUpperCase(),
-        }).format(session.amount_total / 100)
+          currency: (currency ?? 'gbp').toUpperCase(),
+        }).format(amountTotal / 100)
       }
     } catch {
       // swallow — show the generic success message
@@ -41,6 +46,12 @@ export default async function CheckoutSuccessPage({
   return (
     <>
       <Nav />
+      <PurchaseTracker
+        sessionId={session_id ?? null}
+        productName={productName}
+        amountTotal={amountTotal}
+        currency={currency}
+      />
       <main>
         <section className="section" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh', textAlign: 'center' }}>
           <div style={{ maxWidth: 640 }}>

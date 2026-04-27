@@ -1,9 +1,10 @@
 'use client'
 
-import { useActionState, useState, useRef } from 'react'
+import { useActionState, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { conciergeSearch } from './actions'
 import type { ConciergeState } from './actions'
+import { track } from '@/lib/analytics'
 
 const inputStyle: React.CSSProperties = {
   padding: '14px 16px',
@@ -54,6 +55,18 @@ export default function ConciergeForm() {
 
   const hasResults = state && 'results' in state
   const hasError = state && 'error' in state
+
+  // Track every completed concierge search (results count is the key signal —
+  // 0 means "we should have built that")
+  useEffect(() => {
+    if (state && 'results' in state) {
+      track('concierge_search', {
+        query_length: state.query?.length ?? 0,
+        result_count: state.results.length,
+        zero_result: state.results.length === 0,
+      })
+    }
+  }, [state])
 
   function applyExample(text: string) {
     setQuery(text)

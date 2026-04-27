@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Bebas_Neue, Fraunces, DM_Mono, Montserrat } from 'next/font/google'
 import Cursor from '@/components/cursor'
+import PostHogProvider from '@/components/PostHogProvider'
 import './globals.css'
 
 const bebasNeue = Bebas_Neue({
@@ -73,8 +74,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${bebasNeue.variable} ${fraunces.variable} ${dmMono.variable} ${montserrat.variable}`}
     >
       <body>
-        <Cursor />
-        {children}
+        <PostHogProvider>
+          <Cursor />
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   )

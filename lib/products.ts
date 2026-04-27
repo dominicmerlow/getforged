@@ -16,6 +16,15 @@ export interface ProductListItem {
   thumb: string
   emoji: string
   heroImage?: string | null
+  // ── Spec-sheet fields surfaced to the browse filter UI ─────────
+  // These are nullable / empty arrays when the seller hasn't filled them in
+  // yet. Filter UI must treat absence as "matches no filter" (i.e. hidden
+  // when that filter is active), not "matches everything".
+  pricePence: number | null  // raw price for range filtering (uses licensed if present, else exclusive)
+  platform: string[]
+  ai_models: string[]
+  monthly_cost: number | null
+  deploy_time: string | null
 }
 
 export interface ProductDetail extends ProductListItem {
@@ -62,6 +71,7 @@ function supabaseConfigured(): boolean {
 }
 
 function seedToListItem(p: SeedProduct): ProductListItem {
+  const pricePence = p.price_licensed ?? p.price_exclusive ?? null
   return {
     id: null,
     slug: p.slug,
@@ -75,6 +85,11 @@ function seedToListItem(p: SeedProduct): ProductListItem {
     type: p.type,
     thumb: p.thumb,
     emoji: p.emoji,
+    pricePence,
+    platform: [],
+    ai_models: [],
+    monthly_cost: null,
+    deploy_time: null,
   }
 }
 
@@ -120,6 +135,7 @@ function dbToListItem(row: Product): ProductListItem {
         ? `£${priceLicensed.toLocaleString('en-GB')}`
         : 'Contact'
   const heroImage = row.screenshots && row.screenshots.length > 0 ? row.screenshots[0] : null
+  const pricePence = priceLicensed ?? priceExclusive ?? null
   return {
     id: row.id,
     slug: row.slug ?? row.id,
@@ -134,6 +150,11 @@ function dbToListItem(row: Product): ProductListItem {
     thumb: 't1',
     emoji: '⚡',
     heroImage,
+    pricePence,
+    platform: row.platform ?? [],
+    ai_models: row.ai_models ?? [],
+    monthly_cost: row.monthly_cost ?? null,
+    deploy_time: row.deploy_time ?? null,
   }
 }
 

@@ -12,6 +12,8 @@ import ViewTracker from '@/components/ViewTracker'
 import ContactSellerButton from '@/components/ContactSellerButton'
 import ReviewForm from '@/components/ReviewForm'
 import ProductScreenshot from '@/components/ProductScreenshot'
+import BuyButton from '@/components/BuyButton'
+import DemoLink from '@/components/DemoLink'
 import { createClient } from '@/lib/supabase/server'
 
 export const dynamicParams = true
@@ -170,7 +172,12 @@ export default async function ProductPage(
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Nav />
-      <ViewTracker productId={product.id} />
+      <ViewTracker
+        productId={product.id}
+        slug={product.slug}
+        category={product.category}
+        priceMain={product.priceMain}
+      />
       <main className="product-detail">
         {product.isPreview && (
           <div
@@ -240,27 +247,20 @@ export default async function ProductPage(
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <form action="/api/checkout" method="post" style={{ display: 'inline' }}>
-                    <input type="hidden" name="slug" value={product.slug} />
-                    <input
-                      type="hidden"
-                      name="purchase_type"
-                      value={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
-                    />
-                    <button type="submit" className="btn-hero-primary" style={{ cursor: 'pointer', border: 'none' }}>
-                      {buyLabel}
-                    </button>
-                  </form>
+                  <BuyButton
+                    slug={product.slug}
+                    productId={product.id}
+                    purchaseType={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
+                    category={product.category}
+                    priceMain={product.priceMain}
+                    label={buyLabel}
+                  />
                   {product.demo_url && (
-                    <a
+                    <DemoLink
                       href={product.demo_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-hero-secondary"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      See Live Demo ↗
-                    </a>
+                      productId={product.id}
+                      slug={product.slug}
+                    />
                   )}
                   {!product.isPreview && (
                     <ContactSellerButton
@@ -595,17 +595,15 @@ export default async function ProductPage(
             Ready to <span>ship</span>?
           </h2>
           <div style={{ display: 'flex', gap: 16, marginTop: 32, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <form action="/api/checkout" method="post" style={{ display: 'inline' }}>
-              <input type="hidden" name="slug" value={product.slug} />
-              <input
-                type="hidden"
-                name="purchase_type"
-                value={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
-              />
-              <button type="submit" className="btn-hero-primary" style={{ padding: '16px 48px', cursor: 'pointer', border: 'none' }}>
-                {buyLabel}
-              </button>
-            </form>
+            <BuyButton
+              slug={product.slug}
+              productId={product.id}
+              purchaseType={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
+              category={product.category}
+              priceMain={product.priceMain}
+              label={buyLabel}
+              style={{ padding: '16px 48px' }}
+            />
             <Link href="/browse" className="btn-hero-secondary" style={{ padding: '16px 48px' }}>
               See more products
             </Link>

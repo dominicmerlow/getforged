@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import Link from 'next/link'
 import { submitProduct, type SubmitState } from './actions'
+import { track } from '@/lib/analytics'
 
 const CATEGORIES = [
   'AI Automation',
@@ -35,6 +36,16 @@ export default function SubmitForm() {
 
   const ok = state && 'ok' in state && state.ok
   const error = state && 'error' in state ? state.error : null
+
+  // Fire submit_product exactly once when the action transitions to success.
+  useEffect(() => {
+    if (ok && state && 'productId' in state) {
+      track('submit_product', {
+        product_id: state.productId,
+        slug: state.slug ?? null,
+      })
+    }
+  }, [ok, state])
 
   if (ok) {
     return (
