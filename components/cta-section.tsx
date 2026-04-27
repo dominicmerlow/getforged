@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import NewsletterCapture from '@/components/NewsletterCapture'
 
 export default function CTASection() {
   return (
@@ -21,6 +22,21 @@ export default function CTASection() {
         <Link href="/browse" className="btn-hero-secondary" style={{ padding: '16px 40px', fontSize: '14px' }}>
           Browse Products
         </Link>
+      </div>
+
+      {/* Newsletter capture — primary growth loop pre-launch */}
+      <div style={{
+        margin: '64px auto 0',
+        maxWidth: 540,
+        textAlign: 'left',
+      }}>
+        <NewsletterCapture
+          source="homepage"
+          variant="card"
+          heading="Forge of the Week"
+          subhead="One curated AI-built tool, in your inbox every Tuesday. Built by real makers. No noise, no hype."
+          ctaLabel="Get the first issue"
+        />
       </div>
     </div>
   )

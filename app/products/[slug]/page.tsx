@@ -14,6 +14,7 @@ import ReviewForm from '@/components/ReviewForm'
 import ProductScreenshot from '@/components/ProductScreenshot'
 import BuyButton from '@/components/BuyButton'
 import DemoLink from '@/components/DemoLink'
+import CompareToggle from '@/components/CompareToggle'
 import { createClient } from '@/lib/supabase/server'
 
 export const dynamicParams = true
@@ -272,6 +273,12 @@ export default async function ProductPage(
                   {!product.isPreview && (
                     <WishlistButton productId={product.id} returnTo={`/products/${product.slug}`} />
                   )}
+                  <CompareToggle
+                    slug={product.slug}
+                    title={product.title}
+                    priceMain={product.priceMain}
+                    category={product.category}
+                  />
                 </div>
 
                 {/* Task 2: Refund guarantee badge */}

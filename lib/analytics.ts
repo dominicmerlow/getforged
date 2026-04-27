@@ -15,6 +15,11 @@ export type GetForgedEvent =
   | 'submit_product'
   | 'concierge_search'
   | 'apply_filter'
+  | 'compare_add'
+  | 'compare_remove'
+  | 'compare_clear'
+  | 'compare_open'
+  | 'newsletter_signup'
 
 /**
  * Fire a typed analytics event. No-op if PostHog isn't configured (so

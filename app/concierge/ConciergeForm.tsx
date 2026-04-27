@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { conciergeSearch } from './actions'
 import type { ConciergeState } from './actions'
 import { track } from '@/lib/analytics'
+import NewsletterCapture from '@/components/NewsletterCapture'
 
 const inputStyle: React.CSSProperties = {
   padding: '14px 16px',
@@ -185,12 +186,17 @@ export default function ConciergeForm() {
                 </div>
                 <p style={{ fontFamily: 'var(--font-serif)', fontSize: 18, lineHeight: 1.5, margin: 0 }}>
                   We don&apos;t have an exact match for &ldquo;{resolvedQuery}&rdquo; in the
-                  marketplace today. The catalogue grows weekly — leave your need
-                  with us and we&apos;ll DM a builder to make it.
+                  marketplace today. The catalogue grows weekly — leave your email
+                  and we&apos;ll ping you when something close lands.
                 </p>
+                <NewsletterCapture
+                  source="concierge_zero_result"
+                  variant="inline"
+                  ctaLabel="Notify me"
+                />
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
-                  <Link href={`/contact?need=${encodeURIComponent(resolvedQuery)}`} className="btn-hero-primary">
-                    Tell us what you need →
+                  <Link href={`/contact?need=${encodeURIComponent(resolvedQuery)}`} className="btn-hero-secondary">
+                    Or tell us in detail →
                   </Link>
                   <Link href="/browse" className="btn-hero-secondary">
                     Browse the full catalogue

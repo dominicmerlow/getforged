@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
+import NewsletterCapture from '@/components/NewsletterCapture'
 
 export const metadata: Metadata = {
   title: 'Blog — GetForged',
@@ -29,35 +30,14 @@ export default function BlogPage() {
             shipping AI-built tools, and one new featured product every Tuesday.
           </p>
 
-          <div style={{
-            marginTop: 40,
-            padding: 28,
-            border: '1px dashed rgba(42,39,32,0.3)',
-            display: 'grid',
-            gap: 12,
-          }}>
-            <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--soft-amber, #b97314)',
-            }}>
-              Forge of the Week
-            </div>
-            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 18, margin: 0, lineHeight: 1.5 }}>
-              One curated AI-built tool, in your inbox every Tuesday. No noise, no
-              hype — just the best new product on the marketplace and what it
-              replaces.
-            </p>
-            <p style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              color: '#6b6b6b',
-              margin: 0,
-            }}>
-              Newsletter signup launching with the first issue.
-            </p>
+          <div style={{ marginTop: 40 }}>
+            <NewsletterCapture
+              source="blog"
+              variant="card"
+              heading="Forge of the Week"
+              subhead="One curated AI-built tool, in your inbox every Tuesday. No noise, no hype — just the best new product on the marketplace and what it replaces."
+              ctaLabel="Get the first issue"
+            />
           </div>
 
           <div style={{ marginTop: 48 }}>

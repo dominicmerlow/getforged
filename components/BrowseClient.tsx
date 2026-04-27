@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { ProductListItem } from '@/lib/products'
 import ProductScreenshot from '@/components/ProductScreenshot'
+import CompareToggle from '@/components/CompareToggle'
 import { track } from '@/lib/analytics'
 
 const CATEGORIES = ['All', 'AI Automation', 'Web App', 'CRM & Sales', 'Marketing', 'E-Commerce', 'Operations']
@@ -356,7 +357,16 @@ export default function BrowseClient({ products, initialCategory = 'All' }: Prop
                       <div className="product-price-main">{product.priceMain}</div>
                       <div className="product-price-sub">{product.priceSub}</div>
                     </div>
-                    <span className="product-btn">View →</span>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <CompareToggle
+                        slug={product.slug}
+                        title={product.title}
+                        priceMain={product.priceMain}
+                        category={product.category}
+                        stopPropagation
+                      />
+                      <span className="product-btn">View →</span>
+                    </div>
                   </div>
                 </div>
               </Link>
