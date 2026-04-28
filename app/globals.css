@@ -70,7 +70,8 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 48px;
+  /* 14px vertical breathing room around an 80px logo gives a ~108px nav bar */
+  padding: 14px 48px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
   background: rgba(12,11,9,0.85);
   backdrop-filter: blur(20px);
@@ -98,7 +99,9 @@ body::after {
 
 /* When the nav logo is the full PNG lockup (mark + wordmark in one image)
    we constrain height instead of width — width auto-derives from the 3:2
-   intrinsic aspect ratio. */
+   intrinsic aspect ratio.
+   The source PNG has ~25% whitespace padding baked in, so the displayed
+   height needs to be ~30% larger than you'd expect the visible mark to be. */
 .nav-logo-image {
   /* Drop the wordmark text styling — the PNG carries its own typography */
   font-size: 0;
@@ -106,9 +109,10 @@ body::after {
   gap: 0;
 }
 .nav-logo-image img {
-  height: 40px;
+  height: 80px;
   width: auto;
   display: block;
+  max-height: 100%;
 }
 .nav-links {
   display: flex; gap: 36px; list-style: none;
@@ -682,7 +686,7 @@ body::after { opacity: 0.04; }
 .nav {
   background: rgba(251,246,236,0.85);
   border-bottom: 1px solid var(--hairline);
-  padding: 18px 48px;
+  padding: 14px 48px;
 }
 .nav-logo {
   font-family: var(--font-bebas), sans-serif;
