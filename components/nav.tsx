@@ -37,8 +37,8 @@ export default async function Nav() {
         <Image
           src="/getforged_logo.png"
           alt="GetForged"
-          width={612}
-          height={408}
+          width={911}
+          height={274}
           priority
         />
       </Link>
