@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Bebas_Neue, Fraunces, DM_Mono, Montserrat } from 'next/font/google'
-import Cursor from '@/components/cursor'
 import PostHogProvider from '@/components/PostHogProvider'
 import { CompareProvider } from '@/components/CompareProvider'
 import CompareBar from '@/components/CompareBar'
@@ -78,7 +77,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <PostHogProvider>
           <CompareProvider>
-            <Cursor />
             {children}
             <CompareBar />
           </CompareProvider>
