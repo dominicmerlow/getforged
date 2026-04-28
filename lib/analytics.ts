@@ -20,6 +20,9 @@ export type GetForgedEvent =
   | 'compare_clear'
   | 'compare_open'
   | 'newsletter_signup'
+  | 'signup_started'
+  | 'signup_completed'
+  | 'review_reply_posted'
 
 /**
  * Fire a typed analytics event. No-op if PostHog isn't configured (so

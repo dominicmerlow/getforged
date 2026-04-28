@@ -11,6 +11,7 @@ import WishlistButton from '@/components/WishlistButton'
 import ViewTracker from '@/components/ViewTracker'
 import ContactSellerButton from '@/components/ContactSellerButton'
 import ReviewForm from '@/components/ReviewForm'
+import ReviewReplyForm from '@/components/ReviewReplyForm'
 import ProductScreenshot from '@/components/ProductScreenshot'
 import BuyButton from '@/components/BuyButton'
 import DemoLink from '@/components/DemoLink'
@@ -121,28 +122,51 @@ export default async function ProductPage(
     ? `Buy Exclusive — ${product.priceMain}`
     : `Buy Licence — ${product.priceMain}`
 
-  // Fetch reviews for this product (public read, no auth needed)
+  // Fetch reviews for this product (public read, no auth needed).
+  // `seller_reply` / `seller_replied_at` are added by migration 005 — the
+  // select is defensive: if those columns don't exist yet the query still
+  // returns the rest, and the UI just hides the reply block.
   const supabase = await createClient()
   const { data: reviewsData } = await supabase
     .from('reviews')
-    .select('id, rating, body, created_at, buyer:buyer_id(email)')
+    .select('id, rating, body, seller_reply, seller_replied_at, created_at, buyer:buyer_id(email)')
     .eq('product_id', product.id)
     .order('created_at', { ascending: false })
     .limit(20)
-  const reviews = (reviewsData ?? []) as unknown as { id: string; rating: number; body: string | null; created_at: string; buyer: { email: string } | null }[]
+  const reviews = (reviewsData ?? []) as unknown as {
+    id: string
+    rating: number
+    body: string | null
+    seller_reply: string | null
+    seller_replied_at: string | null
+    created_at: string
+    buyer: { email: string } | null
+  }[]
   const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null
 
-  // Check if current user has purchased (to show review form)
+  // Check if current user has purchased (to show review form) AND whether
+  // they are the seller of this product (to show reply forms).
   const { data: userData } = await supabase.auth.getUser()
   let hasPurchased = false
+  let isOwnerSeller = false
   if (userData.user && product.id && !product.id.startsWith('seed-')) {
-    const { data: purchase } = await supabase
-      .from('purchases')
-      .select('id')
-      .eq('product_id', product.id)
-      .eq('buyer_id', userData.user.id)
-      .maybeSingle()
+    const [{ data: purchase }, { data: ownership }] = await Promise.all([
+      supabase
+        .from('purchases')
+        .select('id')
+        .eq('product_id', product.id)
+        .eq('buyer_id', userData.user.id)
+        .maybeSingle(),
+      supabase
+        .from('products')
+        .select('id, seller:sellers!inner(user_id)')
+        .eq('id', product.id)
+        .maybeSingle(),
+    ])
     hasPurchased = !!purchase
+    const ownerSellerArr = ownership?.seller
+    const ownerSeller = Array.isArray(ownerSellerArr) ? ownerSellerArr[0] : ownerSellerArr
+    isOwnerSeller = !!ownerSeller && ownerSeller.user_id === userData.user.id
   }
 
   const rawPrice = product.type === 'Exclusive'
@@ -571,6 +595,48 @@ export default async function ProductPage(
                     <p style={{ fontFamily: 'var(--font-serif)', fontSize: 18, lineHeight: 1.5, margin: 0 }}>
                       {r.body}
                     </p>
+                  )}
+
+                  {/* Builder reply (read-only render) */}
+                  {r.seller_reply && (
+                    <div style={{
+                      marginTop: 8,
+                      padding: 14,
+                      background: 'rgba(185,115,20,0.06)',
+                      borderLeft: '3px solid var(--soft-amber, #b97314)',
+                      display: 'grid',
+                      gap: 6,
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        color: 'var(--soft-amber, #b97314)',
+                      }}>
+                        Builder reply
+                        {product.seller?.display_name && <span style={{ textTransform: 'none', color: '#6b6b6b' }}>· {product.seller.display_name}</span>}
+                        {r.seller_replied_at && (
+                          <span style={{ textTransform: 'none', color: '#6b6b6b' }}>
+                            · {new Date(r.seller_replied_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, lineHeight: 1.5, margin: 0 }}>
+                        {r.seller_reply}
+                      </p>
+                      {isOwnerSeller && (
+                        <ReviewReplyForm reviewId={r.id} productSlug={product.slug} existingReply={r.seller_reply} />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Inline reply form when no reply exists yet (only for the seller) */}
+                  {isOwnerSeller && !r.seller_reply && (
+                    <ReviewReplyForm reviewId={r.id} productSlug={product.slug} existingReply={null} />
                   )}
                 </div>
               ))}

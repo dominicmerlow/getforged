@@ -43,9 +43,21 @@ function PageviewTracker() {
   return null
 }
 
+// Client-side Sentry — dynamically imported only when DSN is set so users
+// without Sentry pay no bundle cost. Once-per-session init.
+let sentryClientInitialised = false
+async function initSentryClient() {
+  if (typeof window === 'undefined') return
+  if (sentryClientInitialised) return
+  if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return
+  await import('@/sentry.client.config')
+  sentryClientInitialised = true
+}
+
 export default function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initPostHog()
+    void initSentryClient()
   }, [])
 
   return (

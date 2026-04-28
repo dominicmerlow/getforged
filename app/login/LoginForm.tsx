@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import Link from 'next/link'
 import { signInWithEmail, type AuthState } from '@/app/actions/auth'
 import { createClient } from '@/lib/supabase/client'
 
@@ -85,6 +86,13 @@ export default function LoginForm() {
           </p>
         )}
       </form>
+
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b', margin: 0, textAlign: 'center' }}>
+        New to GetForged?{' '}
+        <Link href="/register" style={{ color: 'inherit', textDecoration: 'underline' }}>
+          Create an account →
+        </Link>
+      </p>
     </div>
   )
 }
