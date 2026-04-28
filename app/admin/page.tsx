@@ -6,6 +6,7 @@ import Footer from '@/components/footer'
 import { formatPrice } from '@/lib/utils'
 import { adminUpdateStatus } from './actions'
 import AdminBatchScreenshotButton from '@/components/AdminBatchScreenshotButton'
+import { isAdminEmail } from '@/lib/admin'
 
 type DraftProduct = {
   id: string
@@ -68,8 +69,7 @@ export default async function AdminPage() {
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) redirect('/login')
 
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (adminEmail && userData.user.email !== adminEmail) redirect('/')
+  if (!isAdminEmail(userData.user.email)) redirect('/')
 
   const adminDb = createAdminClient()
 

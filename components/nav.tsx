@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/actions/auth'
+import { isAdminEmail } from '@/lib/admin'
 
 function supabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -55,7 +56,7 @@ export default async function Nav() {
           <>
             <Link href="/wishlist" className="btn-ghost" aria-label="Wishlist" title="Wishlist">♥</Link>
             <Link href="/dashboard" className="btn-ghost">Dashboard</Link>
-            {user.email === process.env.ADMIN_EMAIL && (
+            {isAdminEmail(user.email) && (
               <Link href="/admin" className="btn-ghost">Admin</Link>
             )}
             <form action={signOut} style={{ display: 'inline' }}>

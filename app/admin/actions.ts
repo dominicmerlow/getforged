@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@/lib/supabase/server'
 import { scrapeUrl } from '@/lib/firecrawl'
+import { isAdminEmail } from '@/lib/admin'
 
 function createAdminClient() {
   return createServerClient(
@@ -18,8 +19,7 @@ export async function adminUpdateStatus(formData: FormData) {
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) redirect('/login')
 
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (adminEmail && userData.user.email !== adminEmail) redirect('/')
+  if (!isAdminEmail(userData.user.email)) redirect('/')
 
   const id = String(formData.get('id') ?? '')
   const status = String(formData.get('status') ?? '')
@@ -75,8 +75,7 @@ export async function adminBatchRegenerateScreenshots(): Promise<BatchScreenshot
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) redirect('/login')
 
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (adminEmail && userData.user.email !== adminEmail) redirect('/')
+  if (!isAdminEmail(userData.user.email)) redirect('/')
 
   const adminDb = createAdminClient()
   const { data: liveProducts, error } = await adminDb
