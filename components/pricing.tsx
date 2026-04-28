@@ -1,12 +1,22 @@
 import Link from 'next/link'
+import { getContentBatch } from '@/lib/content'
 
-export default function Pricing() {
+export default async function Pricing() {
+  const copy = await getContentBatch([
+    'pricing.section_tag',
+    'pricing.heading',
+    'pricing.tier_label',
+    'pricing.commission_note',
+    'pricing.cta_label',
+  ])
+
   return (
     <section className="section" id="pricing">
-      <div className="section-tag">Seller Plans</div>
-      <h2 className="section-title">
-        Free to List.<br />We Earn <span>Only When You Do.</span>
-      </h2>
+      <div className="section-tag">{copy['pricing.section_tag']}</div>
+      <h2
+        className="section-title"
+        dangerouslySetInnerHTML={{ __html: copy['pricing.heading'] }}
+      />
 
       <div
         style={{
@@ -29,7 +39,7 @@ export default function Pricing() {
             color: 'var(--soft-amber, #b97314)',
           }}
         >
-          Founding Builder · Launch Offer
+          {copy['pricing.tier_label']}
         </div>
 
         <div
@@ -94,7 +104,7 @@ export default function Pricing() {
             margin: 0,
           }}
         >
-          15% commission only when you make a sale · No subscription · No card on file
+          {copy['pricing.commission_note']}
         </p>
 
         <div>
@@ -103,7 +113,7 @@ export default function Pricing() {
             className="btn-amber"
             style={{ display: 'inline-block', padding: '14px 36px', fontSize: 16 }}
           >
-            Become a Founding Builder →
+            {copy['pricing.cta_label']}
           </Link>
         </div>
       </div>

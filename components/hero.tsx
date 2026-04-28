@@ -1,39 +1,55 @@
 import Link from 'next/link'
 import type { ProductListItem } from '@/lib/products'
+import { getContentBatch } from '@/lib/content'
 
 interface HeroProps {
   cards?: ProductListItem[]
   totalCount?: number
 }
 
-export default function Hero({ cards = [], totalCount = 0 }: HeroProps) {
+/**
+ * Server component — reads editable copy from site_content via getContentBatch,
+ * with hardcoded defaults in lib/content-defaults.ts as fallback. Admins can
+ * change every string here from /admin/content without a redeploy.
+ *
+ * Rich-text fields (h1, sub) accept HTML; we use dangerouslySetInnerHTML
+ * because the source is admin-authored, not user-generated. Add sanitisation
+ * here if untrusted writers ever get content_key edit permissions.
+ */
+export default async function Hero({ cards = [], totalCount = 0 }: HeroProps) {
+  const copy = await getContentBatch([
+    'homepage.hero.eyebrow',
+    'homepage.hero.h1',
+    'homepage.hero.sub',
+    'homepage.hero.cta_primary_label',
+    'homepage.hero.cta_secondary_label',
+  ])
+
   return (
     <div className="hero">
       {/* Left column */}
       <div className="hero-left">
         <div className="hero-eyebrow">
           <div className="hero-eyebrow-dot" />
-          <span>The AI Builder Marketplace</span>
+          <span>{copy['homepage.hero.eyebrow']}</span>
         </div>
 
-        <h1 className="hero-title">
-          Buy the AI tool you would<br />
-          have <em>hired</em> a<br />
-          developer to build.
-        </h1>
+        <h1
+          className="hero-title"
+          dangerouslySetInnerHTML={{ __html: copy['homepage.hero.h1'] }}
+        />
 
-        <p className="hero-sub">
-          <strong>Pre-built apps, automations and internal tools</strong> —
-          installed in hours, priced like software, owned like assets.
-          From £49.
-        </p>
+        <p
+          className="hero-sub"
+          dangerouslySetInnerHTML={{ __html: copy['homepage.hero.sub'] }}
+        />
 
         <div className="hero-ctas">
           <Link href="/browse" className="btn-hero-primary">
-            Browse the Marketplace →
+            {copy['homepage.hero.cta_primary_label']}
           </Link>
           <Link href="/concierge" className="btn-hero-secondary">
-            Find My Tool with AI
+            {copy['homepage.hero.cta_secondary_label']}
           </Link>
         </div>
 

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@/lib/supabase/server'
 import Nav from '@/components/nav'
@@ -146,11 +147,11 @@ export default async function AdminPage() {
               { label: 'Overview', href: '/admin', active: true },
               { label: 'Users', href: '#', soon: true },
               { label: 'Products', href: '#', soon: true },
-              { label: 'Content', href: '#', soon: true },
+              { label: 'Content', href: '/admin/content' },
               { label: 'Audit', href: '#', soon: true },
               { label: 'Settings', href: '#', soon: true },
-            ].map(item => (
-              <span key={item.label} style={{
+            ].map(item => {
+              const baseStyle: React.CSSProperties = {
                 padding: '10px 16px',
                 fontFamily: 'var(--font-mono)',
                 fontSize: 12,
@@ -162,11 +163,19 @@ export default async function AdminPage() {
                 opacity: item.soon ? 0.4 : 1,
                 cursor: item.soon ? 'not-allowed' : 'pointer',
                 userSelect: 'none',
-              }}>
-                {item.label}
-                {item.soon && <span style={{ marginLeft: 6, fontSize: 9 }}>· soon</span>}
-              </span>
-            ))}
+                textDecoration: 'none',
+              }
+              return item.soon ? (
+                <span key={item.label} style={baseStyle}>
+                  {item.label}
+                  <span style={{ marginLeft: 6, fontSize: 9 }}>· soon</span>
+                </span>
+              ) : (
+                <Link key={item.label} href={item.href} style={baseStyle}>
+                  {item.label}
+                </Link>
+              )
+            })}
           </nav>
 
           {/* Stats row */}
