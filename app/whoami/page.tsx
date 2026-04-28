@@ -1,7 +1,7 @@
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 import { createClient } from '@/lib/supabase/server'
-import { isAdminEmail } from '@/lib/admin'
+import { isAdminEmail, getUserRole } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +23,8 @@ export default async function WhoAmIPage() {
 
   const adminEmailEnv = process.env.ADMIN_EMAIL ?? '(not set)'
   const isAdmin = user ? isAdminEmail(user.email) : false
+  // DB role lookup (Phase 1 of admin suite — falls back to env-var check above)
+  const dbRole = user ? await getUserRole(user.id) : null
 
   return (
     <>
@@ -84,9 +86,25 @@ export default async function WhoAmIPage() {
               <dt style={{ color: '#6b6b6b' }}>ADMIN_EMAIL env</dt>
               <dd style={{ margin: 0, wordBreak: 'break-all' }}>{adminEmailEnv}</dd>
 
+              <dt style={{ color: '#6b6b6b' }}>DB role (user_roles)</dt>
+              <dd style={{ margin: 0, fontWeight: 600 }}>
+                {dbRole ? (
+                  <span style={{
+                    padding: '2px 8px',
+                    background: 'var(--soft-amber, #b97314)',
+                    color: '#fff',
+                    fontSize: 11,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                  }}>{dbRole}</span>
+                ) : (
+                  <span style={{ color: '#6b6b6b' }}>(none — env-var fallback active)</span>
+                )}
+              </dd>
+
               <dt style={{ color: '#6b6b6b' }}>Admin gate result</dt>
-              <dd style={{ margin: 0, fontWeight: 700, color: isAdmin ? '#3fa85a' : '#c87d1a' }}>
-                {isAdmin ? '✓ Admin (gate passes)' : '✗ Not admin (gate redirects)'}
+              <dd style={{ margin: 0, fontWeight: 700, color: (isAdmin || dbRole) ? '#3fa85a' : '#c87d1a' }}>
+                {(isAdmin || dbRole) ? `✓ Admin (gate passes via ${dbRole ? 'DB role' : 'env fallback'})` : '✗ Not admin (gate redirects)'}
               </dd>
             </dl>
           )}

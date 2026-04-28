@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@/lib/supabase/server'
 import { scrapeUrl } from '@/lib/firecrawl'
-import { isAdminEmail } from '@/lib/admin'
+import { checkAdminAccess, logAdminAction } from '@/lib/admin'
 
 function createAdminClient() {
   return createServerClient(
@@ -19,14 +19,28 @@ export async function adminUpdateStatus(formData: FormData) {
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) redirect('/login')
 
-  if (!isAdminEmail(userData.user.email)) redirect('/')
+  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  if (!role) redirect('/')
 
   const id = String(formData.get('id') ?? '')
   const status = String(formData.get('status') ?? '')
   if (!id || !['live', 'archived'].includes(status)) return
 
   const adminDb = createAdminClient()
+
+  // Snapshot prior status for the audit row so we can see the before/after diff.
+  const { data: prior } = await adminDb.from('products').select('status, title, slug').eq('id', id).maybeSingle()
+
   await adminDb.from('products').update({ status }).eq('id', id)
+
+  await logAdminAction({
+    actor_id: userData.user.id,
+    actor_email: userData.user.email ?? null,
+    action: status === 'live' ? 'product.publish' : 'product.archive',
+    target_type: 'product',
+    target_id: id,
+    payload: { from: prior?.status ?? null, to: status, title: prior?.title ?? null, slug: prior?.slug ?? null },
+  })
 
   revalidatePath('/admin')
   revalidatePath('/browse')
@@ -75,7 +89,8 @@ export async function adminBatchRegenerateScreenshots(): Promise<BatchScreenshot
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) redirect('/login')
 
-  if (!isAdminEmail(userData.user.email)) redirect('/')
+  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  if (!role) redirect('/')
 
   const adminDb = createAdminClient()
   const { data: liveProducts, error } = await adminDb
@@ -128,6 +143,22 @@ export async function adminBatchRegenerateScreenshots(): Promise<BatchScreenshot
 
   revalidatePath('/admin')
   revalidatePath('/browse')
+
+  await logAdminAction({
+    actor_id: userData.user.id,
+    actor_email: userData.user.email ?? null,
+    action: 'screenshots.batch_regenerate',
+    target_type: 'product',
+    target_id: 'all_live',
+    payload: {
+      ok: result.ok,
+      failed: result.failed,
+      skipped: result.skipped,
+      failure_count: result.failures.length,
+      // Truncate failure list to avoid bloating the audit row if many products fail
+      first_failures: result.failures.slice(0, 5),
+    },
+  })
 
   return result
 }

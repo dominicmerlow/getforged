@@ -6,7 +6,7 @@ import Footer from '@/components/footer'
 import { formatPrice } from '@/lib/utils'
 import { adminUpdateStatus } from './actions'
 import AdminBatchScreenshotButton from '@/components/AdminBatchScreenshotButton'
-import { isAdminEmail } from '@/lib/admin'
+import { checkAdminAccess } from '@/lib/admin'
 
 type DraftProduct = {
   id: string
@@ -69,7 +69,8 @@ export default async function AdminPage() {
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) redirect('/login')
 
-  if (!isAdminEmail(userData.user.email)) redirect('/')
+  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  if (!role) redirect('/')
 
   const adminDb = createAdminClient()
 
@@ -118,7 +119,55 @@ export default async function AdminPage() {
           </h1>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: '#6b6b6b', marginTop: 8 }}>
             {userData.user.email}
+            <span style={{
+              marginLeft: 12,
+              padding: '2px 8px',
+              fontSize: 11,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              background: 'var(--soft-amber, #b97314)',
+              color: '#fff',
+              borderRadius: 2,
+            }}>
+              {role}
+            </span>
           </p>
+
+          {/* Side-nav skeleton — Phase 2–5 sections will become live links as they ship */}
+          <nav style={{
+            marginTop: 24,
+            display: 'flex',
+            gap: 4,
+            flexWrap: 'wrap',
+            borderBottom: '1px solid rgba(42,39,32,0.12)',
+            paddingBottom: 0,
+          }}>
+            {[
+              { label: 'Overview', href: '/admin', active: true },
+              { label: 'Users', href: '#', soon: true },
+              { label: 'Products', href: '#', soon: true },
+              { label: 'Content', href: '#', soon: true },
+              { label: 'Audit', href: '#', soon: true },
+              { label: 'Settings', href: '#', soon: true },
+            ].map(item => (
+              <span key={item.label} style={{
+                padding: '10px 16px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: item.active ? 'var(--ink, #2a2217)' : '#6b6b6b',
+                borderBottom: item.active ? '2px solid var(--soft-amber, #b97314)' : '2px solid transparent',
+                marginBottom: -1,
+                opacity: item.soon ? 0.4 : 1,
+                cursor: item.soon ? 'not-allowed' : 'pointer',
+                userSelect: 'none',
+              }}>
+                {item.label}
+                {item.soon && <span style={{ marginLeft: 6, fontSize: 9 }}>· soon</span>}
+              </span>
+            ))}
+          </nav>
 
           {/* Stats row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginTop: 32 }}>

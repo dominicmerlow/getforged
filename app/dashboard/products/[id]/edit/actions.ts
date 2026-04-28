@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/utils'
 import { scrapeUrl } from '@/lib/firecrawl'
+import { logAdminAction } from '@/lib/admin'
 
 function parseCsv(raw: string): string[] | null {
   const items = raw
@@ -256,6 +257,17 @@ export async function regenerateScreenshot(
     .eq('id', productId)
 
   if (updateErr) return { error: `Save failed: ${updateErr.message}` }
+
+  // Audit even seller self-edits — useful for spotting unusual scrape patterns,
+  // and gives admins a unified history when reviewing a product.
+  await logAdminAction({
+    actor_id: userData.user.id,
+    actor_email: userData.user.email ?? null,
+    action: 'product.regenerate_screenshot',
+    target_type: 'product',
+    target_id: productId,
+    payload: { slug: product.slug, source_url: product.source_url, new_screenshot: scraped.screenshot },
+  })
 
   revalidatePath('/dashboard')
   revalidatePath('/browse')
