@@ -25,14 +25,22 @@ interface RawRow {
   category: string | null
   price_licensed: number | null
   price_exclusive: number | null
-  featured: boolean | null
-  featured_position: number | null
-  forge_of_the_week: boolean | null
+  featured?: boolean | null            // optional — exists only if 008 applied
+  featured_position?: number | null
+  forge_of_the_week?: boolean | null
   screenshots: string[] | null
-  view_count: number | null
+  view_count?: number | null            // optional — exists only if 003 applied
   created_at: string
   seller: { display_name: string } | { display_name: string }[] | null
 }
+
+// Columns that always exist (pre-008 baseline)
+const SAFE_COLUMNS =
+  'id, slug, title, status, category, price_licensed, price_exclusive, screenshots, created_at, seller:sellers!inner(display_name)'
+
+// Columns added by migrations 003 + 008 — included if available
+const FULL_COLUMNS =
+  'id, slug, title, status, category, price_licensed, price_exclusive, featured, featured_position, forge_of_the_week, screenshots, view_count, created_at, seller:sellers!inner(display_name)'
 
 /**
  * Admin Products screen — Phase 3 of the admin suite.
@@ -54,21 +62,33 @@ export default async function AdminProductsPage() {
 
   const db = adminDb()
 
-  // Belt-and-braces: if migration 008 hasn't been applied yet, the
-  // featured / forge_of_the_week / featured_position columns won't
-  // exist. We catch the error and surface a clear instruction.
+  // Two-pass query: try the full column set first; if migration 008 (and/or
+  // 003) hasn't been applied, retry with the safe baseline. This means the
+  // page renders with real data even pre-migration; the new flag columns
+  // just default to false / 0 in the reshape step below.
   let rows: RawRow[] = []
   let loadError: string | null = null
+  let usedFallback = false
   try {
     const { data, error } = await db
       .from('products')
-      .select(
-        'id, slug, title, status, category, price_licensed, price_exclusive, featured, featured_position, forge_of_the_week, screenshots, view_count, created_at, seller:sellers!inner(display_name)'
-      )
+      .select(FULL_COLUMNS)
       .order('created_at', { ascending: false })
       .limit(500)
-    if (error) throw new Error(error.message)
-    rows = (data ?? []) as RawRow[]
+    if (error) {
+      // Most likely: column-not-found. Retry with safe columns so the page
+      // still works before migration is applied.
+      const { data: safeData, error: safeError } = await db
+        .from('products')
+        .select(SAFE_COLUMNS)
+        .order('created_at', { ascending: false })
+        .limit(500)
+      if (safeError) throw new Error(safeError.message)
+      rows = (safeData ?? []) as RawRow[]
+      usedFallback = true
+    } else {
+      rows = (data ?? []) as RawRow[]
+    }
   } catch (err) {
     loadError = err instanceof Error ? err.message : 'Unknown read error'
   }
@@ -85,7 +105,7 @@ export default async function AdminProductsPage() {
       price_licensed: r.price_licensed,
       price_exclusive: r.price_exclusive,
       featured: !!r.featured,
-      featured_position: r.featured_position,
+      featured_position: r.featured_position ?? null,
       forge_of_the_week: !!r.forge_of_the_week,
       has_screenshot: !!(r.screenshots && r.screenshots.length > 0),
       view_count: r.view_count ?? 0,
@@ -145,10 +165,40 @@ export default async function AdminProductsPage() {
               lineHeight: 1.6,
             }}>
               <strong>Couldn&apos;t load products:</strong> {loadError}
-              <br />
-              Most likely cause: <code>008_products_featured.sql</code> migration hasn&apos;t been applied yet
-              (it adds the <code>featured</code>, <code>featured_position</code>, <code>forge_of_the_week</code> columns).
-              Run it in the Supabase SQL editor.
+            </div>
+          )}
+
+          {usedFallback && !loadError && (
+            <div style={{
+              marginTop: 16,
+              padding: 14,
+              background: 'rgba(232,146,10,0.08)',
+              border: '1px solid rgba(232,146,10,0.3)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              lineHeight: 1.6,
+            }}>
+              <strong>Featured-flag columns not present.</strong>
+              {' '}Showing products without ★ Feature / Forge of the Week support.
+              {' '}Run <code>008_products_featured.sql</code> in Supabase SQL editor to enable these.
+            </div>
+          )}
+
+          {!loadError && !usedFallback && rows.length === 0 && (
+            <div style={{
+              marginTop: 16,
+              padding: 14,
+              background: 'rgba(42,39,32,0.05)',
+              border: '1px dashed rgba(42,39,32,0.2)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              lineHeight: 1.6,
+            }}>
+              <strong>Query returned 0 rows.</strong>
+              {' '}If you expect to see products, the most common cause is that they
+              exist but have no <code>seller</code> row joined via the inner join.
+              Check that each product&apos;s <code>seller_id</code> matches an existing
+              row in <code>sellers</code>.
             </div>
           )}
         </section>
