@@ -6,6 +6,7 @@ import Footer from '@/components/footer'
 import { createClient } from '@/lib/supabase/server'
 import { checkAdminAccess } from '@/lib/admin'
 import ProductTable, { type AdminProductRow } from './ProductTable'
+import ForgeOfTheWeekPicker from './ForgeOfTheWeekPicker'
 
 export const dynamic = 'force-dynamic'
 
@@ -204,6 +205,18 @@ export default async function AdminProductsPage() {
         </section>
 
         <section className="section" style={{ paddingTop: 0 }}>
+          {/* Forge of the Week picker — only show if 008 columns are present
+              (otherwise forge_of_the_week is always false and picker is moot) */}
+          {!usedFallback && (
+            <div style={{ marginBottom: 16 }}>
+              <ForgeOfTheWeekPicker
+                products={products
+                  .filter(p => p.status === 'live')
+                  .map(p => ({ id: p.id, title: p.title, slug: p.slug, forge_of_the_week: p.forge_of_the_week }))}
+              />
+            </div>
+          )}
+
           <ProductTable products={products} categories={categories} sellers={sellers} />
         </section>
       </main>

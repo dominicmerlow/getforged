@@ -143,39 +143,34 @@ export default async function AdminPage() {
             borderBottom: '1px solid rgba(42,39,32,0.12)',
             paddingBottom: 0,
           }}>
-            {[
+            {([
               { label: 'Overview', href: '/admin', active: true },
-              { label: 'Users', href: '#', soon: true },
+              { label: 'Users', href: '/admin/users' },
               { label: 'Products', href: '/admin/products' },
               { label: 'Content', href: '/admin/content' },
-              { label: 'Audit', href: '#', soon: true },
-              { label: 'Settings', href: '#', soon: true },
-            ].map(item => {
-              const baseStyle: React.CSSProperties = {
-                padding: '10px 16px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 12,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: item.active ? 'var(--ink, #2a2217)' : '#6b6b6b',
-                borderBottom: item.active ? '2px solid var(--soft-amber, #b97314)' : '2px solid transparent',
-                marginBottom: -1,
-                opacity: item.soon ? 0.4 : 1,
-                cursor: item.soon ? 'not-allowed' : 'pointer',
-                userSelect: 'none',
-                textDecoration: 'none',
-              }
-              return item.soon ? (
-                <span key={item.label} style={baseStyle}>
-                  {item.label}
-                  <span style={{ marginLeft: 6, fontSize: 9 }}>· soon</span>
-                </span>
-              ) : (
-                <Link key={item.label} href={item.href} style={baseStyle}>
-                  {item.label}
-                </Link>
-              )
-            })}
+              { label: 'Audit', href: '/admin/audit' },
+              { label: 'Settings', href: '/admin/settings' },
+            ] as const).map(item => (
+              <Link
+                key={item.label}
+                href={item.href}
+                style={{
+                  padding: '10px 16px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: ('active' in item && item.active) ? 'var(--ink, #2a2217)' : '#6b6b6b',
+                  borderBottom: ('active' in item && item.active) ? '2px solid var(--soft-amber, #b97314)' : '2px solid transparent',
+                  marginBottom: -1,
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  textDecoration: 'none',
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           {/* Stats row */}
