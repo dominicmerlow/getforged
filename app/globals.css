@@ -95,6 +95,21 @@ body::after {
   flex-shrink: 0;
   display: block;
 }
+
+/* When the nav logo is the full PNG lockup (mark + wordmark in one image)
+   we constrain height instead of width — width auto-derives from the 3:2
+   intrinsic aspect ratio. */
+.nav-logo-image {
+  /* Drop the wordmark text styling — the PNG carries its own typography */
+  font-size: 0;
+  letter-spacing: 0;
+  gap: 0;
+}
+.nav-logo-image img {
+  height: 40px;
+  width: auto;
+  display: block;
+}
 .nav-links {
   display: flex; gap: 36px; list-style: none;
 }

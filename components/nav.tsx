@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/actions/auth'
 
@@ -24,59 +25,21 @@ export default async function Nav() {
 
   return (
     <nav className="nav">
-      <Link href="/" className="nav-logo" aria-label="GetForged home">
+      <Link href="/" className="nav-logo nav-logo-image" aria-label="GetForged home">
         {/*
-          Hexagonal "G" shield mark — the new GetForged logo.
-          - Outer path: horizontally-stretched hexagon, amber fill (currentColor on the parent
-            anchor, but locked to amber here so the icon stays on-brand on light or dark bg).
-          - Inner G: cut as a negative-space punch using `evenodd` fill-rule.
-          - Small triangular notch on the right of the G arm hints at "forging / forward motion".
-          The whole mark is single-fill amber so it sits cleanly on either ink or paper backgrounds.
+          Full GetForged lockup as a raster asset. We render the mark + wordmark
+          from one PNG so it stays pixel-identical to brand artwork.
+          - `priority` because the nav logo is above the fold on every page.
+          - intrinsic dimensions are 612×408 (3:2); CSS constrains the displayed
+            height via .nav-logo-image img.
         */}
-        <svg
-          className="nav-logo-mark"
-          viewBox="0 0 100 90"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            fill="var(--amber, #e8920a)"
-            d="
-              M 25 4
-              L 75 4
-              L 96 45
-              L 75 86
-              L 25 86
-              L 4 45
-              Z
-
-              M 50 22
-              C 36 22, 28 32, 28 45
-              C 28 58, 36 68, 50 68
-              C 60 68, 67 64, 71 58
-              L 71 47
-              L 49 47
-              L 49 53
-              L 62 53
-              C 60 58, 56 61, 50 61
-              C 41 61, 36 54, 36 45
-              C 36 36, 41 29, 50 29
-              C 56 29, 60 32, 63 37
-              L 70 32
-              C 65 25, 58 22, 50 22
-              Z
-            "
-          />
-          {/* Forge-arrow notch — small triangular cut on the upper-right of the G's terminal */}
-          <path
-            fill="var(--amber, #e8920a)"
-            d="M 71 47 L 78 43 L 78 51 Z"
-          />
-        </svg>
-        GET<span>FORGED</span>
+        <Image
+          src="/getforged_logo.png"
+          alt="GetForged"
+          width={612}
+          height={408}
+          priority
+        />
       </Link>
 
       <ul className="nav-links">
