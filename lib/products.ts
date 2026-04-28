@@ -164,10 +164,16 @@ export async function listLiveProducts(): Promise<ProductListItem[]> {
   }
   try {
     const supabase = await createClient()
+    // Sort featured products first (by featured_position ascending), then
+    // by created_at descending. Postgres sorts NULLs last by default for
+    // ASC, so non-featured rows naturally fall after the featured ones.
+    // If migration 008 hasn't been applied yet, the order on featured*
+    // columns is silently ignored — the fallback to created_at still works.
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('status', 'live')
+      .order('featured_position', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false })
     if (error) throw error
     if (!data || data.length === 0) return SEED_PRODUCTS.map(seedToListItem)

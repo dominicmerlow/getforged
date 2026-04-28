@@ -146,7 +146,7 @@ export default async function AdminPage() {
             {[
               { label: 'Overview', href: '/admin', active: true },
               { label: 'Users', href: '#', soon: true },
-              { label: 'Products', href: '#', soon: true },
+              { label: 'Products', href: '/admin/products' },
               { label: 'Content', href: '/admin/content' },
               { label: 'Audit', href: '#', soon: true },
               { label: 'Settings', href: '#', soon: true },
