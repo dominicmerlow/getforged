@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { ProductListItem } from '@/lib/products'
+import ProductScreenshot from '@/components/ProductScreenshot'
 
 const FILTERS = ['All', 'AI Automation', 'Web Apps', 'CRM & Sales', 'E-Commerce', 'Marketing', 'Operations']
 
@@ -58,8 +59,16 @@ export default function ProductGridFilter({ products }: { products: ProductListI
               className="product-card reveal"
               style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
             >
-              <div className="product-thumb">
-                <div className={`product-thumb-bg ${product.thumb}`}>{product.emoji}</div>
+              <div className="product-thumb" style={{ position: 'relative', height: 190 }}>
+                {/* Real screenshot when present, gradient+emoji placeholder otherwise.
+                    Same component /browse uses, so the two surfaces stay in sync. */}
+                <ProductScreenshot
+                  src={product.heroImage}
+                  title={product.title}
+                  emoji={product.emoji}
+                  category={product.category}
+                  size="card"
+                />
                 <span className="product-category-tag">{product.category}</span>
                 <span className={`product-licensed-tag${product.type === 'Exclusive' ? ' exclusive' : ''}`}>
                   {product.type}
