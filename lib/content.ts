@@ -44,14 +44,17 @@ function readClient() {
 /**
  * Loads ALL content overrides in one round-trip and caches them by tag.
  * Subsequent calls (within the same render or future renders until
- * revalidateTag fires) hit the cache.
+ * the tag invalidates) hit the cache.
  *
- * Returning a Map (not an object) makes lookups O(1) and keeps the
- * downstream `getContent` typing tidy.
+ * IMPORTANT: must return a plain object (Record), not a Map. Next.js
+ * unstable_cache serializes return values via JSON for storage, and
+ * Map → JSON drops the entries (becomes {}), so the next read can't
+ * call .has() / .get() on it. Plain object survives the round-trip
+ * untouched — lookups via `key in obj` and `obj[key]`.
  */
 const fetchAllOverrides = unstable_cache(
-  async (): Promise<Map<string, unknown>> => {
-    if (!supabaseConfigured()) return new Map()
+  async (): Promise<Record<string, unknown>> => {
+    if (!supabaseConfigured()) return {}
     try {
       const supabase = readClient()
       const { data, error } = await supabase
@@ -59,16 +62,16 @@ const fetchAllOverrides = unstable_cache(
         .select('key, value_json')
       if (error) {
         console.error('[content] read failed:', error.message)
-        return new Map()
+        return {}
       }
-      const map = new Map<string, unknown>()
+      const out: Record<string, unknown> = {}
       for (const row of (data ?? []) as Pick<ContentRow, 'key' | 'value_json'>[]) {
-        map.set(row.key, row.value_json)
+        out[row.key] = row.value_json
       }
-      return map
+      return out
     } catch (err) {
       console.error('[content] read threw:', err instanceof Error ? err.message : err)
-      return new Map()
+      return {}
     }
   },
   ['site-content-all'],
@@ -86,8 +89,8 @@ export async function getContent<K extends ContentKey>(
   key: K
 ): Promise<typeof CONTENT_REGISTRY[K]['default']> {
   const overrides = await fetchAllOverrides()
-  if (overrides.has(key)) {
-    return overrides.get(key) as typeof CONTENT_REGISTRY[K]['default']
+  if (key in overrides) {
+    return overrides[key] as typeof CONTENT_REGISTRY[K]['default']
   }
   return CONTENT_REGISTRY[key].default
 }
@@ -102,8 +105,8 @@ export async function getContentBatch<K extends ContentKey>(
   const overrides = await fetchAllOverrides()
   const result = {} as { [key in K]: typeof CONTENT_REGISTRY[key]['default'] }
   for (const key of keys) {
-    result[key] = (overrides.has(key)
-      ? overrides.get(key)
+    result[key] = (key in overrides
+      ? overrides[key]
       : CONTENT_REGISTRY[key].default) as typeof CONTENT_REGISTRY[K]['default']
   }
   return result
@@ -127,10 +130,10 @@ export async function getAllContentForAdmin(): Promise<
   const overrides = await fetchAllOverrides()
   return ALL_CONTENT_KEYS.map(key => {
     const def = CONTENT_REGISTRY[key]
-    const isOverride = overrides.has(key)
+    const isOverride = key in overrides
     return {
       key,
-      value: isOverride ? overrides.get(key) : def.default,
+      value: isOverride ? overrides[key] : def.default,
       isOverride,
       default: def.default,
       description: def.description,
