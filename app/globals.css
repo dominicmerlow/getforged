@@ -88,8 +88,10 @@ body::after {
 }
 .nav-logo span { color: var(--amber); }
 .nav-logo-mark {
-  width: 28px;
-  height: 28px;
+  /* New hex shield is wider than tall (viewBox 100×90). Width drives the box;
+     height auto-derives so the proportions stay clean across breakpoints. */
+  width: 34px;
+  height: auto;
   flex-shrink: 0;
   display: block;
 }

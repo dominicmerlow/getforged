@@ -25,15 +25,56 @@ export default async function Nav() {
   return (
     <nav className="nav">
       <Link href="/" className="nav-logo" aria-label="GetForged home">
-        <svg className="nav-logo-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-          <defs>
-            <linearGradient id="navGfAmber" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f5a623" />
-              <stop offset="100%" stopColor="#e8920a" />
-            </linearGradient>
-          </defs>
-          <path d="M30 4 L38 15 L32 12 L26 15 Z" fill="url(#navGfAmber)" opacity="0.95" />
-          <path d="M2 24 L6 18 L52 18 L52 28 L42 28 L42 40 L58 40 Q60 40 60 42 L60 48 Q60 50 58 50 L6 50 Q4 50 4 48 L4 42 Q4 40 6 40 L22 40 L22 28 L6 28 Z" fill="url(#navGfAmber)" />
+        {/*
+          Hexagonal "G" shield mark — the new GetForged logo.
+          - Outer path: horizontally-stretched hexagon, amber fill (currentColor on the parent
+            anchor, but locked to amber here so the icon stays on-brand on light or dark bg).
+          - Inner G: cut as a negative-space punch using `evenodd` fill-rule.
+          - Small triangular notch on the right of the G arm hints at "forging / forward motion".
+          The whole mark is single-fill amber so it sits cleanly on either ink or paper backgrounds.
+        */}
+        <svg
+          className="nav-logo-mark"
+          viewBox="0 0 100 90"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            fill="var(--amber, #e8920a)"
+            d="
+              M 25 4
+              L 75 4
+              L 96 45
+              L 75 86
+              L 25 86
+              L 4 45
+              Z
+
+              M 50 22
+              C 36 22, 28 32, 28 45
+              C 28 58, 36 68, 50 68
+              C 60 68, 67 64, 71 58
+              L 71 47
+              L 49 47
+              L 49 53
+              L 62 53
+              C 60 58, 56 61, 50 61
+              C 41 61, 36 54, 36 45
+              C 36 36, 41 29, 50 29
+              C 56 29, 60 32, 63 37
+              L 70 32
+              C 65 25, 58 22, 50 22
+              Z
+            "
+          />
+          {/* Forge-arrow notch — small triangular cut on the upper-right of the G's terminal */}
+          <path
+            fill="var(--amber, #e8920a)"
+            d="M 71 47 L 78 43 L 78 51 Z"
+          />
         </svg>
         GET<span>FORGED</span>
       </Link>
