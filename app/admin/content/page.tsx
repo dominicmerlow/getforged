@@ -29,7 +29,18 @@ export default async function AdminContentPage() {
   const role = await checkAdminAccess(userData.user.id, userData.user.email)
   if (!role) redirect('/')
 
-  const allContent = await getAllContentForAdmin()
+  // Belt-and-braces: getAllContentForAdmin already swallows DB errors and
+  // returns the defaults map, but if the migration hasn't been applied yet
+  // OR the unstable_cache wrapper does something unexpected, we'd rather
+  // show the page with all-defaults than throw an Error Boundary.
+  let allContent: Awaited<ReturnType<typeof getAllContentForAdmin>>
+  let loadError: string | null = null
+  try {
+    allContent = await getAllContentForAdmin()
+  } catch (err) {
+    allContent = []
+    loadError = err instanceof Error ? err.message : 'Unknown read error'
+  }
   const overrideCount = allContent.filter(c => c.isOverride).length
 
   // Group by section in registry-declared order (Map preserves insertion order)
@@ -91,6 +102,22 @@ export default async function AdminContentPage() {
             use <code>&lt;em&gt;</code> for amber italic, <code>&lt;span&gt;</code> for amber inline,
             <code>&lt;br/&gt;</code> for line breaks, <code>&lt;strong&gt;</code> for bold.
           </div>
+
+          {loadError && (
+            <div style={{
+              marginTop: 16,
+              padding: 14,
+              background: 'rgba(192,74,27,0.08)',
+              border: '1px solid rgba(192,74,27,0.3)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              lineHeight: 1.6,
+            }}>
+              <strong>Couldn&apos;t load overrides:</strong> {loadError}
+              <br />
+              Most likely cause: <code>009_site_content.sql</code> migration hasn&apos;t been applied yet. Run it in the Supabase SQL editor — the page below shows defaults until then.
+            </div>
+          )}
         </section>
 
         {Array.from(groups, ([group, items]) => (

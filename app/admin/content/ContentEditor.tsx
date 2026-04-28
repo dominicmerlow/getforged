@@ -96,68 +96,75 @@ export default function ContentEditor({
         )}
       </div>
 
-      <form action={saveAction}>
+      {/* Save form — owns the editable input. Submit triggers saveContent. */}
+      <form action={saveAction} id={`save-${contentKey}`}>
         <input type="hidden" name="key" value={contentKey} />
         {renderEditor(kind, draft, setDraft, inputBase)}
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button
-            type="submit"
-            disabled={savePending || draft === stringifyForInput(currentValue, kind)}
-            style={{
-              padding: '8px 16px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              letterSpacing: '0.06em',
-              background: 'var(--soft-amber, #b97314)',
-              color: '#fff',
-              border: 'none',
-              cursor: savePending ? 'wait' : 'pointer',
-              opacity: savePending || draft === stringifyForInput(currentValue, kind) ? 0.5 : 1,
-            }}
-          >
-            {savePending ? 'Saving…' : 'Save'}
-          </button>
-
-          {isOverride && (
-            <form action={resetAction} style={{ display: 'inline' }}>
-              <input type="hidden" name="key" value={contentKey} />
-              <button
-                type="submit"
-                disabled={resetPending}
-                style={{
-                  padding: '8px 14px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
-                  background: 'transparent',
-                  color: 'var(--warm-ink, #2a2217)',
-                  border: '1px solid rgba(42,39,32,0.3)',
-                  cursor: resetPending ? 'wait' : 'pointer',
-                  opacity: resetPending ? 0.5 : 1,
-                }}
-              >
-                {resetPending ? 'Resetting…' : 'Reset to default'}
-              </button>
-            </form>
-          )}
-
-          {justSaved && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#3fa85a' }}>
-              ✓ Saved · live in seconds
-            </span>
-          )}
-          {justReset && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#3fa85a' }}>
-              ✓ Reverted to default
-            </span>
-          )}
-          {error && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#c87d1a' }}>
-              {error}
-            </span>
-          )}
-        </div>
       </form>
+
+      {/*
+        Action row — two SIBLING forms share the same input via the form
+        attribute on the save button, then the reset button posts its own
+        tiny form. Sibling forms are valid HTML; nesting forms is not.
+      */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          type="submit"
+          form={`save-${contentKey}`}
+          disabled={savePending || draft === stringifyForInput(currentValue, kind)}
+          style={{
+            padding: '8px 16px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            letterSpacing: '0.06em',
+            background: 'var(--soft-amber, #b97314)',
+            color: '#fff',
+            border: 'none',
+            cursor: savePending ? 'wait' : 'pointer',
+            opacity: savePending || draft === stringifyForInput(currentValue, kind) ? 0.5 : 1,
+          }}
+        >
+          {savePending ? 'Saving…' : 'Save'}
+        </button>
+
+        {isOverride && (
+          <form action={resetAction} style={{ display: 'inline' }}>
+            <input type="hidden" name="key" value={contentKey} />
+            <button
+              type="submit"
+              disabled={resetPending}
+              style={{
+                padding: '8px 14px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 12,
+                background: 'transparent',
+                color: 'var(--warm-ink, #2a2217)',
+                border: '1px solid rgba(42,39,32,0.3)',
+                cursor: resetPending ? 'wait' : 'pointer',
+                opacity: resetPending ? 0.5 : 1,
+              }}
+            >
+              {resetPending ? 'Resetting…' : 'Reset to default'}
+            </button>
+          </form>
+        )}
+
+        {justSaved && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#3fa85a' }}>
+            ✓ Saved · live in seconds
+          </span>
+        )}
+        {justReset && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#3fa85a' }}>
+            ✓ Reverted to default
+          </span>
+        )}
+        {error && (
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#c87d1a' }}>
+            {error}
+          </span>
+        )}
+      </div>
 
       {!isOverride && kind !== 'boolean' && (
         <details>
