@@ -255,15 +255,24 @@ export default function ProductTable({ products, categories, sellers }: Props) {
                     </td>
                     <td style={{ ...td, color: 'var(--muted, #6b6b6b)' }}>{dateStr}</td>
                     <td style={td}>
-                      {p.slug && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
                         <Link
-                          href={`/products/${p.slug}`}
-                          target="_blank"
-                          style={{ fontSize: 11, color: 'var(--soft-amber, #b97314)', textDecoration: 'underline' }}
+                          href={`/admin/products/${p.id}/edit`}
+                          style={{ color: '#b97314', textDecoration: 'underline', fontWeight: 600 }}
+                          title="Admin edit — bypasses ownership, all changes logged"
                         >
-                          View ↗
+                          ✏ Admin edit
                         </Link>
-                      )}
+                        {p.slug && (
+                          <Link
+                            href={`/products/${p.slug}`}
+                            target="_blank"
+                            style={{ color: 'var(--soft-amber, #b97314)', textDecoration: 'underline' }}
+                          >
+                            View ↗
+                          </Link>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )

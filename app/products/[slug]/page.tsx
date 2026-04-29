@@ -17,6 +17,7 @@ import BuyButton from '@/components/BuyButton'
 import DemoLink from '@/components/DemoLink'
 import CompareToggle from '@/components/CompareToggle'
 import { createClient } from '@/lib/supabase/server'
+import { getSetting } from '@/lib/settings'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -121,6 +122,15 @@ export default async function ProductPage(
   const buyLabel = product.type === 'Exclusive'
     ? `Buy Exclusive — ${product.priceMain}`
     : `Buy Licence — ${product.priceMain}`
+
+  // Admin-controlled checkout pause. Fail-OPEN: settings blip must not hide
+  // the buy button — server route still gates the actual transaction.
+  let checkoutPaused = false
+  try {
+    checkoutPaused = await getSetting('site.checkout_paused')
+  } catch {
+    checkoutPaused = false
+  }
 
   // Fetch reviews for this product (public read, no auth needed).
   // `seller_reply` / `seller_replied_at` are added by migration 005 — the
@@ -272,14 +282,34 @@ export default async function ProductPage(
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <BuyButton
-                    slug={product.slug}
-                    productId={product.id}
-                    purchaseType={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
-                    category={product.category}
-                    priceMain={product.priceMain}
-                    label={buyLabel}
-                  />
+                  {checkoutPaused ? (
+                    <span
+                      className="section-tag"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        border: '1px solid var(--amber, #c87d1a)',
+                        color: 'var(--amber, #c87d1a)',
+                        padding: '10px 16px',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 12,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Checkout temporarily paused — back soon
+                    </span>
+                  ) : (
+                    <BuyButton
+                      slug={product.slug}
+                      productId={product.id}
+                      purchaseType={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
+                      category={product.category}
+                      priceMain={product.priceMain}
+                      label={buyLabel}
+                    />
+                  )}
                   {product.demo_url && (
                     <DemoLink
                       href={product.demo_url}
@@ -668,15 +698,35 @@ export default async function ProductPage(
             Ready to <span>ship</span>?
           </h2>
           <div style={{ display: 'flex', gap: 16, marginTop: 32, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <BuyButton
-              slug={product.slug}
-              productId={product.id}
-              purchaseType={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
-              category={product.category}
-              priceMain={product.priceMain}
-              label={buyLabel}
-              style={{ padding: '16px 48px' }}
-            />
+            {checkoutPaused ? (
+              <span
+                className="section-tag"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  border: '1px solid var(--amber, #c87d1a)',
+                  color: 'var(--amber, #c87d1a)',
+                  padding: '16px 32px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 13,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Checkout temporarily paused — back soon
+              </span>
+            ) : (
+              <BuyButton
+                slug={product.slug}
+                productId={product.id}
+                purchaseType={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
+                category={product.category}
+                priceMain={product.priceMain}
+                label={buyLabel}
+                style={{ padding: '16px 48px' }}
+              />
+            )}
             <Link href="/browse" className="btn-hero-secondary" style={{ padding: '16px 48px' }}>
               See more products
             </Link>

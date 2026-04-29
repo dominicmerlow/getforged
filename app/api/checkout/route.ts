@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getStripe, stripeConfigured } from '@/lib/stripe'
+import { getSetting } from '@/lib/settings'
 import type { Product } from '@/lib/types'
 
 export const runtime = 'nodejs'
@@ -38,6 +39,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: `no ${purchaseType} price set for this product` },
       { status: 400 }
+    )
+  }
+
+  // Admin-controlled checkout pause. Fail-OPEN: a transient settings read
+  // failure must not lock revenue, so on error we treat as "not paused".
+  let checkoutPaused = false
+  try {
+    checkoutPaused = await getSetting('site.checkout_paused')
+  } catch (err) {
+    console.error('[checkout] settings read failed, defaulting to not-paused:', err)
+    checkoutPaused = false
+  }
+  if (checkoutPaused) {
+    return NextResponse.json(
+      { error: 'checkout temporarily paused' },
+      { status: 503 }
     )
   }
 
