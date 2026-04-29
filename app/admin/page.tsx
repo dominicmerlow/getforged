@@ -2,8 +2,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@/lib/supabase/server'
-import Nav from '@/components/nav'
-import Footer from '@/components/footer'
 import { formatPrice } from '@/lib/utils'
 import { adminUpdateStatus } from './actions'
 import AdminBatchScreenshotButton from '@/components/AdminBatchScreenshotButton'
@@ -48,8 +46,6 @@ export default async function AdminPage() {
   if (!supabaseConfigured()) {
     return (
       <>
-        <Nav />
-        <main>
           <section className="section">
             <div className="section-tag">Admin</div>
             <h1 className="section-title" style={{ fontSize: 'clamp(32px,4vw,56px)' }}>
@@ -60,8 +56,6 @@ export default async function AdminPage() {
               <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in <code>.env.local</code>.
             </p>
           </section>
-        </main>
-        <Footer />
       </>
     )
   }
@@ -110,8 +104,6 @@ export default async function AdminPage() {
 
   return (
     <>
-      <Nav />
-      <main>
         {/* Header */}
         <section className="section">
           <div className="section-tag">Admin</div>
@@ -304,8 +296,6 @@ export default async function AdminPage() {
             </div>
           )}
         </section>
-      </main>
-      <Footer />
     </>
   )
 }

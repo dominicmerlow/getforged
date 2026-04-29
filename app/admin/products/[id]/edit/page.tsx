@@ -1,8 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@supabase/ssr'
-import Nav from '@/components/nav'
-import Footer from '@/components/footer'
 import { createClient } from '@/lib/supabase/server'
 import { checkAdminAccess } from '@/lib/admin'
 import AdminEditForm, { type AdminEditableProduct } from './AdminEditForm'
@@ -91,8 +89,6 @@ export default async function AdminProductEditPage({
   if (loadError) {
     return (
       <>
-        <Nav />
-        <main>
           <section className="section">
             <div className="section-tag">Admin · Product edit</div>
             <h1 className="section-title" style={{ fontSize: 'clamp(28px,3vw,40px)' }}>
@@ -112,8 +108,6 @@ export default async function AdminProductEditPage({
               ← Back to products
             </Link>
           </section>
-        </main>
-        <Footer />
       </>
     )
   }
@@ -138,8 +132,6 @@ export default async function AdminProductEditPage({
 
   return (
     <>
-      <Nav />
-      <main>
         <section className="section">
           <div className="section-tag" style={{ color: '#b97314' }}>Admin · Product edit</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
@@ -246,8 +238,6 @@ export default async function AdminProductEditPage({
         <section className="section" style={{ paddingTop: 0 }}>
           <AdminEditForm product={product} />
         </section>
-      </main>
-      <Footer />
     </>
   )
 }

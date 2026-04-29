@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@supabase/ssr'
-import Nav from '@/components/nav'
-import Footer from '@/components/footer'
 import { createClient } from '@/lib/supabase/server'
 import { checkAdminAccess } from '@/lib/admin'
 
@@ -94,22 +92,12 @@ export default async function AdminAuditPage({
 
   return (
     <>
-      <Nav />
-      <main>
         <section className="section">
           <div className="section-tag">Admin · Audit</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
             <h1 className="section-title" style={{ fontSize: 'clamp(36px,4.5vw,56px)' }}>
               Audit Log
             </h1>
-            <Link href="/admin" style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 13,
-              color: '#6b6b6b',
-              textDecoration: 'underline',
-            }}>
-              ← Admin overview
-            </Link>
           </div>
 
           <p style={{
@@ -231,8 +219,6 @@ export default async function AdminAuditPage({
             </div>
           )}
         </section>
-      </main>
-      <Footer />
     </>
   )
 }
