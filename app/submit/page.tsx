@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 import { createClient } from '@/lib/supabase/server'
+import { getSetting } from '@/lib/settings'
 import SubmitForm from './SubmitForm'
 
 export const metadata: Metadata = {
@@ -43,6 +45,69 @@ export default async function SubmitPage() {
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) {
     redirect('/login')
+  }
+
+  // Submissions paused gate (admin feature flag). Defence-in-depth — the
+  // server action also enforces this. Fail-OPEN if the read throws so a
+  // transient Supabase error doesn't block the page.
+  let submissionsPaused = false
+  try {
+    submissionsPaused = await getSetting('site.submissions_paused')
+  } catch (err) {
+    console.error('[submit] submissions_paused check failed (failing open):', err)
+  }
+
+  if (submissionsPaused) {
+    return (
+      <>
+        <Nav />
+        <main>
+          <section
+            className="section"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              gap: 16,
+              paddingTop: 64,
+              paddingBottom: 64,
+            }}
+          >
+            <div className="section-tag">Paused</div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-bebas)',
+                fontSize: 'clamp(48px,7vw,96px)',
+                letterSpacing: '0.02em',
+                lineHeight: 1,
+                margin: 0,
+              }}
+            >
+              Submissions paused
+            </h1>
+            <p
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: 20,
+                maxWidth: 560,
+                marginTop: 8,
+              }}
+            >
+              We&apos;re not accepting new product submissions right now. Existing listings keep selling — check back soon.
+            </p>
+            <Link
+              href="/browse"
+              className="btn-hero-primary"
+              style={{ padding: '12px 24px', marginTop: 16 }}
+            >
+              Back to browse →
+            </Link>
+          </section>
+        </main>
+        <Footer />
+      </>
+    )
   }
 
   return (

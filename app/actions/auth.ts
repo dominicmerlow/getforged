@@ -3,15 +3,57 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { getSetting } from '@/lib/settings'
 
 export type AuthState = { error?: string; message?: string } | null
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const SIGNUPS_PAUSED_MSG =
+  "New signups are paused right now. Please check back soon or email support@getforged.io if you're locked out."
+
 async function getOrigin(): Promise<string> {
   const h = await headers()
   return h.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+}
+
+/**
+ * Returns true if the magic-link request should be blocked because the
+ * `site.signups_paused` setting is on AND no auth.users row exists for this
+ * email (i.e. it would create a new account).
+ *
+ * Fail-OPEN: any error in the setting read or auth lookup returns false so
+ * legitimate logins are never broken by infrastructure hiccups.
+ */
+async function shouldBlockNewSignup(email: string): Promise<boolean> {
+  try {
+    const paused = await getSetting('site.signups_paused')
+    if (!paused) return false
+
+    const service = await createServiceClient()
+    // Query auth.users directly via service role. Returns null row if absent.
+    const { data, error } = await service
+      .schema('auth')
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
+
+    if (error) {
+      // Fail-open on lookup failure — don't break login due to infra.
+      console.error('[auth] signup-pause lookup failed:', error.message)
+      return false
+    }
+    // No row = brand new email = block when paused.
+    return !data
+  } catch (err) {
+    console.error(
+      '[auth] signup-pause check threw:',
+      err instanceof Error ? err.message : err
+    )
+    return false
+  }
 }
 
 export async function signInWithEmail(
@@ -21,6 +63,10 @@ export async function signInWithEmail(
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   if (!email || !EMAIL_RE.test(email)) {
     return { error: 'Enter a valid email address.' }
+  }
+
+  if (await shouldBlockNewSignup(email)) {
+    return { error: SIGNUPS_PAUSED_MSG }
   }
 
   const supabase = await createClient()
@@ -61,6 +107,10 @@ export async function signUpWithNameAndEmail(
   }
   if (!email || !EMAIL_RE.test(email)) {
     return { error: 'Enter a valid email address.' }
+  }
+
+  if (await shouldBlockNewSignup(email)) {
+    return { error: SIGNUPS_PAUSED_MSG }
   }
 
   const supabase = await createClient()

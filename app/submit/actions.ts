@@ -5,6 +5,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { scrapeUrl } from '@/lib/firecrawl'
 import { generateSalesPageSmart, llmConfigured } from '@/lib/llm'
 import { sendDraftReadyEmail } from '@/lib/resend'
+import { getSetting } from '@/lib/settings'
 import { slugify } from '@/lib/utils'
 import type { GeneratedSalesPage } from '@/lib/types'
 
@@ -103,6 +104,18 @@ export async function submitProduct(
     .eq('user_id', userData.user.id)
     .maybeSingle()
   if (!sellerRow) return { error: 'Seller profile not found. Try signing out and back in.' }
+
+  // ── 2b. Submissions paused gate (admin feature flag) ─────────
+  // Server-side enforcement — never trust the client. Fail-OPEN if the
+  // settings read throws so a transient Supabase issue doesn't block sellers.
+  try {
+    const paused = await getSetting('site.submissions_paused')
+    if (paused) {
+      return { error: 'Submissions are temporarily paused. Please check back soon.' }
+    }
+  } catch (err) {
+    console.error('[submit] submissions_paused check failed (failing open):', err)
+  }
 
   // ── 3. Scrape URL (Firecrawl or fallback fetch) ──────────────
   let scraped
