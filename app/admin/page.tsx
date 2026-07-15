@@ -79,6 +79,7 @@ export default async function AdminPage() {
       .from('products')
       .select('id, title, slug, category, created_at, seller:sellers!inner(display_name)')
       .eq('status', 'draft')
+      .eq('is_prospect', false) // unclaimed prospect drafts have no real seller behind them yet
       .order('created_at', { ascending: false })
       .limit(50),
     adminDb
@@ -91,7 +92,8 @@ export default async function AdminPage() {
       .select('id', { count: 'exact', head: true }),
     adminDb
       .from('products')
-      .select('status'),
+      .select('status')
+      .eq('is_prospect', false),
   ])
 
   // Group product counts by status client-side

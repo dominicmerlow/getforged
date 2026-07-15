@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const claimToken = searchParams.get('claim')
   const next = searchParams.get('next') ?? '/dashboard'
 
   if (!code) {
@@ -56,6 +57,51 @@ export async function GET(request: NextRequest) {
             .from('sellers')
             .update({ display_name: desiredName.trim() })
             .eq('id', sellerRow.id)
+        }
+      }
+    }
+  }
+
+  // Claim-invite flow: reassign the prospect draft to this user's own
+  // seller row (created by the on_auth_user_created trigger above) and
+  // mark the invite claimed. Idempotent/single-use via the conditional
+  // status update below — a re-clicked or retried link is a no-op.
+  if (user && claimToken) {
+    const service = await createServiceClient()
+    const { data: invite } = await service
+      .from('claim_invites')
+      .select('id, product_id, status, expires_at')
+      .eq('token', claimToken)
+      .maybeSingle()
+
+    const stillClaimable =
+      invite &&
+      (invite.status === 'sent' || invite.status === 'viewed') &&
+      new Date(invite.expires_at) >= new Date()
+
+    if (stillClaimable && invite) {
+      const { data: sellerRow } = await supabase
+        .from('sellers')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (sellerRow) {
+        const { data: claimedInvite } = await service
+          .from('claim_invites')
+          .update({ status: 'claimed', claimed_at: new Date().toISOString(), claimed_by: user.id })
+          .eq('id', invite.id)
+          .in('status', ['sent', 'viewed'])
+          .select('id')
+          .maybeSingle()
+
+        if (claimedInvite) {
+          await service
+            .from('products')
+            .update({ seller_id: sellerRow.id, is_prospect: false })
+            .eq('id', invite.product_id)
+
+          return NextResponse.redirect(`${origin}/dashboard?claimed=1`)
         }
       }
     }

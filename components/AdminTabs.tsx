@@ -21,6 +21,7 @@ const TABS: Tab[] = [
   { href: '/admin', label: 'Overview' },
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/products', label: 'Products' },
+  { href: '/admin/prospects', label: 'Prospects' },
   { href: '/admin/content', label: 'Content' },
   { href: '/admin/settings', label: 'Settings' },
   { href: '/admin/audit', label: 'Audit' },
