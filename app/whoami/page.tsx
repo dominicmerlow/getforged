@@ -2,20 +2,23 @@ import { redirect } from 'next/navigation'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 import { createClient } from '@/lib/supabase/server'
-import { isAdminEmail, getUserRole, checkAdminAccess } from '@/lib/admin'
+import { isAdminEmail, getUserRole } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * Diagnostic endpoint — shows what Supabase auth knows about the current
- * session and whether the admin gate accepts that email.
+ * session and whether the admin gate accepts it.
  *
  * Used to debug "I logged in but /admin redirects me" cases — the most
  * common cause is OAuth providers returning a different email (e.g.
  * GitHub email-privacy noreply aliases) than the user's profile email.
  *
- * Gated behind admin access — it reveals the ADMIN_EMAIL allowlist, which
- * a non-admin shouldn't be able to read.
+ * Requires sign-in but NOT admin access — a locked-out user needs this page
+ * precisely because they aren't recognized as admin yet. It only ever shows
+ * the signed-in user's OWN session data (id/email/provider/role), never the
+ * raw ADMIN_EMAIL allowlist — that's what made the pre-fix version a leak
+ * (any signed-in user could read every admin's email off it).
  */
 export default async function WhoAmIPage() {
   const supabase = await createClient()
@@ -23,12 +26,8 @@ export default async function WhoAmIPage() {
   const user = userData.user
 
   if (!user) redirect('/login')
-  const role = await checkAdminAccess(user.id, user.email)
-  if (!role) redirect('/')
 
-  const adminEmailEnv = process.env.ADMIN_EMAIL ?? '(not set)'
   const isAdmin = isAdminEmail(user.email)
-  // DB role lookup (Phase 1 of admin suite — falls back to env-var check above)
   const dbRole = await getUserRole(user.id)
 
   return (
@@ -83,8 +82,10 @@ export default async function WhoAmIPage() {
               {user.email_confirmed_at ? `✓ ${user.email_confirmed_at}` : '✗ no'}
             </dd>
 
-            <dt style={{ color: '#6b6b6b' }}>ADMIN_EMAIL env</dt>
-            <dd style={{ margin: 0, wordBreak: 'break-all' }}>{adminEmailEnv}</dd>
+            <dt style={{ color: '#6b6b6b' }}>Your email in ADMIN_EMAIL?</dt>
+            <dd style={{ margin: 0, fontWeight: 600 }}>
+              {isAdmin ? '✓ Yes' : '✗ No'}
+            </dd>
 
             <dt style={{ color: '#6b6b6b' }}>DB role (user_roles)</dt>
             <dd style={{ margin: 0, fontWeight: 600 }}>
@@ -98,13 +99,13 @@ export default async function WhoAmIPage() {
                   textTransform: 'uppercase',
                 }}>{dbRole}</span>
               ) : (
-                <span style={{ color: '#6b6b6b' }}>(none — env-var fallback active)</span>
+                <span style={{ color: '#6b6b6b' }}>(none)</span>
               )}
             </dd>
 
             <dt style={{ color: '#6b6b6b' }}>Admin gate result</dt>
             <dd style={{ margin: 0, fontWeight: 700, color: (isAdmin || dbRole) ? '#3fa85a' : '#c87d1a' }}>
-              {(isAdmin || dbRole) ? `✓ Admin (gate passes via ${dbRole ? 'DB role' : 'env fallback'})` : '✗ Not admin (gate redirects)'}
+              {(isAdmin || dbRole) ? `✓ Admin (gate passes via ${dbRole ? 'DB role' : 'ADMIN_EMAIL'})` : '✗ Not admin (gate redirects)'}
             </dd>
           </dl>
 
@@ -118,8 +119,9 @@ export default async function WhoAmIPage() {
             lineHeight: 1.6,
           }}>
             <strong>If gate fails:</strong> copy the &ldquo;Auth email&rdquo; value above
-            and add it to your Vercel <code>ADMIN_EMAIL</code> env var
-            (comma-separated). Redeploy, hard refresh, retry.
+            and either add it to your Vercel <code>ADMIN_EMAIL</code> env var
+            (comma-separated, then redeploy), or ask an existing admin to grant
+            you a role from <code>/admin/users</code>.
           </div>
         </section>
       </main>
