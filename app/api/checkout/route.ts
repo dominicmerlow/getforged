@@ -2,11 +2,18 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getStripe, stripeConfigured } from '@/lib/stripe'
 import { getSetting } from '@/lib/settings'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 import type { Product } from '@/lib/types'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
+  const ip = await getClientIp()
+  const allowed = await checkRateLimit({ bucket: 'checkout', identifier: ip, limit: 10, windowSeconds: 60 })
+  if (!allowed) {
+    return NextResponse.json({ error: 'Too many requests — please slow down.' }, { status: 429 })
+  }
+
   const form = await request.formData()
   const slug = String(form.get('slug') ?? '')
   const purchaseType = String(form.get('purchase_type') ?? 'licensed') as

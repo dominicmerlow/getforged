@@ -46,7 +46,7 @@ export default function SellersPage() {
             }}
           >
             You built the thing. You don&apos;t want to write sales copy, run
-            Stripe, chase SEO, or do support. FORGE handles the marketplace —
+            Stripe, chase SEO, or do support. GetForged handles the marketplace —
             you ship the app, we bring the buyers. Keep 85% of every sale.
           </p>
 
@@ -314,7 +314,7 @@ export default function SellersPage() {
 
         {/* Benefits */}
         <section className="section">
-          <div className="section-tag">Why sell on FORGE</div>
+          <div className="section-tag">Why sell on GetForged</div>
           <h2 className="section-title" style={{ fontSize: 'clamp(36px, 5vw, 60px)' }}>
             Built for <span>indie AI builders</span>
           </h2>
@@ -343,7 +343,7 @@ export default function SellersPage() {
               {
                 icon: '📬',
                 title: 'Seller support baked in',
-                body: 'Buyers message you through FORGE. Reply from your inbox. Automatic record-keeping.',
+                body: 'Buyers message you through GetForged. Reply from your inbox. Automatic record-keeping.',
               },
               {
                 icon: '🪪',

@@ -123,6 +123,12 @@ export default async function ProductPage(
     ? `Buy Exclusive — ${product.priceMain}`
     : `Buy Licence — ${product.priceMain}`
 
+  // Seed/placeholder products (lib/seed-products.ts) have no row in the
+  // `products` table and no real Stripe seller behind them — /api/checkout
+  // already 404s for these since it re-queries by slug, but showing a live
+  // Buy button that always errors is bad UX. Hide it instead.
+  const isSeedProduct = product.id.startsWith('seed-')
+
   // Admin-controlled checkout pause. Fail-OPEN: settings blip must not hide
   // the buy button — server route still gates the actual transaction.
   let checkoutPaused = false
@@ -282,7 +288,25 @@ export default async function ProductPage(
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {checkoutPaused ? (
+                  {isSeedProduct ? (
+                    <span
+                      className="section-tag"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        border: '1px solid var(--warm-border, #ccc)',
+                        color: 'var(--warm-muted, #6b6b6b)',
+                        padding: '10px 16px',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 12,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Preview listing — not yet purchasable
+                    </span>
+                  ) : checkoutPaused ? (
                     <span
                       className="section-tag"
                       style={{
@@ -698,7 +722,25 @@ export default async function ProductPage(
             Ready to <span>ship</span>?
           </h2>
           <div style={{ display: 'flex', gap: 16, marginTop: 32, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {checkoutPaused ? (
+            {isSeedProduct ? (
+              <span
+                className="section-tag"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  border: '1px solid var(--warm-border, #ccc)',
+                  color: 'var(--warm-muted, #6b6b6b)',
+                  padding: '16px 32px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 13,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Preview listing — not yet purchasable
+              </span>
+            ) : checkoutPaused ? (
               <span
                 className="section-tag"
                 style={{

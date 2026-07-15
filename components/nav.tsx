@@ -2,7 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/actions/auth'
-import { isAdminEmail } from '@/lib/admin'
+import { checkAdminAccess } from '@/lib/admin'
+import MobileNavToggle from '@/components/MobileNavToggle'
 
 function supabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -23,6 +24,7 @@ async function getUser() {
 
 export default async function Nav() {
   const user = await getUser()
+  const isAdmin = user ? Boolean(await checkAdminAccess(user.id, user.email)) : false
 
   return (
     <nav className="nav">
@@ -51,12 +53,14 @@ export default async function Nav() {
         <li><Link href="/#pricing">Pricing</Link></li>
       </ul>
 
+      <MobileNavToggle />
+
       <div className="nav-actions">
         {user ? (
           <>
             <Link href="/wishlist" className="btn-ghost" aria-label="Wishlist" title="Wishlist">♥</Link>
             <Link href="/dashboard" className="btn-ghost">Dashboard</Link>
-            {isAdminEmail(user.email) && (
+            {isAdmin && (
               <Link href="/admin" className="btn-ghost">Admin</Link>
             )}
             <form action={signOut} style={{ display: 'inline' }}>

@@ -12,7 +12,7 @@ import {
 export const metadata: Metadata = {
   title: 'How it works — for buyers',
   description:
-    'Skip the £50k dev quote. Find ready-to-ship AI-built apps for your business on FORGE — browse, buy, deploy in one afternoon.',
+    'Skip the £50k dev quote. Find ready-to-ship AI-built apps for your business on GetForged — browse, buy, deploy in one afternoon.',
 }
 
 export default function BuyersPage() {
@@ -45,7 +45,7 @@ export default function BuyersPage() {
               marginTop: 24,
             }}
           >
-            FORGE is a marketplace of AI-built apps, automations and internal
+            GetForged is a marketplace of AI-built apps, automations and internal
             tools — made by indie builders using Claude Code, Cursor, and the
             modern AI stack, priced for small businesses that can&apos;t afford
             agency rates.
@@ -74,7 +74,7 @@ export default function BuyersPage() {
               title="Browse listings by outcome, not tech"
               body={
                 <>
-                  Every app on FORGE is tagged by the business problem it solves
+                  Every app on GetForged is tagged by the business problem it solves
                   — invoice chasing, client portal, lead tracking, review
                   monitoring. Filter by category, budget, or platform (Web, iOS,
                   Shopify, etc).
@@ -191,7 +191,7 @@ export default function BuyersPage() {
 
         {/* Benefits */}
         <section className="section">
-          <div className="section-tag">Why buy on FORGE</div>
+          <div className="section-tag">Why buy on GetForged</div>
           <h2 className="section-title" style={{ fontSize: 'clamp(36px, 5vw, 60px)' }}>
             The agency quote, <span>without the agency</span>
           </h2>

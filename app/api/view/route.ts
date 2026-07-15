@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 
 function createAdminClient() {
   return createServerClient(
@@ -15,6 +16,18 @@ export async function POST(req: NextRequest) {
     if (!product_id || typeof product_id !== 'string') {
       return NextResponse.json({ error: 'product_id required' }, { status: 400 })
     }
+
+    // Keyed by IP+product (not just IP) so normal browsing across many
+    // products isn't throttled — this only stops repeated inflation of one
+    // product's view count.
+    const ip = await getClientIp()
+    const allowed = await checkRateLimit({
+      bucket: 'view',
+      identifier: `${ip}:${product_id}`,
+      limit: 10,
+      windowSeconds: 300,
+    })
+    if (!allowed) return NextResponse.json({ ok: true }) // silently drop, same as other failure modes here
 
     const supabase = createAdminClient()
 

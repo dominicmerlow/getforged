@@ -84,7 +84,7 @@ export default async function Pricing() {
             'AI-generated sales page from your URL',
             'Spec-sheet, screenshots & video walkthrough',
             'Verified Builder badge for the first 50 sellers',
-            'Stripe payouts direct to your account',
+            'Secure checkout via Stripe on every sale',
             'Featured placement during launch window',
           ].map(line => (
             <li key={line} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>

@@ -69,7 +69,7 @@ export async function sendPurchaseReceiptEmail(
   await resend.emails.send({
     from: `GetForged <${FROM}>`,
     to: buyerEmail,
-    subject: `You bought ${productTitle} on FORGE`,
+    subject: `You bought ${productTitle} on GetForged`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 24px; background: #0c0b09; color: #f8f4ee;">
         <h1 style="font-size: 32px; color: #e8920a; margin-bottom: 8px;">You're in.</h1>

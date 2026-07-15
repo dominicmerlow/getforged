@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceClient, createClient } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 import { Resend } from 'resend'
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
@@ -20,6 +21,10 @@ export async function sendSellerMessage(
   // Honeypot — bots fill hidden fields eagerly, humans don't.
   const honeypot = String(formData.get('website') ?? '')
   if (honeypot.trim()) return { ok: true } // silently "succeed" — no email sent
+
+  const ip = await getClientIp()
+  const allowed = await checkRateLimit({ bucket: 'contact', identifier: ip, limit: 5, windowSeconds: 3600 })
+  if (!allowed) return { error: 'Too many messages sent — please try again later.' }
 
   const senderName = String(formData.get('sender_name') ?? '').trim()
   const senderEmail = String(formData.get('sender_email') ?? '').trim()

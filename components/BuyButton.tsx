@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { track } from '@/lib/analytics'
 
 interface Props {
@@ -28,12 +29,15 @@ export default function BuyButton({
   className = 'btn-hero-primary',
   style,
 }: Props) {
+  const [pending, setPending] = useState(false)
+
   return (
     <form
       action="/api/checkout"
       method="post"
       style={{ display: 'inline' }}
       onSubmit={() => {
+        setPending(true)
         track('start_checkout', {
           product_id: productId,
           slug,
@@ -48,9 +52,15 @@ export default function BuyButton({
       <button
         type="submit"
         className={className}
-        style={{ cursor: 'pointer', border: 'none', ...style }}
+        disabled={pending}
+        style={{
+          cursor: pending ? 'default' : 'pointer',
+          border: 'none',
+          opacity: pending ? 0.7 : 1,
+          ...style,
+        }}
       >
-        {label}
+        {pending ? 'Redirecting to checkout…' : label}
       </button>
     </form>
   )

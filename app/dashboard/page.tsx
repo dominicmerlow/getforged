@@ -10,7 +10,7 @@ import { updateProductStatus } from './actions'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
-  description: 'Manage your FORGE product listings.',
+  description: 'Manage your GetForged product listings.',
 }
 
 export const dynamic = 'force-dynamic'
@@ -41,7 +41,13 @@ const STATUS_ACTIONS: Record<ProductStatus, { next: ProductStatus; label: string
   ],
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ claimed?: string }>
+}) {
+  const { claimed } = await searchParams
+
   if (!supabaseConfigured()) {
     return (
       <>
@@ -115,6 +121,20 @@ export default async function DashboardPage() {
       <Nav />
       <main>
         <section className="section">
+          {claimed === '1' && (
+            <div
+              style={{
+                marginBottom: 24,
+                padding: '14px 20px',
+                border: '1px solid var(--soft-amber, #b97314)',
+                color: 'var(--warm-ink, #2a2217)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 13,
+              }}
+            >
+              Welcome! Your listing has been claimed — review it below and hit Publish when you&apos;re ready.
+            </div>
+          )}
           <div className="section-tag">Seller dashboard</div>
           <h1 className="section-title" style={{ fontSize: 'clamp(40px,5vw,64px)' }}>
             Hey, <span>{sellerRow.display_name}</span>
@@ -155,22 +175,6 @@ export default async function DashboardPage() {
             <Link href="/dashboard/profile" className="btn-ghost" style={{ padding: '10px 20px' }}>
               Edit profile
             </Link>
-          </div>
-
-          <div className="product-card" style={{ padding: 20, marginTop: 24, display: 'grid', gap: 12 }}>
-            <div className="section-tag">Your referral link</div>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#6b6b6b', margin: 0 }}>
-              Share this link. If someone buys through it, you earn a 5% kickback on the platform fee.
-            </p>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <code style={{
-                fontFamily: 'var(--font-mono)', fontSize: 13,
-                background: 'rgba(42,39,32,0.06)', padding: '8px 12px',
-                flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.io'}/?ref=${sellerRow.id}`}
-              </code>
-            </div>
           </div>
         </section>
 

@@ -2,6 +2,7 @@
 
 import { listLiveProducts } from '@/lib/products'
 import { generateSmall } from '@/lib/llm'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 
 export type ConciergeState = {
   results: { slug: string; title: string; reason: string }[]
@@ -12,6 +13,12 @@ export async function conciergeSearch(
   _prev: ConciergeState,
   formData: FormData
 ): Promise<ConciergeState> {
+  const ip = await getClientIp()
+  const allowed = await checkRateLimit({ bucket: 'concierge', identifier: ip, limit: 8, windowSeconds: 300 })
+  if (!allowed) {
+    return { error: 'Too many requests — please wait a few minutes and try again.' }
+  }
+
   const query = String(formData.get('query') ?? '').trim()
   if (!query || query.length < 5) {
     return { error: 'Please describe what you need (at least 5 characters).' }

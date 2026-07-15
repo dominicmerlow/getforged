@@ -9,7 +9,7 @@ import SubmitForm from './SubmitForm'
 
 export const metadata: Metadata = {
   title: 'Submit a product',
-  description: 'List your AI-built product on FORGE. Drop a URL, get a full sales page.',
+  description: 'List your AI-built product on GetForged. Drop a URL, get a full sales page.',
 }
 
 export const dynamic = 'force-dynamic'

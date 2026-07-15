@@ -41,7 +41,7 @@ function stubSalesPage(
     ],
     cta_primary: 'Get a licence',
     cta_secondary: 'Ask a question',
-    meta_title: `${name} — ${category} on FORGE`.slice(0, 60),
+    meta_title: `${name} — ${category} on GetForged`.slice(0, 60),
     meta_description: desc.slice(0, 155),
   }
 }

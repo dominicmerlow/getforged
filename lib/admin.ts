@@ -12,9 +12,9 @@
  *   moderator   — moderation queue, suspend users, archive products
  *   support     — read-only across users / products + send magic links
  *
- * isAdminEmail() is preserved as a sync helper for components that can't
- * await (e.g. the Nav). It still uses the env-var allowlist OR falls back
- * to "true" when env unset (open mode for early-stage).
+ * Fail-CLOSED: an unset or empty ADMIN_EMAIL denies access rather than
+ * granting it. A signed-in user gets admin only via an explicit DB role
+ * in user_roles, or an explicit email match in ADMIN_EMAIL.
  */
 
 import { createServerClient } from '@supabase/ssr'
@@ -38,22 +38,17 @@ function parseAdminEmails(): string[] {
 }
 
 /**
- * Sync email-based check. Used in the nav (server component but no async),
- * components that haven't been refactored to use roles yet, and as a
- * fallback when the user_roles table is empty during migration.
+ * Sync email-based allowlist check. Used as a fallback path in
+ * checkAdminAccess() when the user holds no DB role yet.
  *
- * Returns true if env unset (open mode for early-stage launch). Returns
- * true if email matches the allowlist. Returns false otherwise.
+ * Fail-closed: an unset or empty ADMIN_EMAIL denies every email.
  */
 export function isAdminEmail(email: string | null | undefined): boolean {
   const allow = parseAdminEmails()
-  if (allow.length === 0) return true // open mode — env unset
+  if (allow.length === 0) return false
   if (!email) return false
   return allow.includes(email.trim().toLowerCase())
 }
-
-/** True iff the env var is unset or empty — gate is open to any signed-in user */
-export const ADMIN_GATE_OPEN = (process.env.ADMIN_EMAIL ?? '').trim().length === 0
 
 // ── DB-backed role lookups (Phase 1 onward) ─────────────────────────
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 
 // Email validation: deliberately liberal — we want to capture interest, not
 // reject typos. Soft-bounces are handled by the email provider later.
@@ -15,6 +16,12 @@ const ALLOWED_SOURCES = new Set([
 ])
 
 export async function POST(req: Request) {
+  const ip = await getClientIp()
+  const allowed = await checkRateLimit({ bucket: 'subscribe', identifier: ip, limit: 5, windowSeconds: 3600 })
+  if (!allowed) {
+    return NextResponse.json({ error: 'Too many requests — please try again later.' }, { status: 429 })
+  }
+
   let body: { email?: string; source?: string }
   try {
     body = await req.json()

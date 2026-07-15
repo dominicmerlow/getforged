@@ -7,7 +7,7 @@ import LoginForm from './LoginForm'
 
 export const metadata: Metadata = {
   title: 'Sign in',
-  description: 'Sign in to your FORGE seller account with a magic link.',
+  description: 'Sign in to your GetForged seller account with a magic link.',
 }
 
 function supabaseConfigured(): boolean {

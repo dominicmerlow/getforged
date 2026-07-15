@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'Your wishlist',
-  description: 'Products you have saved on FORGE.',
+  description: 'Products you have saved on GetForged.',
 }
 
 export const dynamic = 'force-dynamic'

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type Stripe from 'stripe'
 import { getStripe, stripeConfigured } from '@/lib/stripe'
 import { createServiceClient } from '@/lib/supabase/server'
-import { sendPurchaseReceiptEmail, sendSellerSaleNotification } from '@/lib/resend'
+import { sendPurchaseReceiptEmail, sendSellerSaleNotification, sendReviewRequestEmail } from '@/lib/resend'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -14,6 +14,7 @@ type PurchaseRow = {
   id: string
   receipt_sent_at: string | null
   seller_notified_at: string | null
+  review_request_sent_at: string | null
 }
 
 export async function POST(request: NextRequest) {
@@ -91,10 +92,11 @@ export async function POST(request: NextRequest) {
       purchase_type: purchaseType,
       amount: amountGBP,
       stripe_payment_id: session.id,
-      // receipt_sent_at and seller_notified_at intentionally left NULL —
-      // emails are sent below and timestamps recorded only on success.
+      // receipt_sent_at, seller_notified_at and review_request_sent_at
+      // intentionally left NULL — emails are sent below and timestamps
+      // recorded only on success.
     })
-    .select('id, receipt_sent_at, seller_notified_at')
+    .select('id, receipt_sent_at, seller_notified_at, review_request_sent_at')
     .single()
 
   if (insertErr) {
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest) {
       // (if any) still need to be sent.
       const { data: existing, error: selectErr } = await supabase
         .from('purchases')
-        .select('id, receipt_sent_at, seller_notified_at')
+        .select('id, receipt_sent_at, seller_notified_at, review_request_sent_at')
         .eq('stripe_payment_id', session.id)
         .maybeSingle()
 
@@ -141,8 +143,9 @@ export async function POST(request: NextRequest) {
   if (buyerEmail && productSlug && purchase) {
     const needsBuyerReceipt = purchase.receipt_sent_at === null
     const needsSellerNotice = purchase.seller_notified_at === null
+    const needsReviewRequest = purchase.review_request_sent_at === null
 
-    if (needsBuyerReceipt || needsSellerNotice) {
+    if (needsBuyerReceipt || needsSellerNotice || needsReviewRequest) {
       const { data: productRow } = await supabase
         .from('products')
         .select('title, price_licensed, price_exclusive, seller:sellers!inner(user_id, display_name)')
@@ -219,6 +222,33 @@ export async function POST(request: NextRequest) {
               error_message: err instanceof Error ? err.message : 'unknown',
             })
           }
+        }
+      }
+
+      // ── Review request. Ideally this would be delayed a few days after
+      //    delivery rather than fired alongside the receipt, but there's no
+      //    scheduled-job infra yet — sending immediately beats never sending
+      //    at all (the function existed unwired before this).
+      if (needsReviewRequest) {
+        try {
+          await sendReviewRequestEmail(buyerEmail, title, productSlug)
+          const { error: stampErr } = await supabase
+            .from('purchases')
+            .update({ review_request_sent_at: new Date().toISOString() })
+            .eq('id', purchase.id)
+          if (stampErr) {
+            await supabase.from('error_log').insert({
+              scenario: 'stripe-webhook-review-request-stamp-failed',
+              payload: { session_id: session.id, purchase_id: purchase.id } as object,
+              error_message: stampErr.message,
+            })
+          }
+        } catch (err) {
+          await supabase.from('error_log').insert({
+            scenario: 'stripe-webhook-review-request-email',
+            payload: { session_id: session.id } as object,
+            error_message: err instanceof Error ? err.message : 'unknown',
+          })
         }
       }
     }
