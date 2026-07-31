@@ -14,7 +14,7 @@ export default function GlobalError({
           minHeight: '100vh', display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 24, padding: 40, textAlign: 'center',
         }}>
-          <h1 style={{ fontSize: 32, margin: 0 }}>GetForged — Something broke</h1>
+          <h1 style={{ fontSize: 32, margin: 0 }}>GetForged: Something broke</h1>
           <p style={{ color: '#666', margin: 0 }}>{error.digest ?? 'Unknown error'}</p>
           <button
             onClick={reset}

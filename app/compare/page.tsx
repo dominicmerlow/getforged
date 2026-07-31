@@ -28,7 +28,7 @@ function SpecRow({ label, value }: { label: string; value: React.ReactNode }) {
         {label}
       </div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}>
-        {value || <span style={{ opacity: 0.35 }}>—</span>}
+        {value || <span style={{ opacity: 0.35 }}>-</span>}
       </div>
     </div>
   )

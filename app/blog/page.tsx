@@ -5,7 +5,7 @@ import Footer from '@/components/footer'
 import NewsletterCapture from '@/components/NewsletterCapture'
 
 export const metadata: Metadata = {
-  title: 'Blog — GetForged',
+  title: 'Blog',
   description: 'Stories, deep dives and launch notes from the GetForged builder community. Coming soon.',
 }
 
@@ -26,7 +26,7 @@ export default function BlogPage() {
             fontSize: 22,
             lineHeight: 1.5,
           }}>
-            Coming soon — case studies on the first Founding Builders, how-tos on
+            Coming soon: case studies on the first Founding Builders, how-tos on
             shipping AI-built tools, and one new featured product every Tuesday.
           </p>
 
@@ -35,7 +35,7 @@ export default function BlogPage() {
               source="blog"
               variant="card"
               heading="Forge of the Week"
-              subhead="One curated AI-built tool, in your inbox every Tuesday. No noise, no hype — just the best new product on the marketplace and what it replaces."
+              subhead="One curated AI-built tool, in your inbox every Tuesday. No noise, no hype, just the best new product on the marketplace and what it replaces."
               ctaLabel="Get the first issue"
             />
           </div>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import SearchBar from '@/components/SearchBar'
+import { openConcierge } from '@/components/ConciergeModal'
 
 interface HeaderDrawerProps {
   authed: boolean
@@ -39,7 +40,12 @@ export default function HeaderDrawer({ authed, isAdmin }: HeaderDrawerProps) {
           </div>
           <nav aria-label="Mobile">
             <Link href="/browse" onClick={close}>Browse</Link>
-            <Link href="/concierge" onClick={close}>Concierge</Link>
+            <button
+              type="button"
+              onClick={() => { close(); openConcierge() }}
+            >
+              Concierge
+            </button>
             <Link href="/how-it-works/buyers" onClick={close}>For buyers</Link>
             <Link href="/how-it-works/sellers" onClick={close}>For sellers</Link>
             {authed ? (

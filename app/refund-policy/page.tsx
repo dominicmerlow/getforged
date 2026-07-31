@@ -3,7 +3,7 @@ import Footer from '@/components/footer'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Refund Policy — GetForged',
+  title: 'Refund Policy',
 }
 
 export default function RefundPolicyPage() {
@@ -26,7 +26,7 @@ export default function RefundPolicyPage() {
               Our Guarantee
             </h2>
             <p>
-              We want you to feel confident buying on GetForged. All purchases — both Licensed and Exclusive — come with a <strong>7-day money-back guarantee</strong>. If you are not satisfied with your purchase for any reason, contact us within 7 days of your payment date and we will issue a full refund, no questions asked.
+              We want you to feel confident buying on GetForged. All purchases, both Licensed and Exclusive, come with a <strong>7-day money-back guarantee</strong>. If you are not satisfied with your purchase for any reason, contact us within 7 days of your payment date and we will issue a full refund, no questions asked.
             </p>
 
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, marginBottom: '0.75rem', marginTop: '2.5rem' }}>

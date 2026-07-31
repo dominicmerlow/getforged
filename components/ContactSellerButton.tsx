@@ -204,7 +204,7 @@ export default function ContactSellerButton({
                     required
                     minLength={10}
                     rows={5}
-                    placeholder="Hi — I'm interested in this for my agency. A few questions about deployment and customisation…"
+                    placeholder="Hi, I'm interested in this for my agency. A few questions about deployment and customisation…"
                     style={{
                       ...fieldStyle,
                       fontFamily: 'var(--font-serif), Georgia, serif',
@@ -254,7 +254,7 @@ export default function ContactSellerButton({
                     letterSpacing: '0.04em',
                   }}
                 >
-                  The seller replies directly to your email — we don&apos;t sit in the middle.
+                  The seller replies directly to your email. We don&apos;t sit in the middle.
                 </p>
               </form>
             )}

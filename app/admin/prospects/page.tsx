@@ -111,7 +111,7 @@ export default async function AdminProspectsPage() {
               </span>
               <span style={{ flex: 1, minWidth: 160 }}>{inv.productTitle ?? '(deleted product)'}</span>
               <span style={{ color: '#6b6b6b' }}>{inv.source}</span>
-              <span style={{ color: '#6b6b6b' }}>{inv.prospectEmail ?? '—'}</span>
+              <span style={{ color: '#6b6b6b' }}>{inv.prospectEmail ?? '-'}</span>
               <code style={{ fontSize: 11, wordBreak: 'break-all', color: 'var(--soft-amber, #b97314)' }}>
                 {`${appUrl}/claim/${inv.token}`}
               </code>

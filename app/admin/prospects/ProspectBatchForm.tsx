@@ -58,7 +58,7 @@ export default function ProspectBatchForm() {
       {results && (
         <div style={{ display: 'grid', gap: 8 }}>
           <div className="section-tag">
-            Batch result — {results.filter(r => r.ok).length}/{results.length} succeeded
+            Batch result: {results.filter(r => r.ok).length}/{results.length} succeeded
           </div>
           {results.map((r, i) => (
             <div

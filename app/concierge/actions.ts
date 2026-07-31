@@ -16,7 +16,7 @@ export async function conciergeSearch(
   const ip = await getClientIp()
   const allowed = await checkRateLimit({ bucket: 'concierge', identifier: ip, limit: 8, windowSeconds: 300 })
   if (!allowed) {
-    return { error: 'Too many requests — please wait a few minutes and try again.' }
+    return { error: 'Too many requests. Please wait a few minutes and try again.' }
   }
 
   const query = String(formData.get('query') ?? '').trim()
@@ -44,7 +44,7 @@ BUYER NEED: ${query}
 CATALOG:
 ${catalog}
 
-Respond ONLY with valid JSON — no markdown, no code blocks, just raw JSON:
+Respond ONLY with valid JSON. No markdown, no code blocks, just raw JSON:
 {"results": [{"slug": "...", "title": "...", "reason": "One sentence why this fits."}, ...]}
 
 If fewer than 3 products match well, return fewer. If nothing matches, return {"results": []}.`

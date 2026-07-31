@@ -9,7 +9,7 @@ import RegisterForm from './RegisterForm'
 
 export const metadata: Metadata = {
   title: 'Create your account',
-  description: 'Join GetForged as a Founding Builder — list your AI-built apps and reach SME buyers. Free to list, 15% only when you sell.',
+  description: 'Join GetForged as a Founding Builder: list your AI-built apps and reach SME buyers. Free to list, 15% only when you sell.',
 }
 
 export default async function RegisterPage({
@@ -46,13 +46,13 @@ export default async function RegisterPage({
                 color: 'var(--soft-amber, #b97314)',
                 margin: 0,
               }}>
-                Pro tier opens after 50 verified builders. You&apos;ll be onboarded as a Founding Builder for now — same price (free).
+                Pro tier opens after 50 verified builders. You&apos;ll be onboarded as a Founding Builder for now, same price (free).
               </p>
             )}
 
             {!dbConfigured() && (
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, padding: 12, border: '1px dashed var(--ink)' }}>
-                <code>DATABASE_URL</code> is not set — sign-up won&apos;t work until the database is configured.
+                <code>DATABASE_URL</code> is not set. Sign-up won&apos;t work until the database is configured.
               </p>
             )}
 

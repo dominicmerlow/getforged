@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 function formatDate(date: Date | null): string {
-  if (!date) return '—'
+  if (!date) return '-'
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 

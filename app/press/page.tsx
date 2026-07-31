@@ -4,8 +4,8 @@ import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 
 export const metadata: Metadata = {
-  title: 'Press — GetForged',
-  description: 'Press resources, brand assets and contact for GetForged — the AI builder marketplace.',
+  title: 'Press',
+  description: 'Press resources, brand assets and contact for GetForged, the AI builder marketplace.',
 }
 
 export default function PressPage() {
@@ -26,7 +26,7 @@ export default function PressPage() {
             lineHeight: 1.5,
           }}>
             GetForged is the marketplace for AI-built apps, automations and
-            internal tools — built by Claude Code, Cursor, Lovable and v0 power
+            internal tools, built by Claude Code, Cursor, Lovable and v0 power
             users, sold to the small businesses who need them.
           </p>
 

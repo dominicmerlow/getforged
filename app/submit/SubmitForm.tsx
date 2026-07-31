@@ -134,7 +134,7 @@ export default function SubmitForm() {
         <textarea
           name="notes"
           rows={3}
-          placeholder="Anything the AI should know — target user, key benefits, what makes it different…"
+          placeholder="Anything the AI should know: target user, key benefits, what makes it different…"
           style={{ ...inputStyle, fontFamily: 'var(--font-serif)', fontSize: 16 }}
         />
       </label>
@@ -168,7 +168,7 @@ export default function SubmitForm() {
       </button>
 
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b' }}>
-        Takes 10–30 seconds. Draft goes to your dashboard — nothing is published until you approve.
+        Takes 10–30 seconds. Draft goes to your dashboard. Nothing is published until you approve.
       </p>
     </form>
   )

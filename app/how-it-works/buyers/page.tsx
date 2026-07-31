@@ -10,9 +10,9 @@ import {
 } from '@/components/HowItWorksShared'
 
 export const metadata: Metadata = {
-  title: 'How it works — for buyers',
+  title: 'How it works: for buyers',
   description:
-    'Skip the £50k dev quote. Find ready-to-ship AI-built apps for your business on GetForged — browse, buy, deploy in one afternoon.',
+    'Skip the £50k dev quote. Find ready-to-ship AI-built apps for your business on GetForged: browse, buy, deploy in one afternoon.',
 }
 
 export default function BuyersPage() {
@@ -24,29 +24,24 @@ export default function BuyersPage() {
         <section className="section" style={{ paddingBottom: 32 }}>
           <div className="section-tag">For buyers</div>
           <h1
-            className="section-title"
-            style={{
-              fontSize: 'clamp(48px, 7vw, 96px)',
-              maxWidth: 900,
-              lineHeight: 1.02,
-            }}
+            className="section-title hiw-hero-title"
+            style={{ maxWidth: 900 }}
           >
             Skip the <span>£50k dev quote</span>.
             <br />
             Buy a finished app instead.
           </h1>
           <p
+            className="hiw-hero-lede"
             style={{
               fontFamily: 'var(--font-serif)',
-              fontSize: 'clamp(20px, 2vw, 26px)',
-              lineHeight: 1.45,
               color: 'var(--warm-ink-dim)',
-              maxWidth: 760,
-              marginTop: 24,
+              maxWidth: 680,
+              marginTop: 20,
             }}
           >
             GetForged is a marketplace of AI-built apps, automations and internal
-            tools — made by indie builders using Claude Code, Cursor, and the
+            tools, made by indie builders using Claude Code, Cursor, and the
             modern AI stack, priced for small businesses that can&apos;t afford
             agency rates.
           </p>
@@ -74,14 +69,14 @@ export default function BuyersPage() {
               title="Browse listings by outcome, not tech"
               body={
                 <>
-                  Every app on GetForged is tagged by the business problem it solves
-                  — invoice chasing, client portal, lead tracking, review
+                  Every app on GetForged is tagged by the business problem it
+                  solves: invoice chasing, client portal, lead tracking, review
                   monitoring. Filter by category, budget, or platform (Web, iOS,
                   Shopify, etc).
                 </>
               }
               illustration={
-                <IllustrationFrame caption="/browse — live catalogue">
+                <IllustrationFrame caption="/browse: live catalogue">
                   <div
                     style={{
                       display: 'flex',
@@ -125,7 +120,7 @@ export default function BuyersPage() {
                 <>
                   No marketing fluff. See the AI models inside, the integrations
                   it ships with, the monthly running cost, the time to deploy,
-                  and a live video walkthrough — before you pay a penny.
+                  and a live video walkthrough, before you pay a penny.
                 </>
               }
               reverse
@@ -142,13 +137,13 @@ export default function BuyersPage() {
 
             <StepRow
               number="03"
-              title="Choose licence — or buy it outright"
+              title="Choose licence, or buy it outright"
               body={
                 <>
                   <strong style={{ color: 'var(--warm-ink)' }}>Licence</strong>{' '}
                   for a one-time fee, keep the seller on the hook for
-                  maintenance. Or buy <strong style={{ color: 'var(--warm-ink)' }}>exclusive rights</strong>{' '}
-                  — full source, remove the listing from the marketplace, make
+                  maintenance. Or buy <strong style={{ color: 'var(--warm-ink)' }}>exclusive rights</strong>:{' '}
+                  full source, remove the listing from the marketplace, make
                   it yours.
                 </>
               }
@@ -177,7 +172,7 @@ export default function BuyersPage() {
                     noreply@getforged.io
                   </div>
                   <div style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontStyle: 'italic', color: 'var(--warm-ink)' }}>
-                    You bought InvoiceBot Pro — here&apos;s your deploy kit
+                    You bought InvoiceBot Pro: here&apos;s your deploy kit
                   </div>
                   <div style={{ fontFamily: 'var(--font-serif)', fontSize: 14, color: 'var(--warm-ink-dim)', lineHeight: 1.5 }}>
                     Receipt: £149 licence · Setup guide: 4 steps · Seller:

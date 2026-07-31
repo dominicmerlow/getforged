@@ -63,7 +63,7 @@ export default async function CheckoutSuccessPage({
               {productName
                 ? `Payment confirmed for ${productName}${amountLabel ? ` (${amountLabel})` : ''}.`
                 : 'Payment confirmed.'}
-              {' '}We&apos;ve emailed you a receipt and notified the seller — they&apos;ll be in touch with access details.
+              {' '}We&apos;ve emailed you a receipt and notified the seller. They&apos;ll be in touch with access details.
             </p>
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 32, flexWrap: 'wrap' }}>
               <Link href="/browse" className="btn-hero-primary" style={{ padding: '14px 28px' }}>

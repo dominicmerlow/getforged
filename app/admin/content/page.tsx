@@ -66,7 +66,7 @@ export default async function AdminContentPage() {
             opacity: 0.85,
           }}>
             Edit every piece of marketing copy on the site.
-            Changes go live within ~30 seconds — no redeploy required.
+            Changes go live within ~30 seconds. No redeploy required.
             {overrideCount > 0 && (
               <>
                 {' '}
@@ -85,7 +85,7 @@ export default async function AdminContentPage() {
             fontSize: 12,
             lineHeight: 1.6,
           }}>
-            <strong>Tip:</strong> values marked <em>rich</em> accept HTML —
+            <strong>Tip:</strong> values marked <em>rich</em> accept HTML:
             use <code>&lt;em&gt;</code> for amber italic, <code>&lt;span&gt;</code> for amber inline,
             <code>&lt;br/&gt;</code> for line breaks, <code>&lt;strong&gt;</code> for bold.
           </div>
@@ -102,7 +102,7 @@ export default async function AdminContentPage() {
             }}>
               <strong>Couldn&apos;t load overrides:</strong> {loadError}
               <br />
-              Most likely cause: <code>009_site_content.sql</code> migration hasn&apos;t been applied yet. Run it in the Supabase SQL editor — the page below shows defaults until then.
+              Most likely cause: <code>009_site_content.sql</code> migration hasn&apos;t been applied yet. Run it in the Supabase SQL editor. The page below shows defaults until then.
             </div>
           )}
         </section>

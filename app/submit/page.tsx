@@ -88,7 +88,7 @@ export default async function SubmitPage() {
                 marginTop: 8,
               }}
             >
-              We&apos;re not accepting new product submissions right now. Existing listings keep selling — check back soon.
+              We&apos;re not accepting new product submissions right now. Existing listings keep selling. Check back soon.
             </p>
             <Link
               href="/browse"

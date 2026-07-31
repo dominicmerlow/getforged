@@ -227,7 +227,7 @@ export default function ProductTable({ products, categories, sellers }: Props) {
                       </div>
                     </td>
                     <td style={td}>{p.seller_name}</td>
-                    <td style={td}>{p.category ?? '—'}</td>
+                    <td style={td}>{p.category ?? '-'}</td>
                     <td style={td}>
                       <span style={{
                         padding: '2px 8px',
@@ -241,7 +241,7 @@ export default function ProductTable({ products, categories, sellers }: Props) {
                       }}>{p.status}</span>
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {price != null ? `£${price.toLocaleString('en-GB')}` : '—'}
+                      {price != null ? `£${price.toLocaleString('en-GB')}` : '-'}
                     </td>
                     <td style={td}>
                       <span style={{ display: 'inline-flex', gap: 4 }}>
@@ -259,7 +259,7 @@ export default function ProductTable({ products, categories, sellers }: Props) {
                         <Link
                           href={`/admin/products/${p.id}/edit`}
                           style={{ color: '#b97314', textDecoration: 'underline', fontWeight: 600 }}
-                          title="Admin edit — bypasses ownership, all changes logged"
+                          title="Admin edit: bypasses ownership, all changes logged"
                         >
                           ✏ Admin edit
                         </Link>

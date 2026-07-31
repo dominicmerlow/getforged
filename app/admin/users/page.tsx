@@ -123,15 +123,15 @@ export default async function AdminUsersPage() {
                   return (
                     <tr key={u.id} style={{ borderBottom: '1px solid rgba(42,39,32,0.06)', verticalAlign: 'top' }}>
                       <td style={td}>
-                        <div style={{ fontWeight: 600, wordBreak: 'break-all' }}>{u.email ?? '—'}</div>
+                        <div style={{ fontWeight: 600, wordBreak: 'break-all' }}>{u.email ?? '-'}</div>
                         <div style={{ fontSize: 10, color: '#6b6b6b' }}>{u.id}</div>
                       </td>
                       <td style={td}>
-                        {seller?.displayName ?? <span style={{ color: '#6b6b6b' }}>—</span>}
+                        {seller?.displayName ?? <span style={{ color: '#6b6b6b' }}>-</span>}
                       </td>
                       <td style={td}>
                         {roles.length === 0 ? (
-                          <span style={{ color: '#6b6b6b' }}>—</span>
+                          <span style={{ color: '#6b6b6b' }}>-</span>
                         ) : (
                           <span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>
                             {roles.map(r => (
@@ -153,10 +153,10 @@ export default async function AdminUsersPage() {
                         {liveCount}
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                        {sales > 0 ? `£${sales.toLocaleString('en-GB')}` : '—'}
+                        {sales > 0 ? `£${sales.toLocaleString('en-GB')}` : '-'}
                       </td>
                       <td style={{ ...td, color: '#6b6b6b', fontSize: 11 }}>
-                        {u.createdAt ? u.createdAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
+                        {u.createdAt ? u.createdAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '-'}
                       </td>
                       <td style={{ ...td, color: '#6b6b6b', fontSize: 11 }}>
                         {u.lastSignInAt ? u.lastSignInAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : 'never'}

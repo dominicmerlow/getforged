@@ -72,7 +72,7 @@ export default async function DashboardPage({
         <h1 className="gf-admin-title">Welcome, {session.user.email}</h1>
         <p className="gf-admin-sub">
           Your seller profile is still being created. If this persists, it likely failed during
-          sign-up — contact support so we can create it manually.
+          sign-up. Contact support so we can create it manually.
         </p>
       </>
     )
@@ -106,7 +106,7 @@ export default async function DashboardPage({
           borderRadius: 'var(--gf-radius)',
           fontSize: 14,
         }}>
-          Your listing has been claimed — review it below and publish when you&apos;re ready.
+          Your listing has been claimed. Review it below and publish when you&apos;re ready.
         </div>
       )}
 
@@ -181,13 +181,13 @@ export default async function DashboardPage({
                       <td>
                         <div style={{ fontWeight: 600 }}>{p.title}</div>
                         <div style={{ fontSize: 13, color: 'var(--gf-text-2)' }}>
-                          {sp?.headline || p.tagline || (p.slug ? `/${p.slug}` : '—')}
+                          {sp?.headline || p.tagline || (p.slug ? `/${p.slug}` : '-')}
                         </div>
                       </td>
                       <td><span className={`gf-status ${p.status}`}>{p.status}</span></td>
-                      <td style={{ color: 'var(--gf-text-2)' }}>{p.category ?? '—'}</td>
+                      <td style={{ color: 'var(--gf-text-2)' }}>{p.category ?? '-'}</td>
                       <td className="num">
-                        {price != null ? formatPrice(price) : '—'}
+                        {price != null ? formatPrice(price) : '-'}
                         {p.priceExclusive != null && p.priceLicensed != null && (
                           <div style={{ fontSize: 12, color: 'var(--gf-text-2)' }}>
                             {formatPrice(p.priceExclusive)} excl.

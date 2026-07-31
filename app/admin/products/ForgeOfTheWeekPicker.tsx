@@ -61,7 +61,7 @@ export default function ForgeOfTheWeekPicker({ products }: Props) {
             cursor: 'pointer',
           }}
         >
-          <option value="none">— Cleared —</option>
+          <option value="none">(Cleared)</option>
           {products.map(p => (
             <option key={p.id} value={p.id}>{p.title}</option>
           ))}

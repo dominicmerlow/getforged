@@ -4,7 +4,7 @@ import Footer from '@/components/footer'
 import ConciergeForm from './ConciergeForm'
 
 export const metadata: Metadata = {
-  title: 'AI Product Concierge — GetForged',
+  title: 'AI Product Concierge',
   description: 'Describe what your business needs and our AI will find the best-matching tools from the GetForged catalogue.',
 }
 
@@ -27,7 +27,7 @@ export default function ConciergePage() {
               maxWidth: 600,
               lineHeight: 1.6,
             }}>
-              Describe what your business needs in plain English. Our AI will scan the catalogue and pick the 3 best matches — no browsing required.
+              Describe what your business needs in plain English. Our AI will scan the catalogue and pick the 3 best matches, no browsing required.
             </p>
 
             <ConciergeForm />

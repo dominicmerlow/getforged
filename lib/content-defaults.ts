@@ -36,7 +36,7 @@ export const CONTENT_REGISTRY = {
     kind: 'boolean' as const,
   } satisfies ContentDef<boolean>,
   'announcement.text': {
-    default: 'Limited launch — first 50 builders get a Founding Builder badge.',
+    default: 'Limited launch: first 50 builders get a Founding Builder badge.',
     description: 'Banner text',
     group: 'Announcement Banner',
     kind: 'text' as const,
@@ -69,7 +69,7 @@ export const CONTENT_REGISTRY = {
   } satisfies ContentDef<string>,
   'homepage.hero.sub': {
     default:
-      "<strong>Pre-built apps, automations and internal tools</strong> — installed in hours, priced like software, owned like assets. From £49.",
+      "<strong>Pre-built apps, automations and internal tools</strong>, installed in hours, priced like software, owned like assets. From £49.",
     description: 'Hero sub-headline (HTML allowed)',
     group: 'Homepage Hero',
     kind: 'rich' as const,

@@ -5,7 +5,7 @@ import Footer from '@/components/footer'
 
 export const metadata: Metadata = {
   title: 'Contact',
-  description: 'Get in touch with GetForged — for builders, buyers, press and partnerships.',
+  description: 'Get in touch with GetForged: for builders, buyers, press and partnerships.',
 }
 
 const channels = [
@@ -17,7 +17,7 @@ const channels = [
   },
   {
     label: 'For buyers',
-    detail: "Can't find the right tool? Describe what you need and our AI will find a match — or capture it for the build queue.",
+    detail: "Can't find the right tool? Describe what you need and our AI will find a match, or capture it for the build queue.",
     cta: 'Try the AI Concierge →',
     href: '/concierge',
   },
@@ -52,7 +52,7 @@ export default function ContactPage() {
             lineHeight: 1.5,
             maxWidth: 640,
           }}>
-            Pick the channel that fits — we read everything and reply within
+            Pick the channel that fits. We read everything and reply within
             one working day.
           </p>
 

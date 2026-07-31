@@ -3,7 +3,7 @@ import Footer from '@/components/footer'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — GetForged',
+  title: 'Terms of Service',
 }
 
 export default function TermsPage() {

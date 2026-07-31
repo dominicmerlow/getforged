@@ -6,6 +6,7 @@ import { checkAdminAccess } from '@/lib/admin'
 import SearchBar from '@/components/SearchBar'
 import CategoryBar from '@/components/CategoryBar'
 import HeaderDrawer from '@/components/HeaderDrawer'
+import ConciergeModal, { ConciergeTrigger } from '@/components/ConciergeModal'
 
 async function getUser() {
   try {
@@ -60,7 +61,7 @@ export default async function Nav({
 
         <nav className="gf-header-nav" aria-label="Primary">
           <Link href="/browse">Browse</Link>
-          <Link href="/concierge">Concierge</Link>
+          <ConciergeTrigger />
           <Link href="/how-it-works/buyers">For buyers</Link>
           <Link href="/how-it-works/sellers">For sellers</Link>
         </nav>
@@ -87,6 +88,8 @@ export default async function Nav({
       </div>
 
       {showCategories && <CategoryBar activeSlug={activeCategory} />}
+
+      <ConciergeModal />
     </header>
   )
 }

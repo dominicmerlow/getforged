@@ -34,11 +34,11 @@ export default function DualPersona() {
             front of buyers who are actively looking for AI-built tools.
           </p>
           <ul className="dual-list">
-            <li>Submit your URL — AI writes the full sales page automatically</li>
+            <li>Submit your URL. AI writes the full sales page automatically</li>
             <li>Set your own price: licensed, exclusive, or subscription</li>
             <li>Earn recurring income, or list the business for a full exit</li>
             <li>Dashboard tracks revenue, conversion and buyer geography</li>
-            <li>Free to list — we only earn when you do (15% commission)</li>
+            <li>Free to list, we only earn when you do (15% commission)</li>
           </ul>
           <Link href="/register" className="btn btn-primary">Start selling free</Link>
         </div>
@@ -59,7 +59,7 @@ export default function DualPersona() {
           <div className="dual-label">For businesses</div>
           <h2>Powerful tools, honest prices</h2>
           <p>
-            You need an automation, a web app, or an AI tool — without paying £15,000 to an
+            You need an automation, a web app, or an AI tool, without paying £15,000 to an
             agency or £500 a day to a contractor.
           </p>
           <ul className="dual-list">

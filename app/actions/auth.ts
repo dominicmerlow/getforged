@@ -124,7 +124,7 @@ export async function signUpWithNameAndEmail(
 
   return safeSignIn(
     () => signIn('resend', { email, redirect: false }),
-    `Welcome ${name.split(/\s+/)[0]} — we've sent a confirmation link to ${email}. Open it on this device to finish.`
+    `Welcome ${name.split(/\s+/)[0]}, we've sent a confirmation link to ${email}. Open it on this device to finish.`
   )
 }
 

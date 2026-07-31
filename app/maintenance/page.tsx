@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Forge offline — back shortly',
+  title: 'Forge offline, back shortly',
   description: 'GetForged is undergoing scheduled maintenance.',
   robots: { index: false, follow: false },
 }

@@ -244,8 +244,8 @@ export default async function ProductPage(
 
   // Deterministic, unambiguous primary CTA — never trust an AI-generated verb
   const buyLabel = product.type === 'Exclusive'
-    ? `Buy exclusive — ${product.priceMain}`
-    : `Buy licence — ${product.priceMain}`
+    ? `Buy exclusive · ${product.priceMain}`
+    : `Buy licence · ${product.priceMain}`
 
   // Seed/placeholder products have no row in `products` and no Stripe seller
   // behind them. /api/checkout already 404s for these, but showing a live Buy
@@ -307,9 +307,9 @@ export default async function ProductPage(
   /* The purchase control appears twice (sticky panel, and again on mobile at
      the end of the page). Defined once so the three states can't drift. */
   const purchaseControl = isSeedProduct ? (
-    <InfoNotice>Preview listing — not yet purchasable</InfoNotice>
+    <InfoNotice>Preview listing: not yet purchasable</InfoNotice>
   ) : checkoutPaused ? (
-    <InfoNotice tone="warn">Checkout temporarily paused — back soon</InfoNotice>
+    <InfoNotice tone="warn">Checkout temporarily paused, back soon</InfoNotice>
   ) : (
     <BuyButton
       slug={product.slug}
@@ -345,7 +345,7 @@ export default async function ProductPage(
             fontSize: 14,
             textAlign: 'center',
           }}>
-            Draft preview — only visible to you. Status: <strong>{product.status}</strong>.{' '}
+            Draft preview: only visible to you. Status: <strong>{product.status}</strong>.{' '}
             <Link href={`/dashboard/products/${product.id}/edit`} style={{ textDecoration: 'underline' }}>Edit</Link>
             {' · '}
             <Link href="/dashboard" style={{ textDecoration: 'underline' }}>Approve to publish</Link>
@@ -638,8 +638,8 @@ export default async function ProductPage(
                   <li>
                     <Check size={17} strokeWidth={2.4} aria-hidden="true" />
                     {product.type === 'Exclusive'
-                      ? 'Exclusive ownership — delisted after purchase'
-                      : 'Perpetual licence — no recurring fees'}
+                      ? 'Exclusive ownership: delisted after purchase'
+                      : 'Perpetual licence: no recurring fees'}
                   </li>
                   {product.deploy_time && (
                     <li><Check size={17} strokeWidth={2.4} aria-hidden="true" />Deploys in {product.deploy_time}</li>

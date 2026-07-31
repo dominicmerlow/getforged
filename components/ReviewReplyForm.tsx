@@ -75,7 +75,7 @@ export default function ReviewReplyForm({ reviewId, productSlug, existingReply }
         value={body}
         onChange={e => setBody(e.target.value)}
         maxLength={1500}
-        placeholder="Thanks for the feedback — here's what we're doing about it…"
+        placeholder="Thanks for the feedback. Here's what we're doing about it…"
         style={{
           fontFamily: 'var(--font-serif)',
           fontSize: 15,

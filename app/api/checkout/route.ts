@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   const ip = await getClientIp()
   const allowed = await checkRateLimit({ bucket: 'checkout', identifier: ip, limit: 10, windowSeconds: 60 })
   if (!allowed) {
-    return NextResponse.json({ error: 'Too many requests — please slow down.' }, { status: 429 })
+    return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 })
   }
 
   const form = await request.formData()
@@ -89,8 +89,8 @@ export async function POST(request: NextRequest) {
           product_data: {
             name:
               purchaseType === 'exclusive'
-                ? `${product.title} — exclusive buy-out`
-                : `${product.title} — licence`,
+                ? `${product.title} (exclusive buy-out)`
+                : `${product.title} (licence)`,
             description: product.tagline ?? undefined,
           },
         },

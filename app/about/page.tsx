@@ -29,17 +29,17 @@ export default function AboutPage() {
           }}>
             <p>
               A new class of builder is shipping faster than agencies can quote.
-              Claude Code, Cursor, Lovable, v0, Bolt — what used to take a quarter
+              Claude Code, Cursor, Lovable, v0, Bolt. What used to take a quarter
               now takes a weekend.
             </p>
             <p>
               GetForged is where those builders meet the small businesses who need
-              what they&apos;ve built. Pre-built apps, automations and internal tools —
-              installed in hours, priced like software, owned like assets.
+              what they&apos;ve built. Pre-built apps, automations and internal
+              tools, installed in hours, priced like software, owned like assets.
             </p>
             <p>
-              We&apos;re currently onboarding our first wave of <strong>Founding Builders</strong>
-              {' '}— curated, verified, and free to list. If you&apos;ve shipped something
+              We&apos;re currently onboarding our first wave of <strong>Founding Builders</strong>:
+              {' '}curated, verified, and free to list. If you&apos;ve shipped something
               remarkable, <Link href="/submit" style={{ color: 'var(--soft-amber, #b97314)' }}>list it free →</Link>
             </p>
           </div>
@@ -69,11 +69,11 @@ export default function AboutPage() {
               fontFamily: 'var(--font-serif)',
               fontSize: 18,
             }}>
-              <li>✓ Every listing has a full spec sheet — platform, AI models, monthly run cost, deploy time</li>
+              <li>✓ Every listing has a full spec sheet: platform, AI models, monthly run cost, deploy time</li>
               <li>✓ Buy a licence (perpetual use) or exclusive ownership (yours alone)</li>
               <li>✓ AI Concierge matches buyers to tools by plain-English problem description</li>
               <li>✓ 7-day money-back guarantee on every purchase</li>
-              <li>✓ Builders keep 85% — we earn only when you sell</li>
+              <li>✓ Builders keep 85%, we earn only when you sell</li>
             </ul>
           </div>
 
