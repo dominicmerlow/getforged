@@ -178,7 +178,7 @@ export default async function CategoryPage({
 
   return (
     <>
-      <Nav />
+      <Nav activeCategory={cat.slug} />
       <main>
         <script
           type="application/ld+json"

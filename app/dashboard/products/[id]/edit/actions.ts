@@ -2,7 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { eq } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { products, sellers, salesPages } from '@/db/schema'
 import { slugify } from '@/lib/utils'
 import { scrapeUrl } from '@/lib/firecrawl'
 import { logAdminAction } from '@/lib/admin'
@@ -42,25 +45,28 @@ export type EditState =
   | { ok: true; slug: string | null }
   | null
 
+/** Ownership lookup shared by every action below — this used to ride on RLS. */
+async function loadOwnedProduct(productId: string, userId: string) {
+  return db
+    .select({ product: products, sellerUserId: sellers.userId })
+    .from(products)
+    .innerJoin(sellers, eq(products.sellerId, sellers.id))
+    .where(eq(products.id, productId))
+    .limit(1)
+    .then(rows => rows[0] ?? null)
+}
+
 export async function saveProduct(
   productId: string,
   _prev: EditState,
   formData: FormData
 ): Promise<EditState> {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) return { error: 'You must be signed in.' }
+  const session = await auth()
+  if (!session?.user) return { error: 'You must be signed in.' }
 
-  // Verify ownership via RLS-compliant join
-  const { data: product, error: fetchErr } = await supabase
-    .from('products')
-    .select('id, slug, seller:sellers!inner(user_id)')
-    .eq('id', productId)
-    .single()
-
-  if (fetchErr || !product) return { error: 'Product not found.' }
-  const seller = Array.isArray(product.seller) ? product.seller[0] : product.seller
-  if (!seller || seller.user_id !== userData.user.id) {
+  const row = await loadOwnedProduct(productId, session.user.id)
+  if (!row) return { error: 'Product not found.' }
+  if (row.sellerUserId !== session.user.id) {
     return { error: 'Not authorised to edit this product.' }
   }
 
@@ -89,10 +95,7 @@ export async function saveProduct(
   const supportTerms = String(formData.get('support_terms') ?? '').trim() || null
   const screenshotsRaw = String(formData.get('screenshots') ?? '').trim()
   const screenshots = screenshotsRaw
-    ? screenshotsRaw
-        .split('\n')
-        .map(s => s.trim())
-        .filter(Boolean)
+    ? screenshotsRaw.split('\n').map(s => s.trim()).filter(Boolean)
     : null
 
   // Sales page fields
@@ -112,65 +115,67 @@ export async function saveProduct(
     return { error: 'Set at least one price (licensed or exclusive).' }
   }
 
-  // Handle slug change if title changed and slug was default
-  let newSlug = product.slug
+  // Handle slug change if the seller supplied an override
+  let newSlug = row.product.slug
   const slugOverride = String(formData.get('slug') ?? '').trim()
   if (slugOverride) {
     newSlug = slugify(slugOverride) || newSlug
   }
 
-  // ── Update products ──────────────────────────────────────────
-  const { error: updateErr } = await supabase
-    .from('products')
-    .update({
+  try {
+    await db.update(products).set({
       title,
       tagline,
       description,
       category,
-      price_licensed: priceLicensed,
-      price_exclusive: priceExclusive,
+      priceLicensed,
+      priceExclusive,
       slug: newSlug,
       platform,
       architecture,
-      ai_models: aiModels,
+      aiModels,
       integrations,
-      tool_tags: toolTags,
-      monthly_cost: monthlyCost,
-      deploy_time: deployTime,
-      demo_url: demoUrl,
-      video_url: videoUrl,
-      docs_url: docsUrl,
-      repo_url: repoUrl,
-      support_terms: supportTerms,
+      toolTags,
+      monthlyCost,
+      deployTime,
+      demoUrl,
+      videoUrl,
+      docsUrl,
+      repoUrl,
+      supportTerms,
       screenshots,
       features: features.length > 0 ? features : null,
-      use_cases: useCases.length > 0 ? useCases : null,
-    })
-    .eq('id', productId)
+      useCases: useCases.length > 0 ? useCases : null,
+    }).where(eq(products.id, productId))
+  } catch (err) {
+    return { error: `Update failed: ${err instanceof Error ? err.message : 'unknown error'}` }
+  }
 
-  if (updateErr) return { error: `Update failed: ${updateErr.message}` }
-
-  // ── Upsert sales_pages ───────────────────────────────────────
-  const { error: spErr } = await supabase
-    .from('sales_pages')
-    .upsert(
-      {
-        product_id: productId,
+  try {
+    await db
+      .insert(salesPages)
+      .values({
+        productId,
         headline,
         subheadline,
-        problem_statement: problemStatement,
-        body_copy: { features, use_cases: useCases } as object,
-        cta_primary: ctaPrimary,
-        cta_secondary: ctaSecondary,
-        meta_title: metaTitle,
-        meta_description: metaDescription,
-      },
-      { onConflict: 'product_id' }
-    )
-
-  if (spErr) {
-    console.error('[edit] sales_pages upsert failed:', spErr)
-    // non-fatal; product updated
+        problemStatement,
+        bodyCopy: { features, use_cases: useCases },
+        ctaPrimary,
+        ctaSecondary,
+        metaTitle,
+        metaDescription,
+      })
+      .onConflictDoUpdate({
+        target: salesPages.productId,
+        set: {
+          headline, subheadline, problemStatement,
+          bodyCopy: { features, use_cases: useCases },
+          ctaPrimary, ctaSecondary, metaTitle, metaDescription,
+        },
+      })
+  } catch (err) {
+    console.error('[edit] salesPages upsert failed:', err instanceof Error ? err.message : err)
+    // non-fatal; product already updated
   }
 
   revalidatePath('/dashboard')
@@ -181,23 +186,16 @@ export async function saveProduct(
 }
 
 export async function deleteProduct(productId: string) {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
+  const session = await auth()
+  if (!session?.user) redirect('/login')
 
-  const { data: product } = await supabase
-    .from('products')
-    .select('id, seller:sellers!inner(user_id)')
-    .eq('id', productId)
-    .single()
-
-  if (!product) redirect('/dashboard')
-  const seller = Array.isArray(product.seller) ? product.seller[0] : product.seller
-  if (!seller || seller.user_id !== userData.user.id) {
+  const row = await loadOwnedProduct(productId, session.user.id)
+  if (!row) redirect('/dashboard')
+  if (row.sellerUserId !== session.user.id) {
     throw new Error('Not authorised')
   }
 
-  await supabase.from('products').delete().eq('id', productId)
+  await db.delete(products).where(eq(products.id, productId))
   revalidatePath('/dashboard')
   redirect('/dashboard')
 }
@@ -214,28 +212,22 @@ export async function regenerateScreenshot(
   _prev: ScreenshotState,
   _formData: FormData
 ): Promise<ScreenshotState> {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) return { error: 'You must be signed in.' }
+  const session = await auth()
+  if (!session?.user) return { error: 'You must be signed in.' }
 
-  const { data: product, error: fetchErr } = await supabase
-    .from('products')
-    .select('id, slug, source_url, screenshots, seller:sellers!inner(user_id)')
-    .eq('id', productId)
-    .single()
-
-  if (fetchErr || !product) return { error: 'Product not found.' }
-  const seller = Array.isArray(product.seller) ? product.seller[0] : product.seller
-  if (!seller || seller.user_id !== userData.user.id) {
+  const row = await loadOwnedProduct(productId, session.user.id)
+  if (!row) return { error: 'Product not found.' }
+  if (row.sellerUserId !== session.user.id) {
     return { error: 'Not authorised to edit this product.' }
   }
-  if (!product.source_url) {
+  const product = row.product
+  if (!product.sourceUrl) {
     return { error: 'No source URL on file. Add one in the Source URL field first.' }
   }
 
   let scraped
   try {
-    scraped = await scrapeUrl(product.source_url)
+    scraped = await scrapeUrl(product.sourceUrl)
   } catch (err) {
     return {
       error: `Could not capture screenshot: ${err instanceof Error ? err.message : 'unknown error'}`,
@@ -246,27 +238,24 @@ export async function regenerateScreenshot(
   }
 
   // Prepend the new screenshot; keep prior ones as gallery thumbs (max 6).
-  const existing = (product.screenshots ?? []).filter(
-    (s: string) => s !== scraped.screenshot
-  )
+  const existing = (product.screenshots ?? []).filter(s => s !== scraped.screenshot)
   const next = [scraped.screenshot, ...existing].slice(0, 6)
 
-  const { error: updateErr } = await supabase
-    .from('products')
-    .update({ screenshots: next })
-    .eq('id', productId)
-
-  if (updateErr) return { error: `Save failed: ${updateErr.message}` }
+  try {
+    await db.update(products).set({ screenshots: next }).where(eq(products.id, productId))
+  } catch (err) {
+    return { error: `Save failed: ${err instanceof Error ? err.message : 'unknown error'}` }
+  }
 
   // Audit even seller self-edits — useful for spotting unusual scrape patterns,
   // and gives admins a unified history when reviewing a product.
   await logAdminAction({
-    actor_id: userData.user.id,
-    actor_email: userData.user.email ?? null,
+    actor_id: session.user.id,
+    actor_email: session.user.email ?? null,
     action: 'product.regenerate_screenshot',
     target_type: 'product',
     target_id: productId,
-    payload: { slug: product.slug, source_url: product.source_url, new_screenshot: scraped.screenshot },
+    payload: { slug: product.slug, source_url: product.sourceUrl, new_screenshot: scraped.screenshot },
   })
 
   revalidatePath('/dashboard')

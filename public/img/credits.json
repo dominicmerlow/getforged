@@ -1,0 +1,38 @@
+[
+  {
+    "file": "hero.jpg",
+    "photographer": "RDNE Stock project",
+    "photographer_url": "https://www.pexels.com/@rdne",
+    "photo_url": "https://www.pexels.com/photo/woman-in-dress-sitting-in-front-of-a-laptop-10375901/",
+    "alt": "Professional black woman smiling at desk using laptop and smartphone in office.",
+    "width": 6720,
+    "height": 4480
+  },
+  {
+    "file": "sellers.jpg",
+    "photographer": "Lee Campbell",
+    "photographer_url": "https://www.pexels.com/@lee-campbell-18167",
+    "photo_url": "https://www.pexels.com/photo/imac-turend-on-89724/",
+    "alt": "A programmer in a blue shirt coding on an iMac. Perfect for technology or work-related themes.",
+    "width": 6016,
+    "height": 4016
+  },
+  {
+    "file": "buyers.jpg",
+    "photographer": "Andrea Piacquadio",
+    "photographer_url": "https://www.pexels.com/@olly",
+    "photo_url": "https://www.pexels.com/photo/cheerful-diverse-colleagues-of-different-ages-working-on-laptop-during-startup-project-3865639/",
+    "alt": "Positive focused multiracial coworkers gathering together near table with laptop in workplace at industrial building during remote work on team against big window at daytime",
+    "width": 7680,
+    "height": 5120
+  },
+  {
+    "file": "concierge.jpg",
+    "photographer": "Cedric Fauntleroy",
+    "photographer_url": "https://www.pexels.com/@cedric-fauntleroy",
+    "photo_url": "https://www.pexels.com/photo/a-woman-sitting-at-the-table-8154580/",
+    "alt": "Businesswoman having a conversation in an office setting with colleague.",
+    "width": 6720,
+    "height": 4480
+  }
+]

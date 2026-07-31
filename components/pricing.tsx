@@ -1,6 +1,23 @@
 import Link from 'next/link'
+import { Check } from 'lucide-react'
 import { getContentBatch } from '@/lib/content'
 
+const INCLUDED = [
+  'Unlimited listings',
+  'AI-generated sales page from your URL',
+  'Spec sheet, screenshots and video walkthrough',
+  'Verified Builder badge for the first 50 sellers',
+  'Secure checkout via Stripe on every sale',
+  'Featured placement during the launch window',
+]
+
+/**
+ * Seller pricing. One tier, so it renders as a single centred card rather than
+ * a comparison grid — a lone card in a three-column layout looks like two
+ * options failed to load.
+ *
+ * Copy still comes from `site_content` so it stays admin-editable.
+ */
 export default async function Pricing() {
   const copy = await getContentBatch([
     'pricing.section_tag',
@@ -11,125 +28,58 @@ export default async function Pricing() {
   ])
 
   return (
-    <section className="section" id="pricing">
-      <div className="section-tag">{copy['pricing.section_tag']}</div>
-      <h2
-        className="section-title"
-        dangerouslySetInnerHTML={{ __html: copy['pricing.heading'] }}
-      />
+    <section className="gf-section" id="pricing">
+      <div className="gf-section-head" style={{ justifyContent: 'center', textAlign: 'center' }}>
+        <div>
+          <h2
+            className="gf-section-title"
+            dangerouslySetInnerHTML={{ __html: copy['pricing.heading'] }}
+          />
+          <p className="gf-section-sub" style={{ marginInline: 'auto' }}>
+            {copy['pricing.section_tag']}
+          </p>
+        </div>
+      </div>
 
       <div
-        style={{
-          marginTop: 32,
-          maxWidth: 720,
-          marginInline: 'auto',
-          border: '2px solid var(--warm-ink, #2a2217)',
-          padding: '40px 32px',
-          display: 'grid',
-          gap: 20,
-          textAlign: 'center',
-        }}
+        className="gf-panel"
+        style={{ maxWidth: 640, marginInline: 'auto', borderColor: 'var(--gf-amber)', borderWidth: 2 }}
       >
-        <div
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: 'var(--soft-amber, #b97314)',
-          }}
-        >
-          {copy['pricing.tier_label']}
-        </div>
+        <div className="gf-panel-body" style={{ padding: 32, textAlign: 'center' }}>
+          <div className="pricing-tier">{copy['pricing.tier_label']}</div>
 
-        <div
-          style={{
-            fontFamily: 'var(--font-bebas, "Bebas Neue", sans-serif)',
-            fontSize: 'clamp(56px, 8vw, 96px)',
-            lineHeight: 1,
-            letterSpacing: '0.02em',
-          }}
-        >
-          £0
-          <span
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 10, marginBottom: 24 }}>
+            <span className="pricing-price" style={{ fontSize: 56, marginBottom: 0 }}>£0</span>
+            <span style={{ fontSize: 16, color: 'var(--gf-text-2)' }}>to list, forever</span>
+          </div>
+
+          <ul
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 14,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'var(--muted, #6b6b6b)',
-              marginLeft: 12,
+              listStyle: 'none', display: 'grid', gap: 12,
+              maxWidth: 420, marginInline: 'auto', textAlign: 'left', marginBottom: 24,
             }}
           >
-            to list, forever
-          </span>
-        </div>
+            {INCLUDED.map(line => (
+              <li key={line} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 15, color: 'var(--gf-text-2)' }}>
+                <Check size={18} strokeWidth={2.4} aria-hidden="true" style={{ color: 'var(--gf-success)', flexShrink: 0, marginTop: 2 }} />
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
 
-        <ul
-          style={{
-            listStyle: 'none',
-            padding: 0,
-            margin: 0,
-            display: 'grid',
-            gap: 12,
-            maxWidth: 480,
-            marginInline: 'auto',
-            fontFamily: 'var(--font-serif)',
-            fontSize: 18,
-            textAlign: 'left',
-          }}
-        >
-          {[
-            'Unlimited listings',
-            'AI-generated sales page from your URL',
-            'Spec-sheet, screenshots & video walkthrough',
-            'Verified Builder badge for the first 50 sellers',
-            'Secure checkout via Stripe on every sale',
-            'Featured placement during launch window',
-          ].map(line => (
-            <li key={line} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <span style={{ color: '#3fa85a', fontSize: 18, flexShrink: 0 }}>✓</span>
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
+          <p style={{ fontSize: 14, color: 'var(--gf-text-2)', marginBottom: 20 }}>
+            {copy['pricing.commission_note']}
+          </p>
 
-        <p
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: 'var(--muted, #6b6b6b)',
-            margin: 0,
-          }}
-        >
-          {copy['pricing.commission_note']}
-        </p>
-
-        <div>
-          <Link
-            href="/submit"
-            className="btn-amber"
-            style={{ display: 'inline-block', padding: '14px 36px', fontSize: 16 }}
-          >
+          <Link href="/submit" className="btn btn-primary btn-lg">
             {copy['pricing.cta_label']}
           </Link>
         </div>
       </div>
 
-      <p
-        style={{
-          textAlign: 'center',
-          marginTop: 24,
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-          color: 'var(--muted, #6b6b6b)',
-          letterSpacing: '0.1em',
-        }}
-      >
-        Pro &amp; Studio tiers (analytics, Flippa cross-listing, sandbox demos)
-        unlock once we hit 50 verified builders.
+      <p style={{ textAlign: 'center', marginTop: 20, fontSize: 14, color: 'var(--gf-text-2)' }}>
+        Pro and Studio tiers (analytics, Flippa cross-listing, sandbox demos) unlock once we
+        reach 50 verified builders.
       </p>
     </section>
   )

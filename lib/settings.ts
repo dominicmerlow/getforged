@@ -1,5 +1,5 @@
 /**
- * Site settings (feature flags) read/write API.
+ * Site settings (feature flags) read API.
  *
  * Mirrors lib/content.ts but with a separate cache tag and a smaller, more
  * structured registry. Values are typed via the SETTINGS_REGISTRY which
@@ -10,7 +10,8 @@
  */
 
 import { unstable_cache } from 'next/cache'
-import { createServerClient } from '@supabase/ssr'
+import { db, dbConfigured } from '@/lib/db'
+import { siteSettings } from '@/db/schema'
 
 export const SETTINGS_CACHE_TAG = 'site-settings'
 
@@ -45,32 +46,13 @@ export const SETTINGS_REGISTRY = {
 export type SettingKey = keyof typeof SETTINGS_REGISTRY
 export const ALL_SETTING_KEYS = Object.keys(SETTINGS_REGISTRY) as SettingKey[]
 
-function readClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
-
 const fetchAllSettings = unstable_cache(
   async (): Promise<Record<string, unknown>> => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    if (!url || !key || url.includes('YOUR_PROJECT')) return {}
+    if (!dbConfigured()) return {}
     try {
-      const supabase = readClient()
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('key, value_json')
-      if (error) {
-        console.error('[settings] read failed:', error.message)
-        return {}
-      }
+      const rows = await db.select({ key: siteSettings.key, value: siteSettings.valueJson }).from(siteSettings)
       const out: Record<string, unknown> = {}
-      for (const row of data ?? []) {
-        out[row.key] = row.value_json
-      }
+      for (const row of rows) out[row.key] = row.value
       return out
     } catch (err) {
       console.error('[settings] read threw:', err instanceof Error ? err.message : err)

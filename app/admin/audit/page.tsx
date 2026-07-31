@@ -1,18 +1,12 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@/lib/supabase/server'
+import { eq, and, desc } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { adminAudit } from '@/db/schema'
 import { checkAdminAccess } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
-
-function adminDb() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
 
 interface AuditRow {
   id: string
@@ -41,31 +35,38 @@ export default async function AdminAuditPage({
 }: {
   searchParams: Promise<{ actor?: string; action?: string }>
 }) {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
 
   const { actor, action } = await searchParams
 
-  const db = adminDb()
-
   let rows: AuditRow[] = []
   let loadError: string | null = null
   try {
-    let query = db
-      .from('admin_audit')
-      .select('id, actor_id, actor_email, action, target_type, target_id, payload, created_at')
-      .order('created_at', { ascending: false })
+    const conditions = [
+      actor ? eq(adminAudit.actorEmail, actor) : undefined,
+      action ? eq(adminAudit.action, action) : undefined,
+    ].filter((c): c is NonNullable<typeof c> => !!c)
+
+    const data = await db
+      .select()
+      .from(adminAudit)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(adminAudit.createdAt))
       .limit(PAGE_SIZE)
 
-    if (actor) query = query.eq('actor_email', actor)
-    if (action) query = query.eq('action', action)
-
-    const { data, error } = await query
-    if (error) throw new Error(error.message)
-    rows = (data ?? []) as AuditRow[]
+    rows = data.map(r => ({
+      id: r.id,
+      actor_id: r.actorId,
+      actor_email: r.actorEmail,
+      action: r.action,
+      target_type: r.targetType,
+      target_id: r.targetId,
+      payload: r.payload,
+      created_at: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
+    }))
   } catch (err) {
     loadError = err instanceof Error ? err.message : 'Unknown read error'
   }
@@ -75,17 +76,15 @@ export default async function AdminAuditPage({
   let actors: string[] = []
   let actions: string[] = []
   try {
-    const { data: distinctRows } = await db
-      .from('admin_audit')
-      .select('actor_email, action')
-      .order('created_at', { ascending: false })
+    const distinctRows = await db
+      .select({ actorEmail: adminAudit.actorEmail, action: adminAudit.action })
+      .from(adminAudit)
+      .orderBy(desc(adminAudit.createdAt))
       .limit(500)
-    if (distinctRows) {
-      actors = Array.from(
-        new Set(distinctRows.map(r => r.actor_email).filter((e): e is string => !!e))
-      ).sort()
-      actions = Array.from(new Set(distinctRows.map(r => r.action))).sort()
-    }
+    actors = Array.from(
+      new Set(distinctRows.map(r => r.actorEmail).filter((e): e is string => !!e))
+    ).sort()
+    actions = Array.from(new Set(distinctRows.map(r => r.action))).sort()
   } catch {
     /* ignore — filter chips degrade gracefully */
   }

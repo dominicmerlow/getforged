@@ -2,17 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@/lib/supabase/server'
+import { eq, and } from 'drizzle-orm'
+import { auth, signIn } from '@/auth'
+import { db } from '@/lib/db'
+import { sellers, userRoles } from '@/db/schema'
 import { checkAdminAccess, logAdminAction, ALL_ROLES, type UserRole } from '@/lib/admin'
-
-function adminDb() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
 
 export type UserActionResult =
   | { ok: true; user_id: string; message?: string }
@@ -20,12 +14,11 @@ export type UserActionResult =
   | null
 
 async function gateOrRedirect(): Promise<{ userId: string; email: string | null; role: UserRole }> {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
-  return { userId: userData.user.id, email: userData.user.email ?? null, role }
+  return { userId: session.user.id, email: session.user.email ?? null, role }
 }
 
 /**
@@ -41,9 +34,11 @@ export async function adminToggleVerified(
   const verified = String(formData.get('verified') ?? 'false').toLowerCase() === 'true'
   if (!sellerId) return { error: 'No seller_id' }
 
-  const db = adminDb()
-  const { error } = await db.from('sellers').update({ verified }).eq('id', sellerId)
-  if (error) return { error: error.message }
+  try {
+    await db.update(sellers).set({ verified }).where(eq(sellers.id, sellerId))
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Update failed' }
+  }
 
   await logAdminAction({
     actor_id: actorId,
@@ -59,7 +54,7 @@ export async function adminToggleVerified(
 }
 
 /**
- * Update a seller's display_name.
+ * Update a seller's display name.
  */
 export async function adminUpdateDisplayName(
   _prev: UserActionResult,
@@ -73,10 +68,16 @@ export async function adminUpdateDisplayName(
   if (!displayName) return { error: 'Display name cannot be empty' }
   if (displayName.length > 80) return { error: 'Display name too long (max 80)' }
 
-  const db = adminDb()
-  const { data: prior } = await db.from('sellers').select('display_name').eq('id', sellerId).maybeSingle()
-  const { error } = await db.from('sellers').update({ display_name: displayName }).eq('id', sellerId)
-  if (error) return { error: error.message }
+  const prior = await db.query.sellers.findFirst({
+    where: eq(sellers.id, sellerId),
+    columns: { displayName: true },
+  })
+
+  try {
+    await db.update(sellers).set({ displayName }).where(eq(sellers.id, sellerId))
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Update failed' }
+  }
 
   await logAdminAction({
     actor_id: actorId,
@@ -84,7 +85,7 @@ export async function adminUpdateDisplayName(
     action: 'user.update_display_name',
     target_type: 'seller',
     target_id: sellerId,
-    payload: { from: prior?.display_name ?? null, to: displayName },
+    payload: { from: prior?.displayName ?? null, to: displayName },
   })
 
   revalidatePath('/admin/users')
@@ -110,12 +111,11 @@ export async function adminGrantRole(
     return { error: 'Only superadmins can grant superadmin' }
   }
 
-  const db = adminDb()
-  const { error } = await db.from('user_roles').upsert(
-    { user_id: targetUserId, role, granted_by: actorId },
-    { onConflict: 'user_id,role', ignoreDuplicates: true }
-  )
-  if (error) return { error: error.message }
+  try {
+    await db.insert(userRoles).values({ userId: targetUserId, role, grantedBy: actorId }).onConflictDoNothing()
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Grant failed' }
+  }
 
   await logAdminAction({
     actor_id: actorId,
@@ -141,18 +141,16 @@ export async function adminRevokeRole(
   if (!targetUserId) return { error: 'No user_id' }
   if (!ALL_ROLES.includes(role)) return { error: `Invalid role: ${role}` }
 
-  // Don't let an admin revoke their own superadmin (foot-gun protection)
+  // Don't let an admin revoke their own current role from this screen (foot-gun protection)
   if (targetUserId === actorId && role === actorRole) {
     return { error: "You can't revoke your own current role from this screen." }
   }
 
-  const db = adminDb()
-  const { error } = await db
-    .from('user_roles')
-    .delete()
-    .eq('user_id', targetUserId)
-    .eq('role', role)
-  if (error) return { error: error.message }
+  try {
+    await db.delete(userRoles).where(and(eq(userRoles.userId, targetUserId), eq(userRoles.role, role)))
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Revoke failed' }
+  }
 
   await logAdminAction({
     actor_id: actorId,
@@ -168,8 +166,16 @@ export async function adminRevokeRole(
 }
 
 /**
- * Send a fresh magic link to a user. Useful when an account is locked out
- * or hasn't received the original signup email.
+ * Send a fresh magic link to a user. Useful when an account is locked out or
+ * hasn't received the original signup email.
+ *
+ * The Supabase version used the admin API's `generateLink` to mint a link
+ * without going through the normal request flow, returning the raw URL for
+ * the admin to relay out-of-band. Auth.js has no equivalent admin-only link
+ * generator — `signIn('resend', ...)` IS the send, there's no "generate but
+ * don't send" mode. That's a strictly better outcome for this use case
+ * anyway: the user gets a working email directly, and no raw auth token
+ * passes through the admin's screen or the audit log.
  */
 export async function adminSendMagicLink(
   _prev: UserActionResult,
@@ -180,31 +186,20 @@ export async function adminSendMagicLink(
   const targetEmail = String(formData.get('email') ?? '').trim().toLowerCase()
   if (!targetEmail) return { error: 'No email' }
 
-  const db = adminDb()
-  // Use the admin API to generate a magic link without rate limit.
-  // generateLink returns the full action_link the admin can share with the
-  // user out-of-band. Supabase also sends the email itself.
   try {
-    const { data, error } = await db.auth.admin.generateLink({
-      type: 'magiclink',
-      email: targetEmail,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.vercel.app'}/auth/callback`,
-      },
-    })
-    if (error) return { error: error.message }
-
-    await logAdminAction({
-      actor_id: actorId,
-      actor_email: actorEmail,
-      action: 'user.send_magic_link',
-      target_type: 'user',
-      target_id: data.user?.id ?? targetEmail,
-      payload: { email: targetEmail },
-    })
-
-    return { ok: true, user_id: data.user?.id ?? targetEmail, message: 'Magic link sent' }
+    await signIn('resend', { email: targetEmail, redirect: false })
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Failed to send' }
   }
+
+  await logAdminAction({
+    actor_id: actorId,
+    actor_email: actorEmail,
+    action: 'user.send_magic_link',
+    target_type: 'user',
+    target_id: targetEmail,
+    payload: { email: targetEmail },
+  })
+
+  return { ok: true, user_id: targetEmail, message: 'Magic link sent' }
 }

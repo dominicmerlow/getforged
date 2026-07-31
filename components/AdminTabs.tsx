@@ -2,35 +2,39 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import {
+  LayoutDashboard, Users, Package, Send, FileText, Settings, ScrollText,
+} from 'lucide-react'
 
 /**
- * Persistent tabbed nav for the /admin section.
+ * Persistent navigation for the /admin section.
  *
- * Active state matches by exact path for "/admin" and prefix-match for the
- * rest, so /admin/products/[id]/edit still highlights the "Products" tab.
+ * A sidebar on desktop, collapsing to the previous horizontal tab strip below
+ * 900px (handled entirely by `.gf-admin-side` in globals.css). A back-office
+ * with seven destinations reads better as a vertical list — the labels stay
+ * left-aligned and scannable instead of competing for a single row of width.
  *
- * Rendered by app/admin/layout.tsx — every admin route gets it for free.
+ * Active state matches exactly for "/admin" and by prefix for the rest, so
+ * /admin/products/[id]/edit still highlights Products.
  */
 
 interface Tab {
   href: string
   label: string
+  Icon: typeof LayoutDashboard
 }
 
 const TABS: Tab[] = [
-  { href: '/admin', label: 'Overview' },
-  { href: '/admin/users', label: 'Users' },
-  { href: '/admin/products', label: 'Products' },
-  { href: '/admin/prospects', label: 'Prospects' },
-  { href: '/admin/content', label: 'Content' },
-  { href: '/admin/settings', label: 'Settings' },
-  { href: '/admin/audit', label: 'Audit' },
+  { href: '/admin',           label: 'Overview',  Icon: LayoutDashboard },
+  { href: '/admin/users',     label: 'Users',     Icon: Users },
+  { href: '/admin/products',  label: 'Products',  Icon: Package },
+  { href: '/admin/prospects', label: 'Prospects', Icon: Send },
+  { href: '/admin/content',   label: 'Content',   Icon: FileText },
+  { href: '/admin/settings',  label: 'Settings',  Icon: Settings },
+  { href: '/admin/audit',     label: 'Audit',     Icon: ScrollText },
 ]
 
 function isActive(pathname: string, href: string): boolean {
-  // /admin must match exactly (otherwise it would highlight on every sub-page).
-  // Sub-tabs prefix-match so deep links like /admin/products/[id]/edit still
-  // highlight their parent tab.
   if (href === '/admin') return pathname === '/admin'
   return pathname === href || pathname.startsWith(href + '/')
 }
@@ -39,61 +43,18 @@ export default function AdminTabs() {
   const pathname = usePathname()
 
   return (
-    <nav
-      aria-label="Admin sections"
-      style={{
-        background: 'rgba(244,237,224,0.6)',
-        borderBottom: '1px solid rgba(42,39,32,0.12)',
-        padding: '0 32px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-      }}
-    >
-      <ul
-        style={{
-          margin: 0,
-          padding: 0,
-          listStyle: 'none',
-          display: 'flex',
-          gap: 0,
-          overflowX: 'auto',
-        }}
-      >
-        {TABS.map(tab => {
-          const active = isActive(pathname, tab.href)
-          return (
-            <li key={tab.href} style={{ flexShrink: 0 }}>
-              <Link
-                href={tab.href}
-                style={{
-                  display: 'block',
-                  padding: '14px 18px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: active
-                    ? 'var(--warm-ink, #2a2217)'
-                    : 'rgba(42,34,23,0.55)',
-                  fontWeight: active ? 700 : 500,
-                  textDecoration: 'none',
-                  borderBottom: active
-                    ? '3px solid var(--soft-amber, #b97314)'
-                    : '3px solid transparent',
-                  marginBottom: -1,
-                  transition: 'color 120ms ease, border-color 120ms ease',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {tab.label}
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
+    <nav className="gf-admin-side" aria-label="Admin sections">
+      <div className="gf-admin-side-label">Administration</div>
+      {TABS.map(({ href, label, Icon }) => (
+        <Link
+          key={href}
+          href={href}
+          aria-current={isActive(pathname, href) ? 'page' : undefined}
+        >
+          <Icon size={17} strokeWidth={1.8} aria-hidden="true" />
+          {label}
+        </Link>
+      ))}
     </nav>
   )
 }

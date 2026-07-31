@@ -1,41 +1,35 @@
 'use server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@/lib/supabase/server'
+import { eq } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { products } from '@/db/schema'
 import { scrapeUrl } from '@/lib/firecrawl'
 import { checkAdminAccess, logAdminAction } from '@/lib/admin'
 
-function createAdminClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
-
 export async function adminUpdateStatus(formData: FormData) {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
+  const session = await auth()
+  if (!session?.user) redirect('/login')
 
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
 
   const id = String(formData.get('id') ?? '')
   const status = String(formData.get('status') ?? '')
   if (!id || !['live', 'archived'].includes(status)) return
 
-  const adminDb = createAdminClient()
-
   // Snapshot prior status for the audit row so we can see the before/after diff.
-  const { data: prior } = await adminDb.from('products').select('status, title, slug').eq('id', id).maybeSingle()
+  const prior = await db.query.products.findFirst({
+    where: eq(products.id, id),
+    columns: { status: true, title: true, slug: true },
+  })
 
-  await adminDb.from('products').update({ status }).eq('id', id)
+  await db.update(products).set({ status: status as 'live' | 'archived' }).where(eq(products.id, id))
 
   await logAdminAction({
-    actor_id: userData.user.id,
-    actor_email: userData.user.email ?? null,
+    actor_id: session.user.id,
+    actor_email: session.user.email ?? null,
     action: status === 'live' ? 'product.publish' : 'product.archive',
     target_type: 'product',
     target_id: id,
@@ -48,15 +42,7 @@ export async function adminUpdateStatus(formData: FormData) {
 
 // ── Batch screenshot regeneration ────────────────────────────────────────
 // Re-scrapes every live product's source_url via Firecrawl and replaces the
-// hero image. Called from the /admin page; gated by ADMIN_EMAIL.
-//
-// This is the operational counterpart to the per-seller "regenerate" button
-// (in the seller dashboard PR). When the marketplace is small (10–100 products)
-// running this once after wiring up Firecrawl gives every existing listing a
-// real screenshot in one click.
-//
-// Stripe-style sequential execution with a small concurrency limit keeps us
-// inside Firecrawl's rate limits and serverless function timeouts.
+// hero image. Called from the /admin page; gated by an admin role.
 
 export type BatchScreenshotResult = {
   ok: number
@@ -85,34 +71,28 @@ async function scrapeWithLimit<T, R>(
 }
 
 export async function adminBatchRegenerateScreenshots(): Promise<BatchScreenshotResult> {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
+  const session = await auth()
+  if (!session?.user) redirect('/login')
 
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
 
-  const adminDb = createAdminClient()
-  const { data: liveProducts, error } = await adminDb
-    .from('products')
-    .select('id, slug, source_url, screenshots')
-    .eq('status', 'live')
-
-  if (error || !liveProducts) {
-    return { ok: 0, failed: 0, skipped: 0, failures: [{ slug: '*', reason: error?.message ?? 'no products returned' }] }
-  }
+  const liveProducts = await db
+    .select({ id: products.id, slug: products.slug, sourceUrl: products.sourceUrl, screenshots: products.screenshots })
+    .from(products)
+    .where(eq(products.status, 'live'))
 
   const result: BatchScreenshotResult = { ok: 0, failed: 0, skipped: 0, failures: [] }
 
   await scrapeWithLimit(
     liveProducts,
     async row => {
-      if (!row.source_url) {
+      if (!row.sourceUrl) {
         result.skipped++
         return
       }
       try {
-        const scraped = await scrapeUrl(row.source_url)
+        const scraped = await scrapeUrl(row.sourceUrl)
         if (!scraped.screenshot) {
           result.failed++
           result.failures.push({ slug: row.slug ?? row.id, reason: 'no screenshot returned' })
@@ -120,15 +100,7 @@ export async function adminBatchRegenerateScreenshots(): Promise<BatchScreenshot
         }
         const existing = (row.screenshots ?? []).filter((s: string) => s !== scraped.screenshot)
         const next = [scraped.screenshot, ...existing].slice(0, 6)
-        const { error: updErr } = await adminDb
-          .from('products')
-          .update({ screenshots: next })
-          .eq('id', row.id)
-        if (updErr) {
-          result.failed++
-          result.failures.push({ slug: row.slug ?? row.id, reason: updErr.message })
-          return
-        }
+        await db.update(products).set({ screenshots: next }).where(eq(products.id, row.id))
         result.ok++
       } catch (err) {
         result.failed++
@@ -145,8 +117,8 @@ export async function adminBatchRegenerateScreenshots(): Promise<BatchScreenshot
   revalidatePath('/browse')
 
   await logAdminAction({
-    actor_id: userData.user.id,
-    actor_email: userData.user.email ?? null,
+    actor_id: session.user.id,
+    actor_email: session.user.email ?? null,
     action: 'screenshots.batch_regenerate',
     target_type: 'product',
     target_id: 'all_live',
@@ -155,7 +127,6 @@ export async function adminBatchRegenerateScreenshots(): Promise<BatchScreenshot
       failed: result.failed,
       skipped: result.skipped,
       failure_count: result.failures.length,
-      // Truncate failure list to avoid bloating the audit row if many products fail
       first_failures: result.failures.slice(0, 5),
     },
   })

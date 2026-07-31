@@ -1,5 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
-import type { Product } from '@/lib/types'
+import { eq, and, desc, asc, inArray, sql } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db, dbConfigured } from '@/lib/db'
+import { products, sellers, salesPages, reviews } from '@/db/schema'
 import { SEED_PRODUCTS, findSeedBySlug, type SeedProduct } from '@/lib/seed-products'
 
 export interface ProductListItem {
@@ -25,6 +27,14 @@ export interface ProductListItem {
   ai_models: string[]
   monthly_cost: number | null
   deploy_time: string | null
+  // ── Card trust signals ─────────────────────────────────────────
+  // `null` / 0 mean "unknown", and the card must render that honestly
+  // (a `New` pill, no seller row) rather than substituting a default.
+  sellerName: string | null
+  sellerVerified: boolean
+  /** Mean review score, or null when the listing has no reviews */
+  rating: number | null
+  ratingCount: number
 }
 
 export interface ProductDetail extends ProductListItem {
@@ -60,16 +70,6 @@ export interface ProductDetail extends ProductListItem {
   }
 }
 
-function supabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  return (
-    !!url && !!key &&
-    !url.includes('YOUR_PROJECT') &&
-    !key.startsWith('your_')
-  )
-}
-
 function seedToListItem(p: SeedProduct): ProductListItem {
   const pricePence = p.price_licensed ?? p.price_exclusive ?? null
   return {
@@ -90,6 +90,12 @@ function seedToListItem(p: SeedProduct): ProductListItem {
     ai_models: [],
     monthly_cost: null,
     deploy_time: null,
+    // Seed data has no seller and no reviews. Cards show a `New` pill and
+    // omit the seller row rather than inventing either.
+    sellerName: null,
+    sellerVerified: false,
+    rating: null,
+    ratingCount: 0,
   }
 }
 
@@ -123,9 +129,29 @@ function seedToDetail(p: SeedProduct): ProductDetail {
   }
 }
 
-function dbToListItem(row: Product): ProductListItem {
-  const priceLicensed = row.price_licensed
-  const priceExclusive = row.price_exclusive
+/** Mean rating + count per product, keyed by product id. */
+type RatingIndex = Map<string, { rating: number; count: number }>
+
+/** Stable non-cryptographic hash so a product keeps the same placeholder
+ *  gradient across renders and machines. */
+function hashToIndex(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+/** Shape shared by every row this module reads out of `products`. */
+type ProductRow = typeof products.$inferSelect
+type SellerRow = typeof sellers.$inferSelect
+type SalesPageRow = typeof salesPages.$inferSelect
+
+function dbToListItem(
+  row: ProductRow,
+  seller: Pick<SellerRow, 'displayName' | 'verified'> | null,
+  ratings?: RatingIndex,
+): ProductListItem {
+  const priceLicensed = row.priceLicensed
+  const priceExclusive = row.priceExclusive
   const type: 'Licensed' | 'Exclusive' =
     priceExclusive && !priceLicensed ? 'Exclusive' : 'Licensed'
   const priceMain =
@@ -136,6 +162,10 @@ function dbToListItem(row: Product): ProductListItem {
         : 'Contact'
   const heroImage = row.screenshots && row.screenshots.length > 0 ? row.screenshots[0] : null
   const pricePence = priceLicensed ?? priceExclusive ?? null
+  const agg = ratings?.get(row.id)
+  // Spread the six gradient classes across the catalogue so a grid of
+  // screenshot-less listings doesn't read as one flat block of the same colour.
+  const thumb = `t${(hashToIndex(row.id) % 6) + 1}`
   return {
     id: row.id,
     slug: row.slug ?? row.id,
@@ -143,106 +173,152 @@ function dbToListItem(row: Product): ProductListItem {
     tagline: row.tagline ?? '',
     description: row.description ?? '',
     category: row.category ?? 'AI Automation',
-    tags: row.tool_tags ?? [],
+    tags: row.toolTags ?? [],
     priceMain,
     priceSub: type === 'Exclusive' ? 'exclusive buy-out' : 'one-time licence',
     type,
-    thumb: 't1',
+    thumb,
     emoji: '⚡',
     heroImage,
     pricePence,
     platform: row.platform ?? [],
-    ai_models: row.ai_models ?? [],
-    monthly_cost: row.monthly_cost ?? null,
-    deploy_time: row.deploy_time ?? null,
+    ai_models: row.aiModels ?? [],
+    monthly_cost: row.monthlyCost ?? null,
+    deploy_time: row.deployTime ?? null,
+    sellerName: seller?.displayName ?? null,
+    sellerVerified: seller?.verified ?? false,
+    rating: agg && agg.count > 0 ? agg.rating : null,
+    ratingCount: agg?.count ?? 0,
   }
 }
 
+/**
+ * Mean rating and review count for a set of products, in one round-trip.
+ *
+ * Unlike the old PostgREST path (which couldn't express GROUP BY and had to
+ * fold rows in JS), Drizzle can push the aggregate down to Postgres directly.
+ * Failure is non-fatal: an empty index means every card shows `New`, which is
+ * wrong-but-harmless, whereas throwing would blank the page.
+ */
+async function fetchRatings(productIds: string[]): Promise<RatingIndex> {
+  const index: RatingIndex = new Map()
+  if (productIds.length === 0) return index
+  try {
+    const rows = await db
+      .select({
+        productId: reviews.productId,
+        avgRating: sql<number>`avg(${reviews.rating})`,
+        count: sql<number>`count(*)`,
+      })
+      .from(reviews)
+      .where(inArray(reviews.productId, productIds))
+      .groupBy(reviews.productId)
+
+    for (const row of rows) {
+      index.set(row.productId, { rating: Number(row.avgRating), count: Number(row.count) })
+    }
+  } catch (err) {
+    console.error('[products] fetchRatings failed:', err instanceof Error ? err.message : err)
+  }
+  return index
+}
+
 export async function listLiveProducts(): Promise<ProductListItem[]> {
-  if (!supabaseConfigured()) {
+  if (!dbConfigured()) {
     return SEED_PRODUCTS.map(seedToListItem)
   }
   try {
-    const supabase = await createClient()
-    // Sort featured products first (by featured_position ascending), then
-    // by created_at descending. Postgres sorts NULLs last by default for
-    // ASC, so non-featured rows naturally fall after the featured ones.
-    // If migration 008 hasn't been applied yet, the order on featured*
-    // columns is silently ignored — the fallback to created_at still works.
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('status', 'live')
-      .order('featured_position', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: false })
-    if (error) throw error
-    if (!data || data.length === 0) return SEED_PRODUCTS.map(seedToListItem)
-    return (data as Product[]).map(dbToListItem)
-  } catch {
+    // Sort featured products first (by featuredPosition ascending), then by
+    // createdAt descending. Postgres sorts NULLs last by default for ASC, so
+    // non-featured rows naturally fall after the featured ones.
+    //
+    // Left join (not inner) so a listing whose seller row is somehow missing
+    // still appears — the card just omits the seller line, same contract the
+    // old `sellers(display_name, verified)` embed (no `!inner`) had.
+    const rows = await db
+      .select({ product: products, seller: sellers })
+      .from(products)
+      .leftJoin(sellers, eq(products.sellerId, sellers.id))
+      .where(eq(products.status, 'live'))
+      .orderBy(asc(products.featuredPosition), desc(products.createdAt))
+
+    if (rows.length === 0) return SEED_PRODUCTS.map(seedToListItem)
+
+    const ratings = await fetchRatings(rows.map(r => r.product.id))
+    return rows.map(r => dbToListItem(r.product, r.seller, ratings))
+  } catch (err) {
+    console.error('[products] listLiveProducts failed:', err instanceof Error ? err.message : err)
     return SEED_PRODUCTS.map(seedToListItem)
   }
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
-  if (!supabaseConfigured()) {
+  if (!dbConfigured()) {
     const seed = findSeedBySlug(slug)
     return seed ? seedToDetail(seed) : null
   }
   try {
-    const supabase = await createClient()
-
-    // Try a "live" fetch first (public path). If nothing lands, fall back
-    // to an owner-authorised fetch so the seller can preview their own
-    // drafts at /products/[slug] before approving.
-    let data: Product | null = null
+    let row: ProductRow | null = null
+    let sellerRow: SellerRow | null = null
+    let salesPageRow: SalesPageRow | null = null
     let isPreview = false
 
-    const liveRes = await supabase
-      .from('products')
-      .select('*, sales_page:sales_pages(*), seller:sellers!inner(display_name, user_id, verified)')
-      .eq('slug', slug)
-      .eq('status', 'live')
-      .maybeSingle()
+    const liveRows = await db
+      .select({ product: products, seller: sellers, salesPage: salesPages })
+      .from(products)
+      .innerJoin(sellers, eq(products.sellerId, sellers.id))
+      .leftJoin(salesPages, eq(salesPages.productId, products.id))
+      .where(and(eq(products.slug, slug), eq(products.status, 'live')))
+      .limit(1)
 
-    if (liveRes.error) throw liveRes.error
-    data = (liveRes.data as Product | null) ?? null
+    if (liveRows.length > 0) {
+      row = liveRows[0].product
+      sellerRow = liveRows[0].seller
+      salesPageRow = liveRows[0].salesPage
+    }
 
-    if (!data) {
-      // Owner preview path — only returns a draft/archived row if the current
-      // user owns it. RLS on `products` already enforces this via `products_seller_all`,
-      // so we just lift the status filter.
-      const { data: userData } = await supabase.auth.getUser()
-      if (userData.user) {
-        const ownedRes = await supabase
-          .from('products')
-          .select('*, sales_page:sales_pages(*), seller:sellers!inner(display_name, user_id, verified)')
-          .eq('slug', slug)
-          .maybeSingle()
-        if (ownedRes.data) {
-          data = ownedRes.data as Product
-          isPreview = data.status !== 'live'
+    if (!row) {
+      // Owner preview path — a draft/archived row is only returned if the
+      // current session belongs to the seller who owns it. This replaces
+      // what the `products_seller_all` RLS policy used to enforce in
+      // Postgres: the ownership check now happens explicitly in this WHERE
+      // clause rather than being implicit in every query against the table.
+      const session = await auth()
+      if (session?.user?.id) {
+        const ownedRows = await db
+          .select({ product: products, seller: sellers, salesPage: salesPages })
+          .from(products)
+          .innerJoin(sellers, eq(products.sellerId, sellers.id))
+          .leftJoin(salesPages, eq(salesPages.productId, products.id))
+          .where(and(eq(products.slug, slug), eq(sellers.userId, session.user.id)))
+          .limit(1)
+
+        if (ownedRows.length > 0) {
+          row = ownedRows[0].product
+          sellerRow = ownedRows[0].seller
+          salesPageRow = ownedRows[0].salesPage
+          isPreview = row.status !== 'live'
         }
       }
     }
 
-    if (!data) {
+    if (!row) {
       const seed = findSeedBySlug(slug)
       return seed ? seedToDetail(seed) : null
     }
-    const row = data
-    const sp = Array.isArray(row.sales_page) ? row.sales_page[0] : row.sales_page
-    const sellerObj = Array.isArray(row.seller) ? row.seller[0] : row.seller
-    const list = dbToListItem(row)
+
+    const list = dbToListItem(row, sellerRow)
     const features = (row.features ?? []).map((f) => {
       if (typeof f === 'string') return f
       const title = (f as { title?: unknown }).title
       return typeof title === 'string' ? title : JSON.stringify(f)
     })
-    const use_cases = (row.use_cases ?? []).map((u) => {
+    const use_cases = (row.useCases ?? []).map((u) => {
       if (typeof u === 'string') return u
       const title = (u as { title?: unknown }).title
       return typeof title === 'string' ? title : JSON.stringify(u)
     })
+
     return {
       ...list,
       id: row.id,
@@ -250,30 +326,31 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
       isPreview,
       features,
       use_cases,
-      price_licensed: row.price_licensed,
-      price_exclusive: row.price_exclusive,
-      headline: sp?.headline ?? row.tagline ?? row.title,
-      subheadline: sp?.subheadline ?? row.description ?? '',
-      problem_statement: sp?.problem_statement ?? null,
-      cta_primary: sp?.cta_primary ?? (list.type === 'Exclusive' ? 'Buy exclusive' : 'Get a licence'),
-      cta_secondary: sp?.cta_secondary ?? 'Ask a question',
+      price_licensed: row.priceLicensed,
+      price_exclusive: row.priceExclusive,
+      headline: salesPageRow?.headline ?? row.tagline ?? row.title,
+      subheadline: salesPageRow?.subheadline ?? row.description ?? '',
+      problem_statement: salesPageRow?.problemStatement ?? null,
+      cta_primary: salesPageRow?.ctaPrimary ?? (list.type === 'Exclusive' ? 'Buy exclusive' : 'Get a licence'),
+      cta_secondary: salesPageRow?.ctaSecondary ?? 'Ask a question',
       platform: row.platform ?? [],
       architecture: row.architecture ?? null,
-      ai_models: row.ai_models ?? [],
+      ai_models: row.aiModels ?? [],
       integrations: row.integrations ?? [],
-      monthly_cost: row.monthly_cost ?? null,
-      deploy_time: row.deploy_time ?? null,
-      demo_url: row.demo_url ?? null,
-      video_url: row.video_url ?? null,
-      docs_url: row.docs_url ?? null,
-      repo_url: row.repo_url ?? null,
-      support_terms: row.support_terms ?? null,
+      monthly_cost: row.monthlyCost ?? null,
+      deploy_time: row.deployTime ?? null,
+      demo_url: row.demoUrl ?? null,
+      video_url: row.videoUrl ?? null,
+      docs_url: row.docsUrl ?? null,
+      repo_url: row.repoUrl ?? null,
+      support_terms: row.supportTerms ?? null,
       screenshots: row.screenshots ?? [],
-      seller: sellerObj
-        ? { display_name: sellerObj.display_name, email: null, verified: (sellerObj as { verified?: boolean }).verified ?? false }
+      seller: sellerRow
+        ? { display_name: sellerRow.displayName, email: null, verified: sellerRow.verified ?? false }
         : undefined,
     }
-  } catch {
+  } catch (err) {
+    console.error('[products] getProductBySlug failed:', err instanceof Error ? err.message : err)
     const seed = findSeedBySlug(slug)
     return seed ? seedToDetail(seed) : null
   }

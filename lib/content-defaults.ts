@@ -42,7 +42,7 @@ export const CONTENT_REGISTRY = {
     kind: 'text' as const,
   } satisfies ContentDef<string>,
   'announcement.cta_label': {
-    default: 'Apply →',
+    default: 'Apply now',
     description: 'Banner CTA label',
     group: 'Announcement Banner',
     kind: 'text' as const,
@@ -75,7 +75,7 @@ export const CONTENT_REGISTRY = {
     kind: 'rich' as const,
   } satisfies ContentDef<string>,
   'homepage.hero.cta_primary_label': {
-    default: 'Browse the Marketplace →',
+    default: 'Browse the marketplace',
     description: 'Primary CTA button text',
     group: 'Homepage Hero',
     kind: 'text' as const,
@@ -156,7 +156,7 @@ export const CONTENT_REGISTRY = {
     kind: 'text' as const,
   } satisfies ContentDef<string>,
   'pricing.cta_label': {
-    default: 'Become a Founding Builder →',
+    default: 'Become a founding builder',
     description: 'CTA button text',
     group: 'Pricing',
     kind: 'text' as const,

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import Nav from '@/components/nav'
-import Footer from '@/components/footer'
-import { createClient } from '@/lib/supabase/server'
+import { eq, desc } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db, dbConfigured } from '@/lib/db'
+import { sellers, messages, products } from '@/db/schema'
 
 export const metadata: Metadata = {
   title: 'Messages',
@@ -11,151 +12,109 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-function supabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  return !!url && !!key && !url.includes('YOUR_PROJECT') && !key.startsWith('your_')
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+function formatDate(date: Date | null): string {
+  if (!date) return '—'
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 export default async function MessagesPage() {
-  if (!supabaseConfigured()) {
+  if (!dbConfigured()) {
     return (
       <>
-        <Nav />
-        <main>
-          <section className="section">
-            <div className="section-tag">Messages</div>
-            <h1 className="section-title" style={{ fontSize: 'clamp(32px,4vw,56px)' }}>
-              Not connected
-            </h1>
-            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, maxWidth: 640, marginTop: 16 }}>
-              Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in <code>.env.local</code> to use messages.
-            </p>
-          </section>
-        </main>
-        <Footer />
+        <div className="section-tag">Messages</div>
+        <h1 className="section-title" style={{ fontSize: 'clamp(32px,4vw,56px)' }}>
+          Not connected
+        </h1>
+        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, maxWidth: 640, marginTop: 16 }}>
+          Set <code>DATABASE_URL</code> in <code>.env.local</code> to use messages.
+        </p>
       </>
     )
   }
 
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
+  const session = await auth()
+  if (!session?.user) redirect('/login')
 
-  const { data: sellerRow } = await supabase
-    .from('sellers')
-    .select('id')
-    .eq('user_id', userData.user.id)
-    .maybeSingle()
+  const sellerRow = await db.query.sellers.findFirst({ where: eq(sellers.userId, session.user.id) })
 
   if (!sellerRow) {
     return (
       <>
-        <Nav />
-        <main>
-          <section className="section">
-            <div className="section-tag">Messages</div>
-            <h1 className="section-title" style={{ fontSize: 'clamp(32px,4vw,56px)' }}>
-              No seller profile found
-            </h1>
-            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, maxWidth: 640, marginTop: 16 }}>
-              Your seller profile is still being created. Check back shortly.
-            </p>
-          </section>
-        </main>
-        <Footer />
+        <div className="section-tag">Messages</div>
+        <h1 className="section-title" style={{ fontSize: 'clamp(32px,4vw,56px)' }}>
+          No seller profile found
+        </h1>
+        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, maxWidth: 640, marginTop: 16 }}>
+          Your seller profile is still being created. Check back shortly.
+        </p>
       </>
     )
   }
 
-  const { data: messages } = await supabase
-    .from('messages')
-    .select('*, product:products(title, slug)')
-    .eq('seller_id', sellerRow.id)
-    .order('created_at', { ascending: false })
-
-  const rows = messages ?? []
+  const rows = await db
+    .select({
+      id: messages.id, senderName: messages.senderName, senderEmail: messages.senderEmail,
+      body: messages.body, createdAt: messages.createdAt,
+      productTitle: products.title, productSlug: products.slug,
+    })
+    .from(messages)
+    .leftJoin(products, eq(products.id, messages.productId))
+    .where(eq(messages.sellerId, sellerRow.id))
+    .orderBy(desc(messages.createdAt))
 
   return (
     <>
-      <Nav />
-      <main>
-        <section className="section">
-          <div className="section-tag">Seller dashboard</div>
-          <h1 className="section-title" style={{ fontSize: 'clamp(40px,5vw,64px)' }}>
-            Messages
-          </h1>
-          <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, marginTop: 12 }}>
-            {rows.length === 0
-              ? 'No messages yet.'
-              : `${rows.length} message${rows.length === 1 ? '' : 's'} from buyers.`}
-          </p>
-        </section>
+      <div className="section-tag">Seller dashboard</div>
+      <h1 className="gf-admin-title">Messages</h1>
+      <p className="gf-admin-sub">
+        {rows.length === 0
+          ? 'No messages yet.'
+          : `${rows.length} message${rows.length === 1 ? '' : 's'} from buyers.`}
+      </p>
 
-        <section className="section" style={{ paddingTop: 0 }}>
-          {rows.length === 0 ? (
-            <div className="product-card" style={{ padding: 40, textAlign: 'center', border: '1px dashed var(--ink)' }}>
-              <p style={{ fontFamily: 'var(--font-serif)', fontSize: 22 }}>
-                No messages yet. They&apos;ll appear here when buyers reach out.
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gap: 12 }}>
-              {rows.map((msg: {
-                id: string
-                sender_name: string
-                sender_email: string
-                body: string
-                created_at: string
-                product: { title: string; slug: string } | null
-              }) => (
-                <article
-                  key={msg.id}
-                  className="product-card"
-                  style={{ padding: 24, display: 'grid', gap: 12 }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
-                    <div>
-                      {msg.product ? (
-                        <Link
-                          href={`/products/${msg.product.slug}`}
-                          style={{ fontFamily: 'var(--font-serif)', fontWeight: 600, fontSize: 18, color: 'var(--amber)', textDecoration: 'none' }}
-                        >
-                          {msg.product.title}
-                        </Link>
-                      ) : (
-                        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 18, color: '#6b6b6b' }}>
-                          (product removed)
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#6b6b6b', whiteSpace: 'nowrap' }}>
-                      {formatDate(msg.created_at)}
-                    </div>
+      {rows.length === 0 ? (
+        <div className="gf-panel">
+          <div className="gf-panel-body" style={{ padding: 40, textAlign: 'center' }}>
+            <p style={{ fontSize: 17, color: 'var(--gf-text-2)' }}>
+              No messages yet. They&apos;ll appear here when buyers reach out.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {rows.map(msg => (
+            <article key={msg.id} className="gf-panel">
+              <div className="gf-panel-body" style={{ display: 'grid', gap: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
+                  <div>
+                    {msg.productTitle && msg.productSlug ? (
+                      <Link
+                        href={`/products/${msg.productSlug}`}
+                        style={{ fontWeight: 600, fontSize: 17, color: 'var(--gf-amber-ink)', textDecoration: 'none' }}
+                      >
+                        {msg.productTitle}
+                      </Link>
+                    ) : (
+                      <span style={{ fontSize: 17, color: 'var(--gf-text-2)' }}>(product removed)</span>
+                    )}
                   </div>
-
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: '#6b6b6b' }}>
-                    {msg.sender_name} &lt;{msg.sender_email}&gt;
+                  <div style={{ fontSize: 13, color: 'var(--gf-text-2)', whiteSpace: 'nowrap' }}>
+                    {formatDate(msg.createdAt)}
                   </div>
+                </div>
 
-                  <p style={{ fontFamily: 'var(--font-serif)', fontSize: 17, lineHeight: 1.6, margin: 0 }}>
-                    {msg.body}
-                  </p>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
-      <Footer />
+                <div style={{ fontSize: 14, color: 'var(--gf-text-2)' }}>
+                  {msg.senderName} &lt;{msg.senderEmail}&gt;
+                </div>
+
+                <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--gf-text)' }}>
+                  {msg.body}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </>
   )
 }

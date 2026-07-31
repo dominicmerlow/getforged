@@ -1,27 +1,31 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { eq } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { sellers } from '@/db/schema'
 
 export type ProfileState = { ok: true } | { error: string } | null
 
 export async function updateProfile(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
-  const display_name = String(formData.get('display_name') ?? '').trim()
+  const displayName = String(formData.get('display_name') ?? '').trim()
   const bio = String(formData.get('bio') ?? '').trim()
-  const avatar_url = String(formData.get('avatar_url') ?? '').trim() || null
+  const avatarUrl = String(formData.get('avatar_url') ?? '').trim() || null
 
-  if (!display_name) return { error: 'Display name is required.' }
+  if (!displayName) return { error: 'Display name is required.' }
 
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
+  const session = await auth()
+  if (!session?.user) redirect('/login')
 
-  const { error } = await supabase
-    .from('sellers')
-    .update({ display_name, bio: bio || null, avatar_url })
-    .eq('user_id', userData.user.id)
+  try {
+    await db.update(sellers)
+      .set({ displayName, bio: bio || null, avatarUrl })
+      .where(eq(sellers.userId, session.user.id))
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not save profile.' }
+  }
 
-  if (error) return { error: error.message }
   revalidatePath('/dashboard')
   return { ok: true }
 }

@@ -80,7 +80,7 @@ export default function PressPage() {
                 Built with
               </div>
               <p style={{ fontFamily: 'var(--font-serif)', fontSize: 17, lineHeight: 1.5, margin: 0 }}>
-                Next.js · Supabase · Stripe · Claude · Resend · Vercel
+                Next.js · Neon · Auth.js · Stripe · Claude · Resend · Vercel
               </p>
             </div>
           </div>

@@ -2,44 +2,22 @@
  * Content read API. Used by every component that renders editable copy.
  *
  * Reads go through `unstable_cache` with the tag 'site-content', so:
- *   - Cold reads hit Supabase once per process and cache for the page TTL
+ *   - Cold reads hit Neon once per process and cache for the page TTL
  *   - Admin edits call revalidateTag('site-content') and the next read is fresh
  *   - No CDN purge needed; Next handles staleness via the cache tag
  *
  * Falls back to `CONTENT_REGISTRY[key].default` whenever:
  *   - The DB row doesn't exist yet (key not yet edited)
- *   - The Supabase env isn't wired (e.g. local dev, preview without DB)
+ *   - DATABASE_URL isn't wired (e.g. local dev, preview without DB)
  *   - Any read error (logged, never thrown)
  */
 
 import { unstable_cache } from 'next/cache'
-import { createServerClient } from '@supabase/ssr'
+import { db, dbConfigured } from '@/lib/db'
+import { siteContent } from '@/db/schema'
 import { CONTENT_REGISTRY, type ContentKey, ALL_CONTENT_KEYS } from './content-defaults'
 
 export const CONTENT_CACHE_TAG = 'site-content'
-
-interface ContentRow {
-  key: string
-  value_json: unknown
-  description: string | null
-  updated_at: string
-  updated_by: string | null
-}
-
-function supabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  return !!url && !!key && !url.includes('YOUR_PROJECT')
-}
-
-// Use a cookie-less server client — content is public-readable, no auth needed.
-function readClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
 
 /**
  * Loads ALL content overrides in one round-trip and caches them by tag.
@@ -54,20 +32,11 @@ function readClient() {
  */
 const fetchAllOverrides = unstable_cache(
   async (): Promise<Record<string, unknown>> => {
-    if (!supabaseConfigured()) return {}
+    if (!dbConfigured()) return {}
     try {
-      const supabase = readClient()
-      const { data, error } = await supabase
-        .from('site_content')
-        .select('key, value_json')
-      if (error) {
-        console.error('[content] read failed:', error.message)
-        return {}
-      }
+      const rows = await db.select({ key: siteContent.key, value: siteContent.valueJson }).from(siteContent)
       const out: Record<string, unknown> = {}
-      for (const row of (data ?? []) as Pick<ContentRow, 'key' | 'value_json'>[]) {
-        out[row.key] = row.value_json
-      }
+      for (const row of rows) out[row.key] = row.value
       return out
     } catch (err) {
       console.error('[content] read threw:', err instanceof Error ? err.message : err)

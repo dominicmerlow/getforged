@@ -3,18 +3,13 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
+import { dbConfigured } from '@/lib/db'
 import RegisterForm from './RegisterForm'
 
 export const metadata: Metadata = {
   title: 'Create your account',
   description: 'Join GetForged as a Founding Builder — list your AI-built apps and reach SME buyers. Free to list, 15% only when you sell.',
-}
-
-function supabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  return !!url && !!key && !url.includes('YOUR_PROJECT') && !key.startsWith('your_')
 }
 
 export default async function RegisterPage({
@@ -24,15 +19,12 @@ export default async function RegisterPage({
 }) {
   const { plan, error } = await searchParams
 
-  if (supabaseConfigured()) {
-    const supabase = await createClient()
-    const { data } = await supabase.auth.getUser()
-    if (data.user) redirect('/dashboard')
-  }
+  const session = await auth()
+  if (session?.user) redirect('/dashboard')
 
   return (
     <>
-      <Nav />
+      <Nav showCategories={false} />
       <main>
         <section className="section" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
           <div style={{ display: 'grid', gap: 24, maxWidth: 460, width: '100%', justifyItems: 'start' }}>
@@ -58,10 +50,9 @@ export default async function RegisterPage({
               </p>
             )}
 
-            {!supabaseConfigured() && (
+            {!dbConfigured() && (
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, padding: 12, border: '1px dashed var(--ink)' }}>
-                Supabase env vars are still placeholders — confirmation emails won&apos;t send until you set
-                {' '}<code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
+                <code>DATABASE_URL</code> is not set — sign-up won&apos;t work until the database is configured.
               </p>
             )}
 

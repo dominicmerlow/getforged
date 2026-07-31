@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
 import { checkAdminAccess } from '@/lib/admin'
 import { getAllSettingsForAdmin } from '@/lib/settings'
 import SettingRow from './SettingRow'
@@ -8,10 +8,9 @@ import SettingRow from './SettingRow'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminSettingsPage() {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
 
   let settings: Awaited<ReturnType<typeof getAllSettingsForAdmin>> = []

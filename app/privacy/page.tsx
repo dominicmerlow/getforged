@@ -33,7 +33,7 @@ export default function PrivacyPage() {
               2. How We Store Your Data
             </h2>
             <p>
-              User accounts and product data are stored in Supabase, a Postgres-based cloud database hosted on AWS infrastructure in the EU. Supabase is SOC 2 Type II certified. Your password is never stored in plain text — authentication is handled via Supabase Auth using bcrypt hashing. We retain your account data for as long as your account is active, plus a reasonable period after deletion for legal and fraud-prevention purposes.
+              User accounts and product data are stored in a managed Postgres database (Neon). Sign-in is handled by Auth.js, which supports Google, GitHub, one-time email links, and email-and-password login; if you use a password, it is never stored in plain text — only a bcrypt hash is kept. We retain your account data for as long as your account is active, plus a reasonable period after deletion for legal and fraud-prevention purposes.
             </p>
 
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, marginBottom: '0.75rem', marginTop: '2.5rem' }}>
@@ -41,9 +41,10 @@ export default function PrivacyPage() {
             </h2>
             <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
               <li><strong>Stripe</strong> — processes all payments. Stripe&apos;s own privacy policy governs the data you share with them at checkout.</li>
-              <li><strong>Resend</strong> — handles transactional email (order confirmations, password resets). We share only your email address and the minimum data needed to send the relevant email.</li>
-              <li><strong>Supabase</strong> — database and authentication infrastructure.</li>
-              <li><strong>Vercel</strong> — hosts the application. Vercel may log request metadata for security and performance purposes.</li>
+              <li><strong>Resend</strong> — handles transactional email (order confirmations, magic-link sign-in, notifications). We share only your email address and the minimum data needed to send the relevant email.</li>
+              <li><strong>Neon</strong> — hosts the Postgres database that stores account and product data.</li>
+              <li><strong>Google and GitHub</strong> — if you choose to sign in with one of these, they confirm your identity to us; we receive only your name, email address and profile image from them.</li>
+              <li><strong>Vercel</strong> — hosts the application and the file storage used for seller-uploaded screenshots. Vercel may log request metadata for security and performance purposes.</li>
             </ul>
             <p style={{ marginTop: '0.75rem' }}>
               We do not sell your data to any third party, ever. We do not use your data for advertising targeting on other platforms.

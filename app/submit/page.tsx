@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
+import { dbConfigured } from '@/lib/db'
 import { getSetting } from '@/lib/settings'
 import SubmitForm from './SubmitForm'
 
@@ -14,14 +15,8 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-function supabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  return !!url && !!key && !url.includes('YOUR_PROJECT') && !key.startsWith('your_')
-}
-
 export default async function SubmitPage() {
-  if (!supabaseConfigured()) {
+  if (!dbConfigured()) {
     return (
       <>
         <Nav />
@@ -32,7 +27,7 @@ export default async function SubmitPage() {
               Not connected
             </h1>
             <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, maxWidth: 640, marginTop: 16 }}>
-              Set Supabase env vars to enable product submissions.
+              Set <code>DATABASE_URL</code> to enable product submissions.
             </p>
           </section>
         </main>
@@ -41,15 +36,14 @@ export default async function SubmitPage() {
     )
   }
 
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) {
+  const session = await auth()
+  if (!session?.user) {
     redirect('/login')
   }
 
   // Submissions paused gate (admin feature flag). Defence-in-depth — the
   // server action also enforces this. Fail-OPEN if the read throws so a
-  // transient Supabase error doesn't block the page.
+  // transient DB error doesn't block the page.
   let submissionsPaused = false
   try {
     submissionsPaused = await getSetting('site.submissions_paused')

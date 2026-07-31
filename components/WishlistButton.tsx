@@ -1,5 +1,20 @@
 import { toggleBookmark, isBookmarked } from '@/lib/bookmarks'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
+
+/**
+ * Whether the viewer is signed in, without taking the page down when the
+ * database is unreachable or unconfigured. An un-authed answer degrades the
+ * control to a sign-in link; a thrown error used to blank the whole product
+ * page.
+ */
+async function isAuthed(): Promise<boolean> {
+  try {
+    const session = await auth()
+    return !!session?.user
+  } catch {
+    return false
+  }
+}
 
 // Server component that renders a heart toggle. When not authenticated,
 // links to /login instead of posting — avoids creating phantom rows.
@@ -12,32 +27,29 @@ export default async function WishlistButton({
   returnTo: string
   compact?: boolean
 }) {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  const authed = !!userData.user
-
-  const saved = authed ? await isBookmarked(productId) : false
-
-  const sizing = compact
-    ? { padding: '8px 10px', fontSize: 13 }
-    : { padding: '10px 16px', fontSize: 13 }
+  const authed = await isAuthed()
+  const saved = authed ? await isBookmarked(productId).catch(() => false) : false
 
   const baseStyle: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 6,
-    background: saved ? 'var(--soft-amber, #b97314)' : 'transparent',
+    justifyContent: 'center',
+    gap: 7,
+    height: compact ? 32 : 40,
+    padding: compact ? '0 12px' : '0 16px',
+    background: saved ? 'var(--gf-amber-tint)' : 'transparent',
     border: '1px solid',
-    borderColor: saved ? 'var(--soft-amber, #b97314)' : 'var(--warm-border, rgba(42,34,23,0.18))',
-    color: saved ? 'var(--cream, #fbf6ec)' : 'var(--warm-ink, #2a2217)',
-    fontFamily: 'var(--font-mono), monospace',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
-    borderRadius: 2,
+    borderColor: saved ? 'var(--gf-amber)' : 'var(--gf-line-strong)',
+    color: saved ? 'var(--gf-amber-ink)' : 'var(--gf-text)',
+    fontFamily: 'var(--font-sans), sans-serif',
+    fontSize: compact ? 14 : 15,
+    fontWeight: 600,
+    letterSpacing: 0,
+    textTransform: 'none',
+    borderRadius: 'var(--gf-radius)',
     cursor: 'pointer',
     textDecoration: 'none',
-    transition: 'all 0.15s',
-    ...sizing,
+    transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
   }
 
   if (!authed) {

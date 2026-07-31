@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-// Static — no DB / no settings reads. Safe to serve even when Supabase is
+// Static — no DB / no settings reads. Safe to serve even when the database is
 // the very thing we're patching.
 export const dynamic = 'force-static'
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { db, dbConfigured } from '@/lib/db'
+import { subscribers } from '@/db/schema'
 import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 
 // Email validation: deliberately liberal — we want to capture interest, not
@@ -39,29 +40,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Email too long.' }, { status: 400 })
   }
 
-  // Use service role so the insert bypasses RLS (the table policy is
-  // public-insert anyway, but service role also works without auth context).
-  let supabase
-  try {
-    supabase = await createServiceClient()
-  } catch {
+  if (!dbConfigured()) {
     return NextResponse.json({ error: 'Subscription service not configured.' }, { status: 503 })
   }
 
   // Upsert by (email, source) so re-subscribing is idempotent.
-  const { error } = await supabase
-    .from('subscribers')
-    .upsert(
-      { email, source, unsubscribed: false },
-      { onConflict: 'email,source', ignoreDuplicates: false }
-    )
-
-  if (error) {
-    // The most common failure here pre-migration is "relation 'subscribers'
-    // does not exist". We log it server-side and return a graceful 503 so
-    // the UI shows an "email-us" fallback instead of an error toast that
-    // implies the user did something wrong.
-    console.error('[subscribe] insert failed:', error.message)
+  try {
+    await db
+      .insert(subscribers)
+      .values({ email, source, unsubscribed: false })
+      .onConflictDoUpdate({
+        target: [subscribers.email, subscribers.source],
+        set: { unsubscribed: false },
+      })
+  } catch (err) {
+    // The most common failure here is transient DB unavailability. Log it
+    // server-side and return a graceful 503 so the UI shows an "email-us"
+    // fallback instead of an error toast that implies the user did something
+    // wrong.
+    console.error('[subscribe] insert failed:', err instanceof Error ? err.message : err)
     return NextResponse.json(
       { error: 'Subscription service is warming up — please email hello@getforged.io for now.' },
       { status: 503 }

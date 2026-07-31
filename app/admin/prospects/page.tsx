@@ -1,30 +1,13 @@
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@/lib/supabase/server'
+import { desc, eq } from 'drizzle-orm'
+import { auth } from '@/auth'
 import { checkAdminAccess } from '@/lib/admin'
+import { db } from '@/lib/db'
+import { claimInvites, products } from '@/db/schema'
 import ProspectBatchForm from './ProspectBatchForm'
 import RevokeInviteButton from './RevokeInviteButton'
 
 export const dynamic = 'force-dynamic'
-
-function adminDb() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
-
-interface InviteRow {
-  id: string
-  token: string
-  status: string
-  source: string
-  prospect_email: string | null
-  created_at: string
-  claimed_at: string | null
-  product: { title: string; slug: string | null } | { title: string; slug: string | null }[] | null
-}
 
 const STATUS_COLOR: Record<string, string> = {
   sent: 'var(--warm-muted, #8a7d69)',
@@ -35,22 +18,25 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default async function AdminProspectsPage() {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
 
-  const db = adminDb()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
 
-  const { data: invitesRaw } = await db
-    .from('claim_invites')
-    .select('id, token, status, source, prospect_email, created_at, claimed_at, product:products(title, slug)')
-    .order('created_at', { ascending: false })
+  const invites = await db
+    .select({
+      id: claimInvites.id, token: claimInvites.token, status: claimInvites.status,
+      source: claimInvites.source, prospectEmail: claimInvites.prospectEmail,
+      createdAt: claimInvites.createdAt, claimedAt: claimInvites.claimedAt,
+      productTitle: products.title,
+    })
+    .from(claimInvites)
+    .leftJoin(products, eq(products.id, claimInvites.productId))
+    .orderBy(desc(claimInvites.createdAt))
     .limit(200)
 
-  const invites = (invitesRaw ?? []) as InviteRow[]
   const funnel = invites.reduce<Record<string, number>>((acc, inv) => {
     acc[inv.status] = (acc[inv.status] ?? 0) + 1
     return acc
@@ -98,45 +84,42 @@ export default async function AdminProspectsPage() {
               No prospect invites yet.
             </p>
           )}
-          {invites.map(inv => {
-            const product = Array.isArray(inv.product) ? inv.product[0] : inv.product
-            return (
-              <div
-                key={inv.id}
+          {invites.map(inv => (
+            <div
+              key={inv.id}
+              style={{
+                padding: '12px 16px',
+                border: '1px solid var(--warm-border, rgba(42,34,23,0.12))',
+                display: 'flex',
+                gap: 16,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 13,
+              }}
+            >
+              <span
                 style={{
-                  padding: '12px 16px',
-                  border: '1px solid var(--warm-border, rgba(42,34,23,0.12))',
-                  display: 'flex',
-                  gap: 16,
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 13,
+                  textTransform: 'uppercase',
+                  fontSize: 11,
+                  letterSpacing: '0.08em',
+                  color: STATUS_COLOR[inv.status] ?? 'inherit',
+                  minWidth: 70,
                 }}
               >
-                <span
-                  style={{
-                    textTransform: 'uppercase',
-                    fontSize: 11,
-                    letterSpacing: '0.08em',
-                    color: STATUS_COLOR[inv.status] ?? 'inherit',
-                    minWidth: 70,
-                  }}
-                >
-                  {inv.status}
-                </span>
-                <span style={{ flex: 1, minWidth: 160 }}>{product?.title ?? '(deleted product)'}</span>
-                <span style={{ color: '#6b6b6b' }}>{inv.source}</span>
-                <span style={{ color: '#6b6b6b' }}>{inv.prospect_email ?? '—'}</span>
-                <code style={{ fontSize: 11, wordBreak: 'break-all', color: 'var(--soft-amber, #b97314)' }}>
-                  {`${appUrl}/claim/${inv.token}`}
-                </code>
-                {(inv.status === 'sent' || inv.status === 'viewed') && (
-                  <RevokeInviteButton inviteId={inv.id} />
-                )}
-              </div>
-            )
-          })}
+                {inv.status}
+              </span>
+              <span style={{ flex: 1, minWidth: 160 }}>{inv.productTitle ?? '(deleted product)'}</span>
+              <span style={{ color: '#6b6b6b' }}>{inv.source}</span>
+              <span style={{ color: '#6b6b6b' }}>{inv.prospectEmail ?? '—'}</span>
+              <code style={{ fontSize: 11, wordBreak: 'break-all', color: 'var(--soft-amber, #b97314)' }}>
+                {`${appUrl}/claim/${inv.token}`}
+              </code>
+              {(inv.status === 'sent' || inv.status === 'viewed') && (
+                <RevokeInviteButton inviteId={inv.id} />
+              )}
+            </div>
+          ))}
         </div>
       </section>
     </>

@@ -1,10 +1,11 @@
 /**
  * Admin gate for /admin and admin server actions.
  *
- * v2: now backed by user_roles table (Phase 1 of admin suite migration).
- * The ADMIN_EMAIL env var is kept as a fallback during the migration so
- * existing admins don't get locked out before being granted DB roles.
- * The fallback is removed in Phase 5.
+ * Backed by the `user_roles` table (Drizzle/Neon). The ADMIN_EMAIL env var
+ * stays as a fallback so an operator can bootstrap the very first admin
+ * before any DB role exists — mirrors the original Supabase-era migration
+ * window, kept indefinitely here since there's no scheduled "Phase 5" to
+ * remove it.
  *
  * Role hierarchy (descending power):
  *   superadmin  — full access including impersonation, role grants, settings
@@ -17,7 +18,9 @@
  * in user_roles, or an explicit email match in ADMIN_EMAIL.
  */
 
-import { createServerClient } from '@supabase/ssr'
+import { eq, and } from 'drizzle-orm'
+import { db, dbConfigured } from '@/lib/db'
+import { userRoles, adminAudit } from '@/db/schema'
 
 export type UserRole = 'superadmin' | 'admin' | 'moderator' | 'support'
 
@@ -27,7 +30,7 @@ export const ALL_ROLES: UserRole[] = ['superadmin', 'admin', 'moderator', 'suppo
 // "buyer" / "seller" tier (those live on `sellers` table, not user_roles).
 export const ADMIN_ROLES: UserRole[] = ['superadmin', 'admin', 'moderator', 'support']
 
-// ── Env-var fallback (kept during Phase 1–4 migration window) ───────
+// ── Env-var fallback ─────────────────────────────────────────────────
 function parseAdminEmails(): string[] {
   const raw = process.env.ADMIN_EMAIL
   if (!raw) return []
@@ -50,41 +53,30 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   return allow.includes(email.trim().toLowerCase())
 }
 
-// ── DB-backed role lookups (Phase 1 onward) ─────────────────────────
-
-/**
- * Direct service-role Supabase client for role checks. Intentionally bypasses
- * RLS because user_roles is policy-deny on public select. Caller must already
- * have authenticated via the user-session client and verified the user's
- * identity before passing user_id here.
- */
-function adminDbClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
+// ── DB-backed role lookups ───────────────────────────────────────────
 
 /**
  * Returns the highest-power role the user holds, or null if they hold none.
  * Used by /admin gate and the side-nav to decide which sections to show.
  */
 export async function getUserRole(userId: string): Promise<UserRole | null> {
-  if (!userId) return null
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
-  const db = adminDbClient()
-  const { data } = await db
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', userId)
+  if (!userId || !dbConfigured()) return null
+  try {
+    const rows = await db
+      .select({ role: userRoles.role })
+      .from(userRoles)
+      .where(eq(userRoles.userId, userId))
 
-  if (!data || data.length === 0) return null
-  // Pick the highest-power role; ALL_ROLES is in descending power order.
-  for (const role of ALL_ROLES) {
-    if (data.some(r => r.role === role)) return role
+    if (rows.length === 0) return null
+    // Pick the highest-power role; ALL_ROLES is in descending power order.
+    for (const role of ALL_ROLES) {
+      if (rows.some(r => r.role === role)) return role
+    }
+    return null
+  } catch (err) {
+    console.error('[admin] getUserRole failed:', err instanceof Error ? err.message : err)
+    return null
   }
-  return null
 }
 
 /**
@@ -108,10 +100,7 @@ export async function userHasRole(
  * Pass-through logic:
  *   1. DB role check first (proper path)
  *   2. If no DB role found, fall back to ADMIN_EMAIL env var
- *   3. Email match → treat as superadmin (during migration window)
- *
- * After all admins have been granted DB roles, the env-var fallback can
- * be removed by deleting the `if (!role && isAdminEmail(...))` block.
+ *   3. Email match → treat as superadmin
  */
 export async function checkAdminAccess(
   userId: string,
@@ -120,10 +109,23 @@ export async function checkAdminAccess(
   const role = await getUserRole(userId)
   if (role) return role
 
-  // Migration fallback — remove in Phase 5
   if (isAdminEmail(email)) return 'superadmin'
 
   return null
+}
+
+/**
+ * Grant a role to a user. Idempotent — the (userId, role) primary key means
+ * a repeat grant is a silent no-op rather than an error.
+ */
+export async function grantRole(userId: string, role: UserRole, grantedBy: string | null): Promise<void> {
+  if (!dbConfigured()) return
+  await db.insert(userRoles).values({ userId, role, grantedBy }).onConflictDoNothing()
+}
+
+export async function revokeRole(userId: string, role: UserRole): Promise<void> {
+  if (!dbConfigured()) return
+  await db.delete(userRoles).where(and(eq(userRoles.userId, userId), eq(userRoles.role, role)))
 }
 
 // ── Audit log ────────────────────────────────────────────────────────
@@ -141,25 +143,21 @@ interface AuditEntry {
  * Append an admin-action row to admin_audit. Failure is non-fatal — we
  * never let an audit insert error block the underlying action, but we
  * do log to console so the failure shows up in Vercel logs.
- *
- * Safe to call from any server action. No-ops if SUPABASE_SERVICE_ROLE_KEY
- * is missing (e.g. local dev without env wired).
  */
 export async function logAdminAction(entry: AuditEntry): Promise<void> {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!dbConfigured()) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[admin-audit] (no service key, skipping)', entry.action, entry.target_id)
+      console.log('[admin-audit] (no database, skipping)', entry.action, entry.target_id)
     }
     return
   }
   try {
-    const db = adminDbClient()
-    await db.from('admin_audit').insert({
-      actor_id: entry.actor_id,
-      actor_email: entry.actor_email,
+    await db.insert(adminAudit).values({
+      actorId: entry.actor_id,
+      actorEmail: entry.actor_email,
       action: entry.action,
-      target_type: entry.target_type ?? null,
-      target_id: entry.target_id ?? null,
+      targetType: entry.target_type ?? null,
+      targetId: entry.target_id ?? null,
       payload: entry.payload ?? null,
     })
   } catch (err) {

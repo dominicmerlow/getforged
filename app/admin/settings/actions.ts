@@ -2,18 +2,12 @@
 
 import { updateTag, revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@/lib/supabase/server'
+import { eq } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { siteSettings } from '@/db/schema'
 import { checkAdminAccess, logAdminAction } from '@/lib/admin'
 import { SETTINGS_REGISTRY, type SettingKey, ALL_SETTING_KEYS, SETTINGS_CACHE_TAG } from '@/lib/settings'
-
-function adminDb() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
 
 export type SettingResult =
   | { ok: true; key: string }
@@ -24,10 +18,9 @@ export async function updateSetting(
   _prev: SettingResult,
   formData: FormData
 ): Promise<SettingResult> {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
 
   const rawKey = String(formData.get('key') ?? '')
@@ -49,33 +42,41 @@ export async function updateSetting(
     return { error: `Unsupported kind for ${key}` }
   }
 
-  const db = adminDb()
-  const { data: prior } = await db.from('site_settings').select('value_json').eq('key', key).maybeSingle()
+  const prior = await db.query.siteSettings.findFirst({ where: eq(siteSettings.key, key) })
 
-  const { error } = await db
-    .from('site_settings')
-    .upsert(
-      {
+  try {
+    await db
+      .insert(siteSettings)
+      .values({
         key,
-        value_json: value,
+        valueJson: value,
         description: def.description,
-        updated_at: new Date().toISOString(),
-        updated_by: userData.user.id,
-      },
-      { onConflict: 'key' }
-    )
-  if (error) return { error: `Save failed: ${error.message}` }
+        updatedAt: new Date(),
+        updatedBy: session.user.id,
+      })
+      .onConflictDoUpdate({
+        target: siteSettings.key,
+        set: {
+          valueJson: value,
+          description: def.description,
+          updatedAt: new Date(),
+          updatedBy: session.user.id,
+        },
+      })
+  } catch (err) {
+    return { error: `Save failed: ${err instanceof Error ? err.message : 'unknown error'}` }
+  }
 
   updateTag(SETTINGS_CACHE_TAG)
   revalidatePath('/', 'layout')
 
   await logAdminAction({
-    actor_id: userData.user.id,
-    actor_email: userData.user.email ?? null,
+    actor_id: session.user.id,
+    actor_email: session.user.email ?? null,
     action: 'setting.update',
     target_type: 'setting',
     target_id: key,
-    payload: { from: prior?.value_json ?? null, to: value },
+    payload: { from: prior?.valueJson ?? null, to: value },
   })
 
   return { ok: true, key }

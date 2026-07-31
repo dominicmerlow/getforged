@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import Nav from '@/components/nav'
-import Footer from '@/components/footer'
-import { createClient } from '@/lib/supabase/server'
-import type { Product, ProductStatus } from '@/lib/types'
+import { eq, desc, sql } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db, dbConfigured } from '@/lib/db'
+import { products, sellers, salesPages, messages } from '@/db/schema'
+import type { ProductStatus } from '@/lib/types'
 import { formatPrice } from '@/lib/utils'
 import { updateProductStatus } from './actions'
 
@@ -15,30 +16,31 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-function supabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  return !!url && !!key && !url.includes('YOUR_PROJECT') && !key.startsWith('your_')
-}
-
-const STATUS_LABEL: Record<ProductStatus, string> = {
-  draft: 'Draft',
-  live: 'Live',
-  archived: 'Archived',
-}
-
-const STATUS_ACTIONS: Record<ProductStatus, { next: ProductStatus; label: string }[]> = {
+const STATUS_ACTIONS: Record<ProductStatus, { next: ProductStatus; label: string; primary?: boolean }[]> = {
   draft: [
-    { next: 'live', label: 'Approve → live' },
+    { next: 'live', label: 'Publish', primary: true },
     { next: 'archived', label: 'Archive' },
   ],
   live: [
+    { next: 'draft', label: 'Unpublish' },
     { next: 'archived', label: 'Archive' },
-    { next: 'draft', label: 'Unpublish → draft' },
   ],
   archived: [
-    { next: 'draft', label: 'Restore → draft' },
+    { next: 'draft', label: 'Restore' },
   ],
+}
+
+/** Order listings so the ones needing attention surface first. */
+const STATUS_ORDER: Record<ProductStatus, number> = { draft: 0, live: 1, archived: 2 }
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="gf-panel">
+      <div className="gf-panel-body" style={{ padding: 40, textAlign: 'center' }}>
+        {children}
+      </div>
+    </div>
+  )
 }
 
 export default async function DashboardPage({
@@ -48,218 +50,179 @@ export default async function DashboardPage({
 }) {
   const { claimed } = await searchParams
 
-  if (!supabaseConfigured()) {
+  if (!dbConfigured()) {
     return (
       <>
-        <Nav />
-        <main>
-          <section className="section">
-            <div className="section-tag">Dashboard</div>
-            <h1 className="section-title" style={{ fontSize: 'clamp(32px,4vw,56px)' }}>
-              Not connected
-            </h1>
-            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, maxWidth: 640, marginTop: 16 }}>
-              Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in <code>.env.local</code> to use the dashboard.
-            </p>
-          </section>
-        </main>
-        <Footer />
+        <h1 className="gf-admin-title">Not connected</h1>
+        <p className="gf-admin-sub">
+          Set <code>DATABASE_URL</code> in <code>.env.local</code> to use the dashboard.
+        </p>
       </>
     )
   }
 
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
+  const session = await auth()
+  if (!session?.user) redirect('/login')
 
-  const { data: sellerRow } = await supabase
-    .from('sellers')
-    .select('id, display_name, verified')
-    .eq('user_id', userData.user.id)
-    .maybeSingle()
+  const sellerRow = await db.query.sellers.findFirst({ where: eq(sellers.userId, session.user.id) })
 
   if (!sellerRow) {
     return (
       <>
-        <Nav />
-        <main>
-          <section className="section">
-            <div className="section-tag">Dashboard</div>
-            <h1 className="section-title" style={{ fontSize: 'clamp(32px,4vw,56px)' }}>
-              Welcome, {userData.user.email}
-            </h1>
-            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, maxWidth: 640, marginTop: 16 }}>
-              Your seller profile is still being created. If this persists, check that the <code>on_auth_user_created</code> trigger is installed.
-            </p>
-          </section>
-        </main>
-        <Footer />
+        <h1 className="gf-admin-title">Welcome, {session.user.email}</h1>
+        <p className="gf-admin-sub">
+          Your seller profile is still being created. If this persists, it likely failed during
+          sign-up — contact support so we can create it manually.
+        </p>
       </>
     )
   }
 
-  const { data: productsRaw } = await supabase
-    .from('products')
-    .select('*, sales_page:sales_pages(headline, subheadline, problem_statement, cta_primary, meta_description)')
-    .eq('seller_id', sellerRow.id)
-    .order('created_at', { ascending: false })
+  const [rows, messageCountRow] = await Promise.all([
+    db
+      .select({ product: products, salesPage: salesPages })
+      .from(products)
+      .leftJoin(salesPages, eq(salesPages.productId, products.id))
+      .where(eq(products.sellerId, sellerRow.id))
+      .orderBy(desc(products.createdAt)),
+    db.select({ count: sql<number>`count(*)` }).from(messages).where(eq(messages.sellerId, sellerRow.id)),
+  ])
 
-  const { count: messageCount } = await supabase
-    .from('messages')
-    .select('id', { count: 'exact', head: true })
-    .eq('seller_id', sellerRow.id)
+  const messageCount = Number(messageCountRow[0]?.count ?? 0)
+  const liveCount = rows.filter(r => r.product.status === 'live').length
+  const draftCount = rows.filter(r => r.product.status === 'draft').length
+  const totalViews = rows.reduce((s, r) => s + (r.product.views ?? 0), 0)
 
-  const products = (productsRaw ?? []) as Product[]
-  const byStatus = {
-    draft: products.filter(p => p.status === 'draft'),
-    live: products.filter(p => p.status === 'live'),
-    archived: products.filter(p => p.status === 'archived'),
-  }
+  const sorted = [...rows].sort((a, b) => STATUS_ORDER[a.product.status] - STATUS_ORDER[b.product.status])
 
   return (
     <>
-      <Nav />
-      <main>
-        <section className="section">
-          {claimed === '1' && (
-            <div
-              style={{
-                marginBottom: 24,
-                padding: '14px 20px',
-                border: '1px solid var(--soft-amber, #b97314)',
-                color: 'var(--warm-ink, #2a2217)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 13,
-              }}
-            >
-              Welcome! Your listing has been claimed — review it below and hit Publish when you&apos;re ready.
-            </div>
-          )}
-          <div className="section-tag">Seller dashboard</div>
-          <h1 className="section-title" style={{ fontSize: 'clamp(40px,5vw,64px)' }}>
-            Hey, <span>{sellerRow.display_name}</span>
+      {claimed === '1' && (
+        <div style={{
+          marginBottom: 20,
+          padding: '12px 16px',
+          border: '1px solid var(--gf-amber)',
+          background: 'var(--gf-amber-tint)',
+          borderRadius: 'var(--gf-radius)',
+          fontSize: 14,
+        }}>
+          Your listing has been claimed — review it below and publish when you&apos;re ready.
+        </div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <h1 className="gf-admin-title">
+            {sellerRow.displayName}
+            {sellerRow.verified && <span className="gf-badge-level" style={{ marginLeft: 10, verticalAlign: 'middle' }}>Verified</span>}
           </h1>
-          <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, marginTop: 12 }}>
-            {products.length === 0
-              ? 'No products yet. Submit a product URL to generate your first listing.'
-              : `You have ${products.length} product${products.length === 1 ? '' : 's'} — ${byStatus.live.length} live, ${byStatus.draft.length} in draft.`}
+          <p className="gf-admin-sub">
+            {rows.length === 0
+              ? 'No listings yet. Submit a product URL to generate your first one.'
+              : `${rows.length} listing${rows.length === 1 ? '' : 's'} · ${liveCount} live · ${draftCount} in draft`}
           </p>
+        </div>
+        <Link href="/submit" className="btn btn-primary">Submit a product</Link>
+      </div>
 
-          {products.length > 0 && (() => {
-            const totalViews = (products as (Product & { views?: number })[]).reduce((s, p) => s + (p.views ?? 0), 0)
-            const liveCount = byStatus.live.length
-            return (
-              <div style={{ display: 'flex', gap: 32, marginTop: 20, flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ fontFamily: 'var(--font-bebas)', fontSize: 40, letterSpacing: '0.02em', lineHeight: 1 }}>{totalViews}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total views</div>
-                </div>
-                <div>
-                  <div style={{ fontFamily: 'var(--font-bebas)', fontSize: 40, letterSpacing: '0.02em', lineHeight: 1 }}>{liveCount}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Live listings</div>
-                </div>
-              </div>
-            )
-          })()}
-
-          <div style={{ marginTop: 24 }}>
-            <Link href="/submit" className="btn-hero-primary" style={{ padding: '14px 28px' }}>
-              + Submit a product
-            </Link>
-          </div>
-
-          <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-            <Link href="/dashboard/messages" className="btn-ghost" style={{ padding: '10px 20px' }}>
-              Messages {messageCount ? `(${messageCount})` : ''}
-            </Link>
-            <Link href="/dashboard/profile" className="btn-ghost" style={{ padding: '10px 20px' }}>
-              Edit profile
-            </Link>
-          </div>
-        </section>
-
-        {(['draft', 'live', 'archived'] as ProductStatus[]).map(status => {
-          const rows = byStatus[status]
-          if (rows.length === 0) return null
-          return (
-            <section key={status} className="section" style={{ paddingTop: 0 }}>
-              <div className="section-tag">{STATUS_LABEL[status]} ({rows.length})</div>
-              <div style={{ display: 'grid', gap: 16, marginTop: 24 }}>
-                {rows.map(p => {
-                  const sp = Array.isArray(p.sales_page) ? p.sales_page[0] : p.sales_page
-                  return (
-                  <article
-                    key={p.id}
-                    className="product-card"
-                    style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, padding: 24, alignItems: 'flex-start' }}
-                  >
-                    <div>
-                      <div className="product-title" style={{ fontSize: 22 }}>{p.title}</div>
-                      {sp?.headline && (
-                        <div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 18, marginTop: 8 }}>
-                          {sp.headline}
-                        </div>
-                      )}
-                      {p.tagline && !sp?.headline && (
-                        <div className="product-desc" style={{ marginTop: 4 }}>{p.tagline}</div>
-                      )}
-                      {sp?.subheadline && (
-                        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, marginTop: 8, color: '#2b2b2b', maxWidth: 560 }}>
-                          {sp.subheadline}
-                        </p>
-                      )}
-                      <div style={{ display: 'flex', gap: 16, marginTop: 12, fontFamily: 'var(--font-mono)', fontSize: 13, color: '#6b6b6b', flexWrap: 'wrap' }}>
-                        {p.slug && <span>/{p.slug}</span>}
-                        {p.price_licensed != null && <span>{formatPrice(p.price_licensed)} licence</span>}
-                        {p.price_exclusive != null && <span>{formatPrice(p.price_exclusive)} exclusive</span>}
-                        {p.category && <span>· {p.category}</span>}
-                        {(p as Product & { views?: number }).views != null && (
-                          <span>· {(p as Product & { views?: number }).views} view{(p as Product & { views?: number }).views === 1 ? '' : 's'}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                      {p.status === 'live' && p.slug && (
-                        <Link href={`/products/${p.slug}`} className="btn-ghost">View</Link>
-                      )}
-                      <Link href={`/dashboard/products/${p.id}/edit`} className="btn-ghost">Edit</Link>
-                      {STATUS_ACTIONS[p.status].map(action => (
-                        <form key={action.next} action={updateProductStatus}>
-                          <input type="hidden" name="id" value={p.id} />
-                          <input type="hidden" name="next" value={action.next} />
-                          <button
-                            type="submit"
-                            className={action.next === 'live' ? 'btn-amber' : 'btn-ghost'}
-                            style={{ cursor: 'pointer', border: 'none' }}
-                          >
-                            {action.label}
-                          </button>
-                        </form>
-                      ))}
-                    </div>
-                  </article>
-                  )
-                })}
-              </div>
-            </section>
-          )
-        })}
-
-        {products.length === 0 && (
-          <section className="section">
-            <div className="product-card" style={{ padding: 40, textAlign: 'center', border: '1px dashed var(--ink)' }}>
-              <p style={{ fontFamily: 'var(--font-serif)', fontSize: 22 }}>
-                No listings yet. Start by submitting a product URL and we&apos;ll generate the sales page for you.
-              </p>
-              <Link href="/submit" className="btn-hero-primary" style={{ padding: '14px 28px', display: 'inline-block', marginTop: 24 }}>
-                + Submit your first product
+      <div className="gf-stats">
+        <div className="gf-stat">
+          <div className="gf-stat-label">Total views</div>
+          <div className="gf-stat-value">{totalViews.toLocaleString('en-GB')}</div>
+        </div>
+        <div className="gf-stat">
+          <div className="gf-stat-label">Live listings</div>
+          <div className="gf-stat-value">{liveCount}</div>
+        </div>
+        <div className="gf-stat">
+          <div className="gf-stat-label">In draft</div>
+          <div className="gf-stat-value">{draftCount}</div>
+        </div>
+        <div className="gf-stat">
+          <div className="gf-stat-label">Messages</div>
+          <div className="gf-stat-value">{messageCount}</div>
+          {messageCount > 0 && (
+            <div className="gf-stat-delta">
+              <Link href="/dashboard/messages" style={{ color: 'var(--gf-amber-ink)', textDecoration: 'underline' }}>
+                Read messages
               </Link>
             </div>
-          </section>
-        )}
-      </main>
-      <Footer />
+          )}
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <Empty>
+          <p style={{ fontSize: 17, color: 'var(--gf-text-2)', marginBottom: 20 }}>
+            No listings yet. Submit a product URL and we&apos;ll generate the sales page for you.
+          </p>
+          <Link href="/submit" className="btn btn-primary">Submit your first product</Link>
+        </Empty>
+      ) : (
+        <div className="gf-panel">
+          <div className="gf-panel-head">Your listings</div>
+          <div className="gf-table-wrap">
+            <table className="gf-table">
+              <thead>
+                <tr>
+                  <th>Listing</th>
+                  <th>Status</th>
+                  <th>Category</th>
+                  <th className="num">Price</th>
+                  <th className="num">Views</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map(({ product: p, salesPage: sp }) => {
+                  const price = p.priceLicensed ?? p.priceExclusive
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{p.title}</div>
+                        <div style={{ fontSize: 13, color: 'var(--gf-text-2)' }}>
+                          {sp?.headline || p.tagline || (p.slug ? `/${p.slug}` : '—')}
+                        </div>
+                      </td>
+                      <td><span className={`gf-status ${p.status}`}>{p.status}</span></td>
+                      <td style={{ color: 'var(--gf-text-2)' }}>{p.category ?? '—'}</td>
+                      <td className="num">
+                        {price != null ? formatPrice(price) : '—'}
+                        {p.priceExclusive != null && p.priceLicensed != null && (
+                          <div style={{ fontSize: 12, color: 'var(--gf-text-2)' }}>
+                            {formatPrice(p.priceExclusive)} excl.
+                          </div>
+                        )}
+                      </td>
+                      <td className="num">{p.views ?? 0}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          {p.status === 'live' && p.slug && (
+                            <Link href={`/products/${p.slug}`} className="btn btn-ghost-new btn-sm">View</Link>
+                          )}
+                          <Link href={`/dashboard/products/${p.id}/edit`} className="btn btn-secondary btn-sm">Edit</Link>
+                          {STATUS_ACTIONS[p.status].map(action => (
+                            <form key={action.next} action={updateProductStatus}>
+                              <input type="hidden" name="id" value={p.id} />
+                              <input type="hidden" name="next" value={action.next} />
+                              <button
+                                type="submit"
+                                className={`btn btn-sm ${action.primary ? 'btn-primary' : 'btn-ghost-new'}`}
+                              >
+                                {action.label}
+                              </button>
+                            </form>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </>
   )
 }

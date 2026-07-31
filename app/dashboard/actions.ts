@@ -2,7 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { eq } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { products, sellers } from '@/db/schema'
 import type { ProductStatus } from '@/lib/types'
 
 const ALLOWED_TRANSITIONS: Record<ProductStatus, ProductStatus[]> = {
@@ -19,34 +22,28 @@ export async function updateProductStatus(formData: FormData) {
     throw new Error('Invalid request')
   }
 
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
+  const session = await auth()
+  if (!session?.user) redirect('/login')
 
-  const { data: product, error: fetchErr } = await supabase
-    .from('products')
-    .select('id, status, seller:sellers!inner(user_id)')
-    .eq('id', id)
-    .single()
+  const row = await db
+    .select({ id: products.id, status: products.status, sellerUserId: sellers.userId })
+    .from(products)
+    .innerJoin(sellers, eq(products.sellerId, sellers.id))
+    .where(eq(products.id, id))
+    .limit(1)
+    .then(rows => rows[0] ?? null)
 
-  if (fetchErr || !product) throw new Error('Product not found')
+  if (!row) throw new Error('Product not found')
+  // Ownership is enforced here explicitly — this used to ride on the
+  // `products_seller_all` RLS policy, which no longer exists.
+  if (row.sellerUserId !== session.user.id) throw new Error('Not authorized')
 
-  const seller = Array.isArray(product.seller) ? product.seller[0] : product.seller
-  if (!seller || seller.user_id !== userData.user.id) {
-    throw new Error('Not authorized')
-  }
-
-  const current = product.status as ProductStatus
+  const current = row.status as ProductStatus
   if (!ALLOWED_TRANSITIONS[current].includes(next)) {
     throw new Error(`Cannot move product from ${current} to ${next}`)
   }
 
-  const { error } = await supabase
-    .from('products')
-    .update({ status: next })
-    .eq('id', id)
-
-  if (error) throw new Error(error.message)
+  await db.update(products).set({ status: next }).where(eq(products.id, id))
 
   revalidatePath('/dashboard')
   revalidatePath('/browse')

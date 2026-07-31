@@ -2,10 +2,53 @@
 
 import { useActionState } from 'react'
 import Link from 'next/link'
-import type { Product, SalesPage } from '@/lib/types'
 import MultiSelect from '@/components/MultiSelect'
 import { saveProduct, deleteProduct, type EditState } from './actions'
 import RegenerateScreenshotButton from './RegenerateScreenshotButton'
+import ScreenshotUploader from '@/components/ScreenshotUploader'
+
+/**
+ * Snake_case editable shape, matching the form's `name="..."` attributes
+ * (which mirror the server action's FormData keys) rather than the
+ * Drizzle-inferred camelCase row type. page.tsx adapts the DB row into this
+ * shape once, at the server/client boundary, so the form JSX below didn't
+ * need touching when the data layer moved off Supabase.
+ */
+export interface EditableProduct {
+  id: string
+  title: string
+  slug: string | null
+  category: string | null
+  tagline: string | null
+  description: string | null
+  price_licensed: number | null
+  price_exclusive: number | null
+  platform: string[] | null
+  architecture: string | null
+  ai_models: string[] | null
+  integrations: string[] | null
+  tool_tags: string[] | null
+  monthly_cost: number | null
+  deploy_time: string | null
+  demo_url: string | null
+  video_url: string | null
+  docs_url: string | null
+  repo_url: string | null
+  screenshots: string[] | null
+  support_terms: string | null
+  features: { title?: string; description?: string }[] | null
+  use_cases: { title?: string; description?: string }[] | null
+}
+
+export interface EditableSalesPage {
+  headline: string | null
+  subheadline: string | null
+  problem_statement: string | null
+  cta_primary: string | null
+  cta_secondary: string | null
+  meta_title: string | null
+  meta_description: string | null
+}
 
 const PLATFORM_OPTIONS = [
   'Web', 'iOS', 'Android',
@@ -89,8 +132,8 @@ export default function EditForm({
   product,
   salesPage,
 }: {
-  product: Product
-  salesPage: SalesPage | null
+  product: EditableProduct
+  salesPage: EditableSalesPage | null
 }) {
   const [state, action, pending] = useActionState<EditState, FormData>(
     saveProduct.bind(null, product.id),
@@ -288,7 +331,11 @@ export default function EditForm({
               style={{ ...textareaStyle, fontFamily: 'var(--font-mono)', fontSize: 13 }}
               placeholder="https://example.com/shot1.png"
             />
-            <RegenerateScreenshotButton productId={product.id} />
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+              <RegenerateScreenshotButton productId={product.id} />
+              <span style={{ fontSize: 12, color: '#6b6b6b' }}>or</span>
+              <ScreenshotUploader textareaName="screenshots" />
+            </div>
           </label>
         </div>
 

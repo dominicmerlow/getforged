@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { eq, sql } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { products, productViewEvents } from '@/db/schema'
 import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
-
-function createAdminClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,24 +23,11 @@ export async function POST(req: NextRequest) {
     })
     if (!allowed) return NextResponse.json({ ok: true }) // silently drop, same as other failure modes here
 
-    const supabase = createAdminClient()
-
-    // Fetch current views, increment
-    const { data: current } = await supabase
-      .from('products')
-      .select('views')
-      .eq('id', product_id)
-      .maybeSingle()
-
-    if (current !== null) {
-      await supabase
-        .from('products')
-        .update({ views: (current.views ?? 0) + 1 })
-        .eq('id', product_id)
-    }
+    // Atomic increment — no read-then-write race between concurrent views.
+    await db.update(products).set({ views: sql`${products.views} + 1` }).where(eq(products.id, product_id))
 
     // Also log the event for time-series data
-    await supabase.from('product_view_events').insert({ product_id })
+    await db.insert(productViewEvents).values({ productId: product_id })
 
     return NextResponse.json({ ok: true })
   } catch {

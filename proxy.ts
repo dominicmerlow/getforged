@@ -1,35 +1,35 @@
 /**
  * Root proxy (Next 16 rename of middleware) — two jobs:
- *   1. Supabase session refresh via updateSession on every pass-through
- *      response, so auth cookies stay fresh.
+ *   1. Keep the Auth.js session cookie fresh on every pass-through response.
+ *      Wrapping the handler in `auth(...)` (rather than calling `auth()`
+ *      inside it) is what makes this happen — the wrapper both attaches
+ *      `req.auth` and performs the cookie-refresh side effect; a bare call
+ *      to `auth()` from inside an unwrapped function does neither reliably
+ *      in the middleware runtime.
  *   2. Site-wide maintenance gate: when `site.maintenance_mode` is true,
  *      all traffic is rewritten to `/maintenance` EXCEPT:
  *        - admin surfaces (/admin, /admin/*, /api/admin/*, /whoami)
- *        - auth flows (/auth/*, /login)
+ *        - auth flows (/api/auth/*, /login)
  *        - the maintenance page itself
  *        - Next internals + static assets (caught by the matcher AND a
  *          defence-in-depth allowlist inside the fn)
  *        - signed-in users who hold an admin role (DB-backed via
  *          checkAdminAccess)
  *
- * Fail-OPEN: if reading the flag throws (e.g. site_settings table missing
- * pre-migration), traffic passes through untouched. The site is more useful
+ * Fail-OPEN: if reading the flag throws (e.g. the settings table is
+ * unreachable), traffic passes through untouched. The site is more useful
  * up than down, and a misconfigured flag should never lock everyone out.
  *
  * Notes for future maintainers:
  *   - We use `NextResponse.rewrite` (not redirect) so the user's URL stays
  *     intact — they can refresh post-maintenance and land where they were.
- *   - Hash fragments (#access_token=...) used by AuthHashHandler are never
- *     sent to the server, so this proxy can't see them and won't interfere
- *     with magic-link flows landing on `/`.
  *   - The matcher excludes Next internals at the framework level for perf;
  *     the inline allowlist exists for clarity / safety if the matcher is
  *     ever loosened.
  */
 
-import { NextResponse, type NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { updateSession } from '@/lib/supabase/middleware'
+import { NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import { getSetting } from '@/lib/settings'
 import { checkAdminAccess } from '@/lib/admin'
 
@@ -38,7 +38,7 @@ const ALLOW_PREFIXES = [
   '/admin',
   '/api/admin',
   '/whoami',
-  '/auth',
+  '/api/auth',
   '/login',
   '/maintenance',
   '/_next',
@@ -56,39 +56,10 @@ function isAllowlisted(pathname: string): boolean {
   return false
 }
 
-/**
- * Resolve the current user (if any) via Supabase auth cookies. Returns null
- * when env is unset, the user is anonymous, or anything throws.
- */
-async function getSessionUser(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key || url.includes('YOUR_PROJECT') || key.startsWith('your_')) {
-    return null
-  }
-  try {
-    const supabase = createServerClient(url, key, {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        // The maintenance branch only needs to read the session, not
-        // refresh it. Keeping setAll a no-op avoids stomping on the
-        // response we'll rewrite below.
-        setAll: () => {},
-      },
-    })
-    const { data } = await supabase.auth.getUser()
-    return data.user ?? null
-  } catch {
-    return null
-  }
-}
+export const proxy = auth(async (req) => {
+  const { pathname } = req.nextUrl
 
-export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  if (isAllowlisted(pathname)) {
-    return await updateSession(request)
-  }
+  if (isAllowlisted(pathname)) return NextResponse.next()
 
   // Fail-OPEN: any error reading settings → let traffic through.
   let maintenance = false
@@ -96,19 +67,17 @@ export async function proxy(request: NextRequest) {
     maintenance = await getSetting('site.maintenance_mode')
   } catch (err) {
     console.error('[proxy] settings read failed, failing open:', err instanceof Error ? err.message : err)
-    return await updateSession(request)
+    return NextResponse.next()
   }
 
-  if (!maintenance) {
-    return await updateSession(request)
-  }
+  if (!maintenance) return NextResponse.next()
 
   // Maintenance is ON. Last bypass: signed-in admins.
-  const user = await getSessionUser(request)
-  if (user) {
+  const user = req.auth?.user
+  if (user?.id) {
     try {
       const role = await checkAdminAccess(user.id, user.email)
-      if (role) return await updateSession(request)
+      if (role) return NextResponse.next()
     } catch {
       // If the role check throws, treat as non-admin (fail-CLOSED for the
       // admin bypass — safer than letting an error grant access).
@@ -116,10 +85,10 @@ export async function proxy(request: NextRequest) {
   }
 
   // Rewrite (not redirect) so the URL the user typed stays in the bar.
-  const url = request.nextUrl.clone()
+  const url = req.nextUrl.clone()
   url.pathname = '/maintenance'
   return NextResponse.rewrite(url)
-}
+})
 
 export const config = {
   // Run on every request EXCEPT Next internals and obvious static assets.

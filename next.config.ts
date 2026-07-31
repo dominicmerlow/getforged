@@ -4,7 +4,8 @@ import { withSentryConfig } from '@sentry/nextjs'
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '**.supabase.co' },
+      // Seller-uploaded screenshots (app/api/upload/route.ts → Vercel Blob)
+      { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
       { protocol: 'https', hostname: 'getforged.io' },
     ],
   },

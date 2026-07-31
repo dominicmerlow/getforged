@@ -1,29 +1,23 @@
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
-import Nav from '@/components/nav'
-import Footer from '@/components/footer'
+import { eq } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { sellers } from '@/db/schema'
 import ProfileForm from './ProfileForm'
 
 export const metadata: Metadata = { title: 'Edit Profile' }
 export const dynamic = 'force-dynamic'
 
 export default async function ProfilePage() {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
+  const session = await auth()
+  if (!session?.user) redirect('/login')
 
-  const { data: sellerRow } = await supabase
-    .from('sellers')
-    .select('id, display_name, bio, avatar_url, verified, created_at')
-    .eq('user_id', userData.user.id)
-    .maybeSingle()
-
+  const sellerRow = await db.query.sellers.findFirst({ where: eq(sellers.userId, session.user.id) })
   if (!sellerRow) redirect('/login')
 
   return (
     <>
-      <Nav />
       <main style={{ minHeight: '70vh', padding: 'clamp(40px,6vw,80px) clamp(20px,5vw,80px)' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', display: 'grid', gap: 32 }}>
           <div>
@@ -60,13 +54,12 @@ export default async function ProfilePage() {
           </div>
 
           <ProfileForm
-            display_name={sellerRow.display_name ?? ''}
+            display_name={sellerRow.displayName ?? ''}
             bio={sellerRow.bio ?? null}
-            avatar_url={sellerRow.avatar_url ?? null}
+            avatar_url={sellerRow.avatarUrl ?? null}
           />
         </div>
       </main>
-      <Footer />
     </>
   )
 }

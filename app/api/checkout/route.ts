@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { eq, and } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { products } from '@/db/schema'
 import { getStripe, stripeConfigured } from '@/lib/stripe'
 import { getSetting } from '@/lib/settings'
 import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
-import type { Product } from '@/lib/types'
 
 export const runtime = 'nodejs'
 
@@ -27,21 +29,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'invalid purchase_type' }, { status: 400 })
   }
 
-  const supabase = await createClient()
-  const { data: productRow, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'live')
-    .maybeSingle()
+  const product = await db.query.products.findFirst({
+    where: and(eq(products.slug, slug), eq(products.status, 'live')),
+  })
 
-  if (error || !productRow) {
+  if (!product) {
     return NextResponse.json({ error: 'product not found' }, { status: 404 })
   }
-  const product = productRow as Product
 
   const price =
-    purchaseType === 'exclusive' ? product.price_exclusive : product.price_licensed
+    purchaseType === 'exclusive' ? product.priceExclusive : product.priceLicensed
   if (!price || price <= 0) {
     return NextResponse.json(
       { error: `no ${purchaseType} price set for this product` },
@@ -76,10 +73,10 @@ export async function POST(request: NextRequest) {
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
 
-  const { data: userData } = await supabase.auth.getUser()
-  const customerEmail = userData.user?.email
+  const session = await auth()
+  const customerEmail = session?.user?.email ?? undefined
 
-  const session = await stripe.checkout.sessions.create({
+  const checkoutSession = await stripe.checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
     customer_email: customerEmail,
@@ -105,13 +102,13 @@ export async function POST(request: NextRequest) {
       product_id: product.id,
       product_slug: slug,
       purchase_type: purchaseType,
-      buyer_id: userData.user?.id ?? '',
+      buyer_id: session?.user?.id ?? '',
     },
   })
 
-  if (!session.url) {
+  if (!checkoutSession.url) {
     return NextResponse.json({ error: 'stripe did not return a url' }, { status: 500 })
   }
 
-  return NextResponse.redirect(session.url, { status: 303 })
+  return NextResponse.redirect(checkoutSession.url, { status: 303 })
 }

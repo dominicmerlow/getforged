@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
 import { checkAdminAccess } from '@/lib/admin'
 import { getAllContentForAdmin } from '@/lib/content'
 import ContentEditor from './ContentEditor'
@@ -21,10 +21,9 @@ export const dynamic = 'force-dynamic'
  * changes go live within seconds without a redeploy.
  */
 export default async function AdminContentPage() {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
 
   // Belt-and-braces: getAllContentForAdmin already swallows DB errors and

@@ -2,9 +2,12 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { redirect } from 'next/navigation'
+import { eq, desc } from 'drizzle-orm'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
+import { db, dbConfigured } from '@/lib/db'
+import { bookmarks, products } from '@/db/schema'
 
 export const metadata: Metadata = {
   title: 'Your wishlist',
@@ -13,41 +16,25 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
-type SavedProduct = {
-  id: string
-  title: string
-  tagline: string | null
-  slug: string | null
-  price_licensed: number | null
-  price_exclusive: number | null
-  screenshots: string[] | null
-  category: string | null
-}
-
 export default async function WishlistPage() {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login?next=/wishlist')
+  // A wishlist is meaningless without auth, so an unconfigured backend lands on
+  // /login rather than throwing a 500 out of a Drizzle query.
+  if (!dbConfigured()) redirect('/login?next=/wishlist')
 
-  // Fetch bookmark rows with joined product data. The RLS policy on
-  // `bookmarks` restricts to the user's own rows, and `products_public_read`
-  // will filter to live-only — which is what we want on the wishlist.
-  const { data: rows } = await supabase
-    .from('bookmarks')
-    .select(`
-      id,
-      created_at,
-      product:products (
-        id, title, tagline, slug, price_licensed, price_exclusive, screenshots, category, status
-      )
-    `)
-    .eq('user_id', userData.user.id)
-    .order('created_at', { ascending: false })
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login?next=/wishlist')
 
-  type Row = { id: string; created_at: string; product: SavedProduct & { status?: string } | (SavedProduct & { status?: string })[] | null }
-  const products: SavedProduct[] = ((rows ?? []) as Row[])
-    .map(r => (Array.isArray(r.product) ? r.product[0] : r.product))
-    .filter((p): p is SavedProduct & { status?: string } => !!p && p.status === 'live')
+  // Inner join means an unpublished (draft/archived) saved product silently
+  // drops off the list — same behaviour the old `products_public_read` RLS
+  // policy produced by only exposing `status = 'live'` rows to this query.
+  const rows = await db
+    .select({ product: products })
+    .from(bookmarks)
+    .innerJoin(products, eq(bookmarks.productId, products.id))
+    .where(eq(bookmarks.userId, session.user.id))
+    .orderBy(desc(bookmarks.createdAt))
+
+  const saved = rows.map(r => r.product).filter(p => p.status === 'live')
 
   return (
     <>
@@ -56,19 +43,19 @@ export default async function WishlistPage() {
         <section className="section">
           <div className="section-tag">Wishlist</div>
           <h1 className="section-title" style={{ fontSize: 'clamp(40px, 5.5vw, 72px)' }}>
-            {products.length === 0 ? (
+            {saved.length === 0 ? (
               <>No <span>saves</span> yet</>
             ) : (
-              <>{products.length} saved <span>{products.length === 1 ? 'product' : 'products'}</span></>
+              <>{saved.length} saved <span>{saved.length === 1 ? 'product' : 'products'}</span></>
             )}
           </h1>
           <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, maxWidth: 640, marginTop: 16, color: 'var(--warm-ink-dim)' }}>
-            {products.length === 0
+            {saved.length === 0
               ? 'Tap the ♡ on any product to save it here. Handy when you want to compare a shortlist before buying.'
               : 'These are the products you saved. Click through to review or buy.'}
           </p>
 
-          {products.length === 0 && (
+          {saved.length === 0 && (
             <div style={{ marginTop: 32 }}>
               <Link href="/browse" className="btn-hero-primary" style={{ padding: '14px 28px' }}>
                 Browse products →
@@ -76,15 +63,15 @@ export default async function WishlistPage() {
             </div>
           )}
 
-          {products.length > 0 && (
+          {saved.length > 0 && (
             <div className="product-grid" style={{ marginTop: 48 }}>
-              {products.map(p => {
+              {saved.map(p => {
                 const hero = p.screenshots?.[0] ?? null
-                const isExclusive = p.price_exclusive && !p.price_licensed
+                const isExclusive = p.priceExclusive && !p.priceLicensed
                 const priceMain = isExclusive
-                  ? `£${p.price_exclusive!.toLocaleString('en-GB')}`
-                  : p.price_licensed
-                    ? `£${p.price_licensed.toLocaleString('en-GB')}`
+                  ? `£${p.priceExclusive!.toLocaleString('en-GB')}`
+                  : p.priceLicensed
+                    ? `£${p.priceLicensed.toLocaleString('en-GB')}`
                     : 'Contact'
                 const priceSub = isExclusive ? 'exclusive buy-out' : 'one-time licence'
                 return (

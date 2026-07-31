@@ -1,34 +1,47 @@
 import { redirect } from 'next/navigation'
+import { eq } from 'drizzle-orm'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
+import { db, dbConfigured } from '@/lib/db'
+import { accounts, users } from '@/db/schema'
 import { isAdminEmail, getUserRole } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * Diagnostic endpoint — shows what Supabase auth knows about the current
- * session and whether the admin gate accepts it.
+ * Diagnostic endpoint — shows what Auth.js knows about the current session
+ * and whether the admin gate accepts it.
  *
  * Used to debug "I logged in but /admin redirects me" cases — the most
- * common cause is OAuth providers returning a different email (e.g.
- * GitHub email-privacy noreply aliases) than the user's profile email.
+ * common cause is an OAuth provider returning a different email than the
+ * user expects to be allowlisted.
  *
  * Requires sign-in but NOT admin access — a locked-out user needs this page
  * precisely because they aren't recognized as admin yet. It only ever shows
  * the signed-in user's OWN session data (id/email/provider/role), never the
- * raw ADMIN_EMAIL allowlist — that's what made the pre-fix version a leak
- * (any signed-in user could read every admin's email off it).
+ * raw ADMIN_EMAIL allowlist.
  */
 export default async function WhoAmIPage() {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  const user = userData.user
-
-  if (!user) redirect('/login')
+  const session = await auth()
+  const user = session?.user
+  if (!user?.id) redirect('/login')
 
   const isAdmin = isAdminEmail(user.email)
   const dbRole = await getUserRole(user.id)
+
+  let providers: string[] = []
+  let emailVerified: Date | null = null
+  if (dbConfigured()) {
+    const linkedAccounts = await db
+      .select({ provider: accounts.provider })
+      .from(accounts)
+      .where(eq(accounts.userId, user.id))
+    providers = linkedAccounts.map(a => a.provider)
+
+    const userRow = await db.query.users.findFirst({ where: eq(users.id, user.id) })
+    emailVerified = userRow?.emailVerified ?? null
+  }
 
   return (
     <>
@@ -49,37 +62,25 @@ export default async function WhoAmIPage() {
             fontSize: 14,
             maxWidth: 640,
           }}>
-            <dt style={{ color: '#6b6b6b' }}>Auth user ID</dt>
+            <dt style={{ color: '#6b6b6b' }}>User ID</dt>
             <dd style={{ margin: 0, wordBreak: 'break-all' }}>{user.id}</dd>
 
-            <dt style={{ color: '#6b6b6b' }}>Auth email</dt>
+            <dt style={{ color: '#6b6b6b' }}>Email</dt>
             <dd style={{ margin: 0, wordBreak: 'break-all', fontWeight: 600 }}>
               {user.email ?? '(none)'}
             </dd>
 
-            <dt style={{ color: '#6b6b6b' }}>Provider</dt>
+            <dt style={{ color: '#6b6b6b' }}>Linked providers</dt>
             <dd style={{ margin: 0 }}>
-              {(user.app_metadata?.provider as string | undefined) ?? '(unknown)'}
-            </dd>
-
-            <dt style={{ color: '#6b6b6b' }}>All providers</dt>
-            <dd style={{ margin: 0 }}>
-              {((user.app_metadata?.providers as string[] | undefined) ?? []).join(', ') || '(none)'}
-            </dd>
-
-            <dt style={{ color: '#6b6b6b' }}>GitHub login</dt>
-            <dd style={{ margin: 0 }}>
-              {(user.user_metadata?.user_name as string | undefined) ?? (user.user_metadata?.preferred_username as string | undefined) ?? '(n/a)'}
+              {providers.length > 0 ? providers.join(', ') : '(password only, or none linked)'}
             </dd>
 
             <dt style={{ color: '#6b6b6b' }}>Display name</dt>
-            <dd style={{ margin: 0 }}>
-              {(user.user_metadata?.full_name as string | undefined) ?? (user.user_metadata?.name as string | undefined) ?? '(n/a)'}
-            </dd>
+            <dd style={{ margin: 0 }}>{user.name ?? '(n/a)'}</dd>
 
-            <dt style={{ color: '#6b6b6b' }}>Email confirmed?</dt>
+            <dt style={{ color: '#6b6b6b' }}>Email verified?</dt>
             <dd style={{ margin: 0 }}>
-              {user.email_confirmed_at ? `✓ ${user.email_confirmed_at}` : '✗ no'}
+              {emailVerified ? `✓ ${emailVerified.toISOString()}` : '✗ no'}
             </dd>
 
             <dt style={{ color: '#6b6b6b' }}>Your email in ADMIN_EMAIL?</dt>
@@ -118,7 +119,7 @@ export default async function WhoAmIPage() {
             fontSize: 13,
             lineHeight: 1.6,
           }}>
-            <strong>If gate fails:</strong> copy the &ldquo;Auth email&rdquo; value above
+            <strong>If gate fails:</strong> copy the &ldquo;Email&rdquo; value above
             and either add it to your Vercel <code>ADMIN_EMAIL</code> env var
             (comma-separated, then redeploy), or ask an existing admin to grant
             you a role from <code>/admin/users</code>.

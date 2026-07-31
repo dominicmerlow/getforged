@@ -1,48 +1,37 @@
 import type { Metadata } from 'next'
-import { Bebas_Neue, Fraunces, DM_Mono, Montserrat } from 'next/font/google'
+import { Plus_Jakarta_Sans, Inter } from 'next/font/google'
 import PostHogProvider from '@/components/PostHogProvider'
 import { CompareProvider } from '@/components/CompareProvider'
 import CompareBar from '@/components/CompareBar'
-import AuthHashHandler from '@/components/AuthHashHandler'
 import './globals.css'
 
-const bebasNeue = Bebas_Neue({
-  weight: '400',
-  subsets: ['latin'],
-  variable: '--font-bebas',
-  display: 'swap',
-})
+/*
+  Two-font system (see design-system/MASTER.md §3).
 
-// Fraunces — a modern variable display serif. Replaces Instrument Serif
-// which read as too calligraphic/handwritten at large sizes.
-// opsz variation at 96 opens up the forms for display; weight 500-600 is
-// substantial without feeling heavy.
-const fraunces = Fraunces({
-  // Fraunces is a variable font. To use its `opsz` + `SOFT` axes we
-  // must NOT pin discrete weights — leave weight undefined so Next's
-  // `next/font/google` loader treats it as variable.
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
-  variable: '--font-serif',
-  display: 'swap',
-  axes: ['opsz', 'SOFT'],
-})
+  Plus Jakarta Sans is the closest freely-licensed match to Fiverr's Macan —
+  geometric-humanist, tight apertures, reads as product chrome rather than
+  editorial. It carries headings, buttons, prices and nav.
 
-const dmMono = DM_Mono({
-  weight: ['300', '400', '500'],
-  subsets: ['latin'],
-  variable: '--font-mono',
-  display: 'swap',
-})
+  Inter carries body copy and dense back-office tables, where its larger
+  x-height and tabular numerals beat Jakarta at 13–14px.
 
-// Primary UI / body font — Montserrat replaces the previous Syne.
-// Kept the CSS variable name as --font-sans (was --font-syne) to avoid
-// the misleading legacy name. Both vars are emitted for transitional
-// compatibility with any stale selectors.
-const montserrat = Montserrat({
+  Only these two families load. The legacy `--font-serif` / `--font-mono` /
+  `--font-bebas` variables are *aliased* onto them in globals.css rather than
+  loading Fraunces/DM Mono/Bebas Neue — see the note there. That drops three
+  font families from the critical path while silently de-serifing the ~470
+  inline `var(--font-*)` references scattered across the app.
+*/
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-sans',
+  display: 'swap',
+})
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-body',
   display: 'swap',
 })
 
@@ -73,12 +62,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${bebasNeue.variable} ${fraunces.variable} ${dmMono.variable} ${montserrat.variable}`}
+      className={`${plusJakarta.variable} ${inter.variable}`}
     >
       <body>
         <PostHogProvider>
           <CompareProvider>
-            <AuthHashHandler />
             {children}
             <CompareBar />
           </CompareProvider>

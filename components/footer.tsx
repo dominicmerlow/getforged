@@ -1,59 +1,81 @@
 import Link from 'next/link'
 
+/*
+  Dense multi-column footer — on a marketplace this is real navigation, not
+  decoration, so it carries every category and both audience paths.
+*/
+const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
+  {
+    title: 'Categories',
+    links: [
+      { label: 'AI Automation',    href: '/browse/ai-automation' },
+      { label: 'Web Apps & Tools', href: '/browse/web-apps' },
+      { label: 'CRM & Sales',      href: '/browse/crm-sales' },
+      { label: 'Marketing',        href: '/browse/marketing' },
+      { label: 'E-Commerce',       href: '/browse/ecommerce' },
+      { label: 'Operations',       href: '/browse/operations' },
+    ],
+  },
+  {
+    title: 'For buyers',
+    links: [
+      { label: 'Browse listings', href: '/browse' },
+      { label: 'How it works',    href: '/how-it-works/buyers' },
+      { label: 'Concierge',       href: '/concierge' },
+      { label: 'Compare tools',   href: '/compare' },
+      { label: 'Refund policy',   href: '/refund-policy' },
+    ],
+  },
+  {
+    title: 'For sellers',
+    links: [
+      { label: 'List your app',    href: '/submit' },
+      { label: 'Seller dashboard', href: '/dashboard' },
+      { label: 'Seller guide',     href: '/how-it-works/sellers' },
+      { label: 'Pricing',          href: '/#pricing' },
+      { label: 'Seller agreement', href: '/seller-agreement' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About',   href: '/about' },
+      { label: 'Blog',    href: '/blog' },
+      { label: 'Press',   href: '/press' },
+      { label: 'Contact', href: '/contact' },
+    ],
+  },
+]
+
 export default function Footer() {
   return (
-    <footer className="footer">
-      <div className="footer-top">
-        <div>
-          <div className="footer-brand-name">
-            GETFORGED<span>.</span>
-          </div>
-          <div className="footer-tagline">Built by builders. Made for business.</div>
+    <footer className="gf-footer">
+      <div className="gf-footer-inner">
+        <div className="gf-footer-cols">
+          {COLUMNS.map(col => (
+            <div className="gf-footer-col" key={col.title}>
+              <h4>{col.title}</h4>
+              <ul>
+                {col.links.map(link => (
+                  <li key={link.href + link.label}>
+                    <Link href={link.href}>{link.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <div className="footer-cols">
-          <div className="footer-col">
-            <h4>Marketplace</h4>
-            <ul>
-              <li><Link href="/browse">Browse All</Link></li>
-              <li><Link href="/browse/ai-automation">AI Automation</Link></li>
-              <li><Link href="/browse/web-apps">Web Apps</Link></li>
-              <li><Link href="/browse/crm-sales">CRM &amp; Sales Tools</Link></li>
-              <li><Link href="/browse/ecommerce">E-Commerce</Link></li>
-              <li><Link href="/browse/marketing">Marketing</Link></li>
-              <li><Link href="/browse/operations">Operations</Link></li>
-            </ul>
-          </div>
-          <div className="footer-col">
-            <h4>For Sellers</h4>
-            <ul>
-              <li><Link href="/submit">List Your App</Link></li>
-              <li><Link href="/dashboard">Seller Dashboard</Link></li>
-              <li><Link href="/seller-agreement">Seller Agreement</Link></li>
-              <li><Link href="/how-it-works/sellers">How It Works</Link></li>
-            </ul>
-          </div>
-          <div className="footer-col">
-            <h4>Company</h4>
-            <ul>
-              <li><Link href="/about">About GetForged</Link></li>
-              <li><Link href="/blog">Blog</Link></li>
-              <li><Link href="/press">Press</Link></li>
-              <li><Link href="/contact">Contact</Link></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div className="footer-bottom">
-        <div className="footer-copy">
-          © 2026 GETFORGED — ALL RIGHTS RESERVED
-        </div>
-        <div className="footer-legal">
-          <span><Link href="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</Link></span>
-          <span><Link href="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>Terms</Link></span>
-          <span><Link href="/refund-policy" style={{ color: 'inherit', textDecoration: 'none' }}>Refunds</Link></span>
-          <span><Link href="/seller-agreement" style={{ color: 'inherit', textDecoration: 'none' }}>Seller Agreement</Link></span>
+        <div className="gf-footer-bottom">
+          <span className="gf-footer-copy">
+            © {new Date().getFullYear()} GetForged — built by builders, made for business.
+          </span>
+          <nav className="gf-footer-legal" aria-label="Legal">
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/refund-policy">Refunds</Link>
+            <Link href="/seller-agreement">Seller agreement</Link>
+          </nav>
         </div>
       </div>
     </footer>

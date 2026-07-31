@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
+import { Star, Check, ChevronRight, ShieldCheck } from 'lucide-react'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 import ScrollReveal from '@/components/scroll-reveal'
@@ -16,44 +17,23 @@ import ProductScreenshot from '@/components/ProductScreenshot'
 import BuyButton from '@/components/BuyButton'
 import DemoLink from '@/components/DemoLink'
 import CompareToggle from '@/components/CompareToggle'
-import { createClient } from '@/lib/supabase/server'
+import { eq, and, desc } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db, dbConfigured } from '@/lib/db'
+import { reviews as reviewsTable, purchases, products, sellers } from '@/db/schema'
 import { getSetting } from '@/lib/settings'
+import { categoryByDbValue } from '@/lib/categories'
 
 export const dynamicParams = true
 export const revalidate = 60
 
+/* ── Small presentational helpers ──────────────────────────────────── */
+
 function SpecRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div
-      className="product-card"
-      style={{
-        padding: 20,
-        display: 'grid',
-        gap: 6,
-        alignContent: 'start',
-      }}
-    >
-      <dt
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: '#6b6b6b',
-        }}
-      >
-        {label}
-      </dt>
-      <dd
-        style={{
-          fontFamily: 'var(--font-serif)',
-          fontSize: 18,
-          margin: 0,
-          wordBreak: 'break-word',
-        }}
-      >
-        {value}
-      </dd>
+    <div style={{ display: 'grid', gap: 2, padding: '12px 0', borderBottom: '1px solid var(--gf-line)' }}>
+      <dt style={{ fontSize: 13, color: 'var(--gf-text-2)' }}>{label}</dt>
+      <dd style={{ fontSize: 15, margin: 0, wordBreak: 'break-word', color: 'var(--gf-text)' }}>{value}</dd>
     </div>
   )
 }
@@ -63,18 +43,149 @@ function ExternalLink({ href }: { href: string }) {
   try {
     label = new URL(href).hostname.replace(/^www\./, '')
   } catch {
-    // keep as-is
+    // keep the raw string when it isn't a parseable URL
   }
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      style={{ textDecoration: 'underline', color: 'inherit' }}
+      style={{ color: 'var(--gf-amber-ink)', textDecoration: 'underline' }}
     >
       {label} ↗
     </a>
   )
+}
+
+/** Five stars with the filled count driven by `value`. */
+function Stars({ value, size = 16 }: { value: number; size?: number }) {
+  const rounded = Math.round(value)
+  return (
+    <span style={{ display: 'inline-flex', gap: 1 }} aria-label={`${value.toFixed(1)} out of 5`}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <Star
+          key={i}
+          size={size}
+          aria-hidden="true"
+          style={{
+            color: 'var(--gf-star)',
+            fill: i <= rounded ? 'var(--gf-star)' : 'none',
+          }}
+        />
+      ))}
+    </span>
+  )
+}
+
+function InfoNotice({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'warn' }) {
+  return (
+    <div
+      style={{
+        padding: '12px 14px',
+        borderRadius: 'var(--gf-radius)',
+        fontSize: 14,
+        textAlign: 'center',
+        border: `1px solid ${tone === 'warn' ? 'var(--gf-amber)' : 'var(--gf-line)'}`,
+        background: tone === 'warn' ? 'var(--gf-amber-tint)' : 'var(--gf-surface-2)',
+        color: tone === 'warn' ? 'var(--gf-amber-ink)' : 'var(--gf-text-2)',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+interface ReviewRow {
+  id: string
+  rating: number
+  body: string | null
+  seller_reply: string | null
+  seller_replied_at: string | null
+  created_at: string
+}
+
+interface SocialData {
+  reviews: ReviewRow[]
+  /** null when signed out or the database isn't configured */
+  viewer: { id: string } | null
+  hasPurchased: boolean
+  isOwnerSeller: boolean
+}
+
+const NO_SOCIAL: SocialData = { reviews: [], viewer: null, hasPurchased: false, isOwnerSeller: false }
+
+/**
+ * Reviews plus the viewer's relationship to this listing.
+ *
+ * Split out of the page body so the whole block can fail soft. Without it, an
+ * unconfigured or briefly unreachable database took down the entire product
+ * page — including the parts served from seed data that need no database at
+ * all.
+ */
+async function loadSocial(productId: string): Promise<SocialData> {
+  if (!dbConfigured()) return NO_SOCIAL
+  // Seed-fallback products (lib/seed-products.ts) use a synthetic
+  // `seed-<slug>` id, not a real uuid — every table this function queries has
+  // a uuid product_id column, so a query with this id doesn't just find
+  // nothing, it throws a type-cast error. Short-circuit before touching the
+  // database at all; a seed product can never have real reviews/purchases.
+  if (productId.startsWith('seed-')) {
+    const session = await auth()
+    return { ...NO_SOCIAL, viewer: session?.user?.id ? { id: session.user.id } : null }
+  }
+  try {
+    const reviewRows = await db
+      .select({
+        id: reviewsTable.id,
+        rating: reviewsTable.rating,
+        body: reviewsTable.body,
+        sellerReply: reviewsTable.sellerReply,
+        sellerRepliedAt: reviewsTable.sellerRepliedAt,
+        createdAt: reviewsTable.createdAt,
+      })
+      .from(reviewsTable)
+      .where(eq(reviewsTable.productId, productId))
+      .orderBy(desc(reviewsTable.createdAt))
+      .limit(20)
+
+    const reviews: ReviewRow[] = reviewRows.map(r => ({
+      id: r.id,
+      rating: r.rating,
+      body: r.body,
+      seller_reply: r.sellerReply,
+      seller_replied_at: r.sellerRepliedAt ? r.sellerRepliedAt.toISOString() : null,
+      created_at: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
+    }))
+
+    const session = await auth()
+    const userId = session?.user?.id
+    if (!userId) {
+      return { reviews, viewer: null, hasPurchased: false, isOwnerSeller: false }
+    }
+
+    const [purchaseRow, ownershipRow] = await Promise.all([
+      db.query.purchases.findFirst({
+        where: and(eq(purchases.productId, productId), eq(purchases.buyerId, userId)),
+      }),
+      db
+        .select({ sellerUserId: sellers.userId })
+        .from(products)
+        .innerJoin(sellers, eq(products.sellerId, sellers.id))
+        .where(eq(products.id, productId))
+        .limit(1)
+        .then(rows => rows[0] ?? null),
+    ])
+
+    return {
+      reviews,
+      viewer: { id: userId },
+      hasPurchased: !!purchaseRow,
+      isOwnerSeller: !!ownershipRow && ownershipRow.sellerUserId === userId,
+    }
+  } catch (err) {
+    console.error('[product page] loadSocial failed:', err instanceof Error ? err.message : err)
+    return NO_SOCIAL
+  }
 }
 
 export async function generateStaticParams() {
@@ -98,6 +209,19 @@ export async function generateMetadata(
   }
 }
 
+/**
+ * Product detail, laid out as a marketplace listing page: media and narrative
+ * on the left, a sticky purchase panel on the right.
+ *
+ * The panel is the important part of the redesign. Previously the Buy button
+ * lived once, in the hero, and scrolled away — a visitor who read to the bottom
+ * of the spec sheet had nothing to click. The panel keeps price, inclusions and
+ * CTA in view for the whole page.
+ *
+ * All purchase, preview and review logic is carried over unchanged: seed
+ * listings stay unbuyable, the admin checkout pause still fails open, and only
+ * verified purchasers can review.
+ */
 export default async function ProductPage(
   { params }: { params: Promise<{ slug: string }> }
 ) {
@@ -110,7 +234,7 @@ export default async function ProductPage(
   const vimeoId = parseVimeoId(product.video_url)
   const hasEmbed = !!(ytId || vimeoId)
 
-  // Drop empty / whitespace-only features so we never render an empty section
+  // Drop empty / whitespace-only entries so we never render an empty section
   const cleanFeatures = product.features
     .map(f => (typeof f === 'string' ? f.trim() : ''))
     .filter(f => f.length > 0)
@@ -120,17 +244,16 @@ export default async function ProductPage(
 
   // Deterministic, unambiguous primary CTA — never trust an AI-generated verb
   const buyLabel = product.type === 'Exclusive'
-    ? `Buy Exclusive — ${product.priceMain}`
-    : `Buy Licence — ${product.priceMain}`
+    ? `Buy exclusive — ${product.priceMain}`
+    : `Buy licence — ${product.priceMain}`
 
-  // Seed/placeholder products (lib/seed-products.ts) have no row in the
-  // `products` table and no real Stripe seller behind them — /api/checkout
-  // already 404s for these since it re-queries by slug, but showing a live
-  // Buy button that always errors is bad UX. Hide it instead.
+  // Seed/placeholder products have no row in `products` and no Stripe seller
+  // behind them. /api/checkout already 404s for these, but showing a live Buy
+  // button that always errors is worse than showing none.
   const isSeedProduct = product.id.startsWith('seed-')
 
-  // Admin-controlled checkout pause. Fail-OPEN: settings blip must not hide
-  // the buy button — server route still gates the actual transaction.
+  // Admin-controlled checkout pause. Fails OPEN: a settings blip must not hide
+  // the buy button — the server route still gates the actual transaction.
   let checkoutPaused = false
   try {
     checkoutPaused = await getSetting('site.checkout_paused')
@@ -138,52 +261,13 @@ export default async function ProductPage(
     checkoutPaused = false
   }
 
-  // Fetch reviews for this product (public read, no auth needed).
-  // `seller_reply` / `seller_replied_at` are added by migration 005 — the
-  // select is defensive: if those columns don't exist yet the query still
-  // returns the rest, and the UI just hides the reply block.
-  const supabase = await createClient()
-  const { data: reviewsData } = await supabase
-    .from('reviews')
-    .select('id, rating, body, seller_reply, seller_replied_at, created_at, buyer:buyer_id(email)')
-    .eq('product_id', product.id)
-    .order('created_at', { ascending: false })
-    .limit(20)
-  const reviews = (reviewsData ?? []) as unknown as {
-    id: string
-    rating: number
-    body: string | null
-    seller_reply: string | null
-    seller_replied_at: string | null
-    created_at: string
-    buyer: { email: string } | null
-  }[]
+  // Everything below needs Supabase. When it isn't configured — local dev
+  // against seed data — the page previously threw and rendered the global error
+  // boundary, while every other route degraded gracefully. Now the social
+  // layer (reviews, purchase state) simply comes back empty and the listing
+  // still renders.
+  const { reviews, viewer, hasPurchased, isOwnerSeller } = await loadSocial(product.id)
   const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null
-
-  // Check if current user has purchased (to show review form) AND whether
-  // they are the seller of this product (to show reply forms).
-  const { data: userData } = await supabase.auth.getUser()
-  let hasPurchased = false
-  let isOwnerSeller = false
-  if (userData.user && product.id && !product.id.startsWith('seed-')) {
-    const [{ data: purchase }, { data: ownership }] = await Promise.all([
-      supabase
-        .from('purchases')
-        .select('id')
-        .eq('product_id', product.id)
-        .eq('buyer_id', userData.user.id)
-        .maybeSingle(),
-      supabase
-        .from('products')
-        .select('id, seller:sellers!inner(user_id)')
-        .eq('id', product.id)
-        .maybeSingle(),
-    ])
-    hasPurchased = !!purchase
-    const ownerSellerArr = ownership?.seller
-    const ownerSeller = Array.isArray(ownerSellerArr) ? ownerSellerArr[0] : ownerSellerArr
-    isOwnerSeller = !!ownerSeller && ownerSeller.user_id === userData.user.id
-  }
 
   const rawPrice = product.type === 'Exclusive'
     ? product.price_exclusive
@@ -204,7 +288,38 @@ export default async function ProductPage(
       availability: 'https://schema.org/InStock',
       url: `https://getforged.io/products/${product.slug}`,
     } : undefined,
+    // Only emit an aggregate rating when reviews actually exist — a fabricated
+    // rating in structured data is a search-engine penalty, not just a lie.
+    aggregateRating: avgRating != null ? {
+      '@type': 'AggregateRating',
+      ratingValue: avgRating.toFixed(1),
+      reviewCount: reviews.length,
+    } : undefined,
   }
+
+  const cat = categoryByDbValue(product.category)
+  const hasSpecs =
+    product.platform.length > 0 || product.architecture || product.ai_models.length > 0 ||
+    product.integrations.length > 0 || product.monthly_cost != null || product.deploy_time ||
+    product.tags.length > 0 || product.demo_url || product.video_url ||
+    product.docs_url || product.repo_url
+
+  /* The purchase control appears twice (sticky panel, and again on mobile at
+     the end of the page). Defined once so the three states can't drift. */
+  const purchaseControl = isSeedProduct ? (
+    <InfoNotice>Preview listing — not yet purchasable</InfoNotice>
+  ) : checkoutPaused ? (
+    <InfoNotice tone="warn">Checkout temporarily paused — back soon</InfoNotice>
+  ) : (
+    <BuyButton
+      slug={product.slug}
+      productId={product.id}
+      purchaseType={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
+      category={product.category}
+      priceMain={product.priceMain}
+      label={buyLabel}
+    />
+  )
 
   return (
     <>
@@ -212,43 +327,73 @@ export default async function ProductPage(
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <Nav />
+      <Nav activeCategory={cat?.slug} />
       <ViewTracker
         productId={product.id}
         slug={product.slug}
         category={product.category}
         priceMain={product.priceMain}
       />
-      <main className="product-detail">
+
+      <main>
         {product.isPreview && (
-          <div
-            style={{
-              background: 'var(--amber, #c87d1a)',
-              color: 'var(--paper, #fafaf5)',
-              padding: '10px 24px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 13,
-              textAlign: 'center',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Draft preview — only visible to you. Status: <strong>{product.status}</strong>. {' '}
-            <Link href={`/dashboard/products/${product.id}/edit`} style={{ textDecoration: 'underline', color: 'inherit' }}>
-              Edit
-            </Link>
+          <div style={{
+            background: 'var(--gf-amber-tint)',
+            borderBottom: '1px solid var(--gf-amber)',
+            color: 'var(--gf-text)',
+            padding: '10px 24px',
+            fontSize: 14,
+            textAlign: 'center',
+          }}>
+            Draft preview — only visible to you. Status: <strong>{product.status}</strong>.{' '}
+            <Link href={`/dashboard/products/${product.id}/edit`} style={{ textDecoration: 'underline' }}>Edit</Link>
             {' · '}
-            <Link href="/dashboard" style={{ textDecoration: 'underline', color: 'inherit' }}>
-              Approve to publish
-            </Link>
+            <Link href="/dashboard" style={{ textDecoration: 'underline' }}>Approve to publish</Link>
           </div>
         )}
 
-        <section className="section product-hero">
-          <div className="product-hero-inner">
-            <Link href="/browse" className="product-back">← All products</Link>
+        <div className="gf-section">
+          <nav className="gf-breadcrumb" aria-label="Breadcrumb">
+            <Link href="/browse">Browse</Link>
+            <ChevronRight size={14} aria-hidden="true" />
+            {cat
+              ? <Link href={`/browse/${cat.slug}`}>{cat.label}</Link>
+              : <span>{product.category}</span>}
+            <ChevronRight size={14} aria-hidden="true" />
+            <span aria-current="page">{product.title}</span>
+          </nav>
 
-            <div className="product-hero-grid">
-              <div className="product-hero-media">
+          <div className="gf-gig">
+            {/* ── Main column ─────────────────────────────────────── */}
+            <div className="gf-gig-main">
+              <h1 style={{ fontSize: 'clamp(26px, 3.4vw, 34px)', marginBottom: 14 }}>
+                {product.headline || product.title}
+              </h1>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+                {product.seller?.display_name && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <span className="gf-avatar" aria-hidden="true">
+                      {product.seller.display_name.trim().charAt(0).toUpperCase()}
+                    </span>
+                    <strong style={{ fontSize: 15 }}>{product.seller.display_name}</strong>
+                    {product.seller.verified && <span className="gf-badge-level">Verified</span>}
+                  </span>
+                )}
+                <span className="gf-rating">
+                  {avgRating != null ? (
+                    <>
+                      <Stars value={avgRating} />
+                      <span className="gf-rating-score">{avgRating.toFixed(1)}</span>
+                      <span className="gf-rating-count">({reviews.length})</span>
+                    </>
+                  ) : (
+                    <span className="gf-rating-new">New listing</span>
+                  )}
+                </span>
+              </div>
+
+              <div className="gf-gallery">
                 <ProductScreenshot
                   src={heroImage}
                   title={product.title}
@@ -256,100 +401,283 @@ export default async function ProductPage(
                   category={product.category}
                   size="hero"
                 />
-                <div className="product-hero-tags" style={{ marginTop: 20 }}>
-                  <span className="product-category-tag" style={{ position: 'static', display: 'inline-block' }}>{product.category}</span>
-                  <span className={`product-licensed-tag${product.type === 'Exclusive' ? ' exclusive' : ''}`} style={{ position: 'static', display: 'inline-block', marginLeft: 8 }}>
-                    {product.type}
-                  </span>
-                </div>
               </div>
 
-              <div className="product-hero-copy">
-                <div className="section-tag">{product.category}</div>
-                <h1 className="section-title" style={{ fontSize: 'clamp(40px,5.5vw,72px)' }}>
-                  {product.title}
-                </h1>
-                <p className="product-tagline" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: 24, marginTop: 8 }}>
-                  {product.headline}
-                </p>
-                <p className="product-desc" style={{ fontSize: 18, marginTop: 16 }}>
-                  {product.subheadline}
-                </p>
-
-                <div className="product-tags" style={{ marginTop: 24 }}>
-                  {product.tags.map(tag => (
-                    <span key={tag} className="product-tag">{tag}</span>
+              {product.screenshots.length > 1 && (
+                <div className="gf-gallery-thumbs">
+                  {product.screenshots.slice(1).map((src, i) => (
+                    <div key={i} className="gf-gallery-thumb">
+                      <Image
+                        src={src}
+                        alt={`${product.title} screenshot ${i + 2}`}
+                        fill
+                        sizes="(max-width: 900px) 45vw, 220px"
+                        style={{ objectFit: 'cover' }}
+                        unoptimized
+                      />
+                    </div>
                   ))}
                 </div>
+              )}
 
-                <div className="product-price" style={{ marginTop: 32 }}>
-                  <div className="product-price-main" style={{ fontSize: 48 }}>{product.priceMain}</div>
-                  <div className="product-price-sub">{product.priceSub}</div>
+              <section style={{ marginTop: 40 }}>
+                <h2 style={{ fontSize: 22, marginBottom: 12 }}>About this tool</h2>
+                <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--gf-text-2)' }}>
+                  {product.subheadline}
+                </p>
+                {product.problem_statement && (
+                  <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--gf-text-2)', marginTop: 14 }}>
+                    {product.problem_statement}
+                  </p>
+                )}
+                {product.tags.length > 0 && (
+                  <div className="gf-card-tags" style={{ marginTop: 18 }}>
+                    {product.tags.map(tag => <span key={tag} className="gf-pill">{tag}</span>)}
+                  </div>
+                )}
+              </section>
+
+              {cleanFeatures.length > 0 && (
+                <section style={{ marginTop: 40 }}>
+                  <h2 style={{ fontSize: 22, marginBottom: 14 }}>What it does</h2>
+                  <ul style={{ listStyle: 'none', display: 'grid', gap: 12 }}>
+                    {cleanFeatures.map((f, i) => (
+                      <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 16, color: 'var(--gf-text-2)' }}>
+                        <Check size={19} strokeWidth={2.4} aria-hidden="true" style={{ color: 'var(--gf-success)', flexShrink: 0, marginTop: 3 }} />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {cleanUseCases.length > 0 && (
+                <section style={{ marginTop: 40 }}>
+                  <h2 style={{ fontSize: 22, marginBottom: 14 }}>Who it&apos;s for</h2>
+                  <ul style={{ listStyle: 'none', display: 'grid', gap: 12 }}>
+                    {cleanUseCases.map((u, i) => (
+                      <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 16, color: 'var(--gf-text-2)' }}>
+                        <ChevronRight size={18} aria-hidden="true" style={{ color: 'var(--gf-amber-ink)', flexShrink: 0, marginTop: 3 }} />
+                        <span>{u}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {hasEmbed && (
+                <section style={{ marginTop: 40 }}>
+                  <h2 style={{ fontSize: 22, marginBottom: 14 }}>Walkthrough</h2>
+                  <div style={{
+                    position: 'relative', width: '100%', aspectRatio: '16 / 9',
+                    background: '#000', overflow: 'hidden',
+                    borderRadius: 'var(--gf-radius-lg)', border: '1px solid var(--gf-line)',
+                  }}>
+                    {ytId && (
+                      <iframe
+                        src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`}
+                        title={`${product.title} walkthrough`}
+                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+                      />
+                    )}
+                    {!ytId && vimeoId && (
+                      <iframe
+                        src={`https://player.vimeo.com/video/${vimeoId}?title=0&byline=0&portrait=0`}
+                        title={`${product.title} walkthrough`}
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+                      />
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {hasSpecs && (
+                <section style={{ marginTop: 40 }}>
+                  <h2 style={{ fontSize: 22, marginBottom: 6 }}>Under the hood</h2>
+                  <dl className="gf-specs">
+                    {product.platform.length > 0 && <SpecRow label="Platform" value={product.platform.join(' · ')} />}
+                    {product.architecture && <SpecRow label="Architecture" value={product.architecture} />}
+                    {product.ai_models.length > 0 && <SpecRow label="Native AI" value={product.ai_models.join(' · ')} />}
+                    {product.integrations.length > 0 && <SpecRow label="Integrations" value={product.integrations.join(' · ')} />}
+                    {product.tags.length > 0 && <SpecRow label="Tech stack" value={product.tags.join(' · ')} />}
+                    {product.monthly_cost != null && (
+                      <SpecRow label="Monthly cost to run" value={`£${product.monthly_cost.toLocaleString('en-GB')}/mo approx`} />
+                    )}
+                    {product.deploy_time && <SpecRow label="Time to deploy" value={product.deploy_time} />}
+                    {product.demo_url && <SpecRow label="Live demo" value={<ExternalLink href={product.demo_url} />} />}
+                    {product.video_url && <SpecRow label="Video walkthrough" value={<ExternalLink href={product.video_url} />} />}
+                    {product.docs_url && <SpecRow label="Docs" value={<ExternalLink href={product.docs_url} />} />}
+                    {product.repo_url && <SpecRow label="Repo" value={<ExternalLink href={product.repo_url} />} />}
+                  </dl>
+                </section>
+              )}
+
+              {product.seller?.display_name && (
+                <section style={{ marginTop: 40 }}>
+                  <h2 style={{ fontSize: 22, marginBottom: 14 }}>About the builder</h2>
+                  <div className="gf-panel">
+                    <div className="gf-panel-body" style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                      <span className="gf-avatar" style={{ width: 48, height: 48, fontSize: 19 }} aria-hidden="true">
+                        {product.seller.display_name.trim().charAt(0).toUpperCase()}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 160 }}>
+                        <div style={{ fontSize: 17, fontWeight: 700 }}>{product.seller.display_name}</div>
+                        <div style={{ fontSize: 14, color: 'var(--gf-text-2)' }}>
+                          {product.seller.verified ? 'Verified builder' : 'Builder on GetForged'}
+                        </div>
+                      </div>
+                      {!product.isPreview && (
+                        <ContactSellerButton
+                          productId={product.id}
+                          productTitle={product.title}
+                          label="Message seller"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* ── Reviews ─────────────────────────────────────── */}
+              <section style={{ marginTop: 40 }}>
+                <h2 style={{ fontSize: 22, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  {reviews.length > 0 ? (
+                    <>
+                      {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+                      {avgRating != null && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 17 }}>
+                          <Stars value={avgRating} />
+                          <span>{avgRating.toFixed(1)}</span>
+                        </span>
+                      )}
+                    </>
+                  ) : 'No reviews yet'}
+                </h2>
+
+                {reviews.length > 0 && (
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    {reviews.map(r => (
+                      <div key={r.id} className="gf-panel">
+                        <div className="gf-panel-body" style={{ display: 'grid', gap: 8 }}>
+                          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <Stars value={r.rating} size={15} />
+                            <span style={{ fontSize: 13, color: 'var(--gf-text-2)' }}>
+                              {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          </div>
+                          {r.body && (
+                            <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--gf-text-2)' }}>{r.body}</p>
+                          )}
+
+                          {r.seller_reply && (
+                            <div style={{
+                              marginTop: 4, padding: 14,
+                              background: 'var(--gf-surface-2)',
+                              borderLeft: '3px solid var(--gf-amber)',
+                              borderRadius: '0 var(--gf-radius) var(--gf-radius) 0',
+                              display: 'grid', gap: 6,
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--gf-text-2)' }}>
+                                <strong style={{ color: 'var(--gf-amber-ink)' }}>Builder reply</strong>
+                                {product.seller?.display_name && <span>· {product.seller.display_name}</span>}
+                                {r.seller_replied_at && (
+                                  <span>· {new Date(r.seller_replied_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                )}
+                              </div>
+                              <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--gf-text-2)' }}>{r.seller_reply}</p>
+                              {isOwnerSeller && (
+                                <ReviewReplyForm reviewId={r.id} productSlug={product.slug} existingReply={r.seller_reply} />
+                              )}
+                            </div>
+                          )}
+
+                          {isOwnerSeller && !r.seller_reply && (
+                            <ReviewReplyForm reviewId={r.id} productSlug={product.slug} existingReply={null} />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {hasPurchased && !product.isPreview && (
+                  <div style={{ marginTop: 24, maxWidth: 520 }}>
+                    <h3 style={{ fontSize: 17, marginBottom: 10 }}>Leave a review</h3>
+                    <ReviewForm productId={product.id} productSlug={product.slug} />
+                  </div>
+                )}
+
+                {!hasPurchased && !product.isPreview && viewer && (
+                  <p style={{ fontSize: 14, color: 'var(--gf-text-2)', marginTop: 14 }}>
+                    Only verified buyers can leave reviews.
+                  </p>
+                )}
+
+                {!viewer && reviews.length === 0 && (
+                  <p style={{ fontSize: 14, color: 'var(--gf-text-2)', marginTop: 14 }}>
+                    Purchase this tool to leave a review.
+                  </p>
+                )}
+              </section>
+            </div>
+
+            {/* ── Sticky purchase panel ───────────────────────────── */}
+            <aside className="gf-gig-aside">
+              <div className="gf-package">
+                <div className="gf-package-head">
+                  <span className="gf-pill">{product.type}</span>
+                  <span className="gf-package-price">{product.priceMain}</span>
                 </div>
+                <p className="gf-package-sub">{product.priceSub}</p>
 
-                <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {isSeedProduct ? (
-                    <span
-                      className="section-tag"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        border: '1px solid var(--warm-border, #ccc)',
-                        color: 'var(--warm-muted, #6b6b6b)',
-                        padding: '10px 16px',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 12,
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Preview listing — not yet purchasable
-                    </span>
-                  ) : checkoutPaused ? (
-                    <span
-                      className="section-tag"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        border: '1px solid var(--amber, #c87d1a)',
-                        color: 'var(--amber, #c87d1a)',
-                        padding: '10px 16px',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 12,
-                        letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Checkout temporarily paused — back soon
-                    </span>
-                  ) : (
-                    <BuyButton
-                      slug={product.slug}
-                      productId={product.id}
-                      purchaseType={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
-                      category={product.category}
-                      priceMain={product.priceMain}
-                      label={buyLabel}
-                    />
+                <ul className="gf-package-list">
+                  <li>
+                    <Check size={17} strokeWidth={2.4} aria-hidden="true" />
+                    {product.type === 'Exclusive'
+                      ? 'Exclusive ownership — delisted after purchase'
+                      : 'Perpetual licence — no recurring fees'}
+                  </li>
+                  {product.deploy_time && (
+                    <li><Check size={17} strokeWidth={2.4} aria-hidden="true" />Deploys in {product.deploy_time}</li>
                   )}
+                  {product.repo_url && (
+                    <li><Check size={17} strokeWidth={2.4} aria-hidden="true" />Full source code access</li>
+                  )}
+                  {product.docs_url && (
+                    <li><Check size={17} strokeWidth={2.4} aria-hidden="true" />Setup docs and deploy guide</li>
+                  )}
+                  <li><Check size={17} strokeWidth={2.4} aria-hidden="true" />Direct line to the builder</li>
+                  <li><Check size={17} strokeWidth={2.4} aria-hidden="true" />7-day money-back guarantee</li>
+                </ul>
+
+                {product.support_terms && (
+                  <p style={{ fontSize: 14, color: 'var(--gf-text-2)', marginBottom: 16 }}>
+                    {product.support_terms}
+                  </p>
+                )}
+
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {purchaseControl}
+
                   {product.demo_url && (
-                    <DemoLink
-                      href={product.demo_url}
-                      productId={product.id}
-                      slug={product.slug}
-                    />
+                    <DemoLink href={product.demo_url} productId={product.id} slug={product.slug} />
                   )}
                   {!product.isPreview && (
                     <ContactSellerButton
                       productId={product.id}
                       productTitle={product.title}
-                      label={product.cta_secondary || 'Talk to Builder'}
+                      label={product.cta_secondary || 'Ask a question'}
                     />
                   )}
+                </div>
+
+                <div className="gf-package-foot">
                   {!product.isPreview && (
-                    <WishlistButton productId={product.id} returnTo={`/products/${product.slug}`} />
+                    <WishlistButton productId={product.id} returnTo={`/products/${product.slug}`} compact />
                   )}
                   <CompareToggle
                     slug={product.slug}
@@ -359,422 +687,19 @@ export default async function ProductPage(
                   />
                 </div>
 
-                {/* Task 2: Refund guarantee badge */}
-                <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b' }}>
-                  <span style={{ color: '#3fa85a', fontSize: 16 }}>✓</span>
-                  7-day money-back guarantee
-                  <span style={{ margin: '0 4px' }}>·</span>
-                  <span style={{ color: '#3fa85a', fontSize: 16 }}>✓</span>
-                  Secure checkout via Stripe
-                </div>
-
-                {/* Task 3: Trust logo strip */}
-                <div style={{ marginTop: 20, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6b6b' }}>Powered by</span>
-                  {(['Stripe', 'Supabase', 'Claude'] as const).map(name => (
-                    <span key={name} style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.06em',
-                      border: '1px solid rgba(42,39,32,0.2)', padding: '4px 10px', color: '#2a2217'
-                    }}>{name}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {product.problem_statement && (
-          <section className="section">
-            <div className="section-tag">The problem</div>
-            <p style={{ fontFamily: 'var(--font-serif)', fontSize: 28, lineHeight: 1.4, maxWidth: 820 }}>
-              {product.problem_statement}
-            </p>
-          </section>
-        )}
-
-        {cleanFeatures.length > 0 && (
-          <section className="section">
-            <div className="section-tag">What it does</div>
-            <h2 className="section-title" style={{ fontSize: 'clamp(32px,4vw,48px)' }}>Features</h2>
-            <ul className="product-features-list" style={{ marginTop: 32, display: 'grid', gap: 20, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', listStyle: 'none', padding: 0 }}>
-              {cleanFeatures.map((f, i) => (
-                <li key={i} className="product-card reveal" style={{ padding: 24, display: 'grid', gap: 8 }}>
-                  <div style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: 'var(--soft-amber, #b97314)',
-                  }}>
-                    Feature {String(i + 1).padStart(2, '0')}
-                  </div>
-                  <div className="product-desc" style={{ fontSize: 16, lineHeight: 1.5 }}>{f}</div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {cleanUseCases.length > 0 && (
-          <section className="section">
-            <div className="section-tag">Who it&apos;s for</div>
-            <h2 className="section-title" style={{ fontSize: 'clamp(32px,4vw,48px)' }}>Use cases</h2>
-            <ul style={{ marginTop: 32, display: 'grid', gap: 16, maxWidth: 820, listStyle: 'none', padding: 0 }}>
-              {cleanUseCases.map((u, i) => (
-                <li key={i} style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1.5 }}>
-                  · {u}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {(product.platform.length > 0 ||
-          product.architecture ||
-          product.ai_models.length > 0 ||
-          product.integrations.length > 0 ||
-          product.monthly_cost != null ||
-          product.deploy_time ||
-          product.tags.length > 0 ||
-          product.demo_url || product.video_url || product.docs_url || product.repo_url) && (
-          <section className="section">
-            <div className="section-tag">Spec sheet</div>
-            <h2 className="section-title" style={{ fontSize: 'clamp(32px,4vw,48px)' }}>Under the hood</h2>
-            <dl
-              style={{
-                marginTop: 32,
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                gap: 20,
-                maxWidth: 1100,
-              }}
-            >
-              {product.platform.length > 0 && (
-                <SpecRow label="Platform" value={product.platform.join(' · ')} />
-              )}
-              {product.architecture && (
-                <SpecRow label="Architecture" value={product.architecture} />
-              )}
-              {product.ai_models.length > 0 && (
-                <SpecRow label="Native AI" value={product.ai_models.join(' · ')} />
-              )}
-              {product.integrations.length > 0 && (
-                <SpecRow label="Integrations" value={product.integrations.join(' · ')} />
-              )}
-              {product.tags.length > 0 && (
-                <SpecRow label="Tech stack" value={product.tags.join(' · ')} />
-              )}
-              {product.monthly_cost != null && (
-                <SpecRow
-                  label="Monthly cost to run"
-                  value={`£${product.monthly_cost.toLocaleString('en-GB')}/mo approx`}
-                />
-              )}
-              {product.deploy_time && (
-                <SpecRow label="Time to deploy" value={product.deploy_time} />
-              )}
-              {product.demo_url && (
-                <SpecRow label="Live demo" value={<ExternalLink href={product.demo_url} />} />
-              )}
-              {product.video_url && (
-                <SpecRow label="Video walkthrough" value={<ExternalLink href={product.video_url} />} />
-              )}
-              {product.docs_url && (
-                <SpecRow label="Docs" value={<ExternalLink href={product.docs_url} />} />
-              )}
-              {product.repo_url && (
-                <SpecRow label="Repo" value={<ExternalLink href={product.repo_url} />} />
-              )}
-            </dl>
-          </section>
-        )}
-
-        {hasEmbed && (
-          <section className="section">
-            <div className="section-tag">Walkthrough</div>
-            <h2 className="section-title" style={{ fontSize: 'clamp(32px,4vw,48px)' }}>See it in action</h2>
-            <div
-              style={{
-                marginTop: 32,
-                position: 'relative',
-                width: '100%',
-                maxWidth: 960,
-                aspectRatio: '16 / 9',
-                background: '#000',
-                overflow: 'hidden',
-                border: '1px solid rgba(42,39,32,0.12)',
-              }}
-            >
-              {ytId && (
-                <iframe
-                  src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`}
-                  title={`${product.title} walkthrough`}
-                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
-                />
-              )}
-              {!ytId && vimeoId && (
-                <iframe
-                  src={`https://player.vimeo.com/video/${vimeoId}?title=0&byline=0&portrait=0`}
-                  title={`${product.title} walkthrough`}
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
-                />
-              )}
-            </div>
-          </section>
-        )}
-
-        {product.screenshots.length > 1 && (
-          <section className="section">
-            <div className="section-tag">Screenshots</div>
-            <div
-              style={{
-                marginTop: 32,
-                display: 'grid',
-                gap: 16,
-                gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-              }}
-            >
-              {product.screenshots.slice(1).map((src, i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    aspectRatio: '16 / 10',
-                    overflow: 'hidden',
-                    border: '1px solid rgba(42,39,32,0.12)',
-                  }}
-                >
-                  <Image
-                    src={src}
-                    alt={`${product.title} screenshot ${i + 2}`}
-                    fill
-                    sizes="(max-width: 900px) 100vw, 33vw"
-                    style={{ objectFit: 'cover' }}
-                    unoptimized
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Always show "What you get" — buyers need delivery clarity before paying */}
-        <section className="section">
-          <div className="section-tag">What you get</div>
-          <div style={{
-            marginTop: 24,
-            maxWidth: 820,
-            border: '2px solid var(--warm-ink, #2a2217)',
-            padding: '28px 32px',
-            display: 'grid',
-            gap: 16,
-          }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#b97314' }}>
-              Included with purchase
-            </div>
-            {product.support_terms && (
-              <p style={{ fontFamily: 'var(--font-serif)', fontSize: 22, lineHeight: 1.6, margin: 0 }}>
-                {product.support_terms}
-              </p>
-            )}
-            <div style={{ display: 'grid', gap: 10, fontFamily: 'var(--font-serif)', fontSize: 17 }}>
-              <div>✓ {product.type === 'Exclusive' ? 'Exclusive ownership — listing is removed from the marketplace after purchase' : 'Perpetual licence — use it forever, no recurring fees'}</div>
-              {product.repo_url && <div>✓ Full source code access</div>}
-              {product.docs_url && <div>✓ Setup documentation &amp; deploy guide</div>}
-              {product.demo_url && <div>✓ Live working demo to inspect before you buy</div>}
-              {product.deploy_time && <div>✓ Estimated time to deploy: {product.deploy_time}</div>}
-              <div>✓ Direct line to the builder for questions</div>
-              <div>✓ 7-day money-back guarantee, no questions asked</div>
-            </div>
-          </div>
-        </section>
-
-        {product.seller?.display_name && (
-          <section className="section">
-            <div className="section-tag">Built by</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap', marginTop: 16 }}>
-              <div
-                style={{
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: 28,
-                  fontStyle: 'italic',
-                }}
-              >
-                {product.seller.display_name}
-              </div>
-              {product.seller?.verified && (
-                <span style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.08em',
-                  textTransform: 'uppercase', background: 'var(--soft-amber, #b97314)',
-                  color: '#fff', padding: '4px 10px',
+                <p style={{
+                  display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center',
+                  marginTop: 14, fontSize: 13, color: 'var(--gf-text-2)',
                 }}>
-                  ✓ Verified
-                </span>
-              )}
-              <ContactSellerButton
-                productId={product.id}
-                productTitle={product.title}
-                label="Message seller →"
-              />
-            </div>
-          </section>
-        )}
-
-        <section className="section">
-          <div className="section-tag">Reviews</div>
-          <h2 className="section-title" style={{ fontSize: 'clamp(28px,3.5vw,42px)' }}>
-            {reviews.length > 0
-              ? <>{reviews.length} review{reviews.length !== 1 ? 's' : ''}{avgRating ? ` · ${'★'.repeat(Math.round(avgRating))}${'☆'.repeat(5 - Math.round(avgRating))} ${avgRating.toFixed(1)}` : ''}</>
-              : 'No reviews yet'}
-          </h2>
-
-          {reviews.length > 0 && (
-            <div style={{ marginTop: 32, display: 'grid', gap: 16, maxWidth: 820 }}>
-              {reviews.map(r => (
-                <div key={r.id} className="product-card" style={{ padding: 24, display: 'grid', gap: 8 }}>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <span style={{ color: '#b97314', fontSize: 20, letterSpacing: 2 }}>
-                      {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
-                    </span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#6b6b6b' }}>
-                      {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
-                  </div>
-                  {r.body && (
-                    <p style={{ fontFamily: 'var(--font-serif)', fontSize: 18, lineHeight: 1.5, margin: 0 }}>
-                      {r.body}
-                    </p>
-                  )}
-
-                  {/* Builder reply (read-only render) */}
-                  {r.seller_reply && (
-                    <div style={{
-                      marginTop: 8,
-                      padding: 14,
-                      background: 'rgba(185,115,20,0.06)',
-                      borderLeft: '3px solid var(--soft-amber, #b97314)',
-                      display: 'grid',
-                      gap: 6,
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 10,
-                        letterSpacing: '0.12em',
-                        textTransform: 'uppercase',
-                        color: 'var(--soft-amber, #b97314)',
-                      }}>
-                        Builder reply
-                        {product.seller?.display_name && <span style={{ textTransform: 'none', color: '#6b6b6b' }}>· {product.seller.display_name}</span>}
-                        {r.seller_replied_at && (
-                          <span style={{ textTransform: 'none', color: '#6b6b6b' }}>
-                            · {new Date(r.seller_replied_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </span>
-                        )}
-                      </div>
-                      <p style={{ fontFamily: 'var(--font-serif)', fontSize: 16, lineHeight: 1.5, margin: 0 }}>
-                        {r.seller_reply}
-                      </p>
-                      {isOwnerSeller && (
-                        <ReviewReplyForm reviewId={r.id} productSlug={product.slug} existingReply={r.seller_reply} />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Inline reply form when no reply exists yet (only for the seller) */}
-                  {isOwnerSeller && !r.seller_reply && (
-                    <ReviewReplyForm reviewId={r.id} productSlug={product.slug} existingReply={null} />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {hasPurchased && !product.isPreview && (
-            <div style={{ marginTop: 32, maxWidth: 520 }}>
-              <div className="section-tag" style={{ marginBottom: 12 }}>Leave a review</div>
-              <ReviewForm productId={product.id} productSlug={product.slug} />
-            </div>
-          )}
-
-          {!hasPurchased && !product.isPreview && userData.user && (
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#6b6b6b', marginTop: 16 }}>
-              Only verified buyers can leave reviews.
-            </p>
-          )}
-
-          {!userData.user && reviews.length === 0 && (
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#6b6b6b', marginTop: 16 }}>
-              Purchase this product to leave a review.
-            </p>
-          )}
-        </section>
-
-        <section className="section" style={{ textAlign: 'center' }}>
-          <h2 className="section-title" style={{ fontSize: 'clamp(32px,4vw,56px)' }}>
-            Ready to <span>ship</span>?
-          </h2>
-          <div style={{ display: 'flex', gap: 16, marginTop: 32, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {isSeedProduct ? (
-              <span
-                className="section-tag"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  border: '1px solid var(--warm-border, #ccc)',
-                  color: 'var(--warm-muted, #6b6b6b)',
-                  padding: '16px 32px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 13,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Preview listing — not yet purchasable
-              </span>
-            ) : checkoutPaused ? (
-              <span
-                className="section-tag"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  border: '1px solid var(--amber, #c87d1a)',
-                  color: 'var(--amber, #c87d1a)',
-                  padding: '16px 32px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 13,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Checkout temporarily paused — back soon
-              </span>
-            ) : (
-              <BuyButton
-                slug={product.slug}
-                productId={product.id}
-                purchaseType={product.type === 'Exclusive' ? 'exclusive' : 'licensed'}
-                category={product.category}
-                priceMain={product.priceMain}
-                label={buyLabel}
-                style={{ padding: '16px 48px' }}
-              />
-            )}
-            <Link href="/browse" className="btn-hero-secondary" style={{ padding: '16px 48px' }}>
-              See more products
-            </Link>
+                  <ShieldCheck size={15} aria-hidden="true" style={{ color: 'var(--gf-success)' }} />
+                  Secure checkout via Stripe
+                </p>
+              </div>
+            </aside>
           </div>
-        </section>
+        </div>
       </main>
+
       <Footer />
       <ScrollReveal />
     </>

@@ -2,28 +2,21 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@/lib/supabase/server'
+import { eq, and, inArray } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { claimInvites } from '@/db/schema'
 import { checkAdminAccess, logAdminAction, type UserRole } from '@/lib/admin'
 import { createProspectDraft } from '@/lib/prospects'
 
 const DEFAULT_CATEGORY = 'AI Automation'
 
-function adminDb() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
-
 async function gateOrRedirect(): Promise<{ userId: string; email: string | null; role: UserRole }> {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
-  return { userId: userData.user.id, email: userData.user.email ?? null, role }
+  return { userId: session.user.id, email: session.user.email ?? null, role }
 }
 
 export interface ProspectRowResult {
@@ -125,14 +118,13 @@ export async function revokeInvite(
   const inviteId = String(formData.get('invite_id') ?? '')
   if (!inviteId) return { error: 'Missing invite id.' }
 
-  const db = adminDb()
-  const { error } = await db
-    .from('claim_invites')
-    .update({ status: 'revoked' })
-    .eq('id', inviteId)
-    .in('status', ['sent', 'viewed'])
-
-  if (error) return { error: error.message }
+  try {
+    await db.update(claimInvites)
+      .set({ status: 'revoked' })
+      .where(and(eq(claimInvites.id, inviteId), inArray(claimInvites.status, ['sent', 'viewed'])))
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not revoke invite.' }
+  }
 
   await logAdminAction({
     actor_id: userId,

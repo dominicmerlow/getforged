@@ -1,5 +1,7 @@
 import { headers } from 'next/headers'
-import { createServiceClient } from '@/lib/supabase/server'
+import { lt, sql } from 'drizzle-orm'
+import { db, dbConfigured } from '@/lib/db'
+import { rateLimits } from '@/db/schema'
 
 /**
  * Best-effort client IP from Vercel/proxy forwarding headers. Not spoof-proof
@@ -31,10 +33,15 @@ const memoryStore = new Map<string, { count: number; resetAt: number }>()
 
 /**
  * Fixed-window rate limiter, durable across serverless instances via a
- * Supabase-backed atomic counter (see migration 013). Falls back to a
- * per-instance in-memory counter if the DB call fails — a rate-limit outage
- * must not take down checkout or concierge, so this fails open on infra
- * errors while still applying best-effort per-instance limiting.
+ * Neon-backed atomic counter (see db/schema.ts → rateLimits, ported from
+ * migration 013). The old Supabase version called a `rate_limit_hit` SQL
+ * function for atomicity; the same guarantee comes from a single
+ * `INSERT ... ON CONFLICT DO UPDATE ... RETURNING` statement here — Postgres
+ * upserts are atomic on their own, no stored procedure required.
+ *
+ * Falls back to a per-instance in-memory counter if the DB call fails — a
+ * rate-limit outage must not take down checkout or concierge, so this fails
+ * open on infra errors while still applying best-effort per-instance limiting.
  *
  * Returns true if the request should proceed, false if it should be
  * rejected as over the limit.
@@ -44,24 +51,43 @@ export async function checkRateLimit(opts: RateLimitOptions): Promise<boolean> {
   const windowMs = opts.windowSeconds * 1000
   const now = Date.now()
 
+  if (!dbConfigured()) {
+    return inMemoryFallback(key, windowMs, now, opts.limit)
+  }
+
   try {
-    const supabase = await createServiceClient()
-    const windowStart = new Date(Math.floor(now / windowMs) * windowMs).toISOString()
-    const { data, error } = await supabase.rpc('rate_limit_hit', {
-      p_key: key,
-      p_window_start: windowStart,
-      p_limit: opts.limit,
-    })
-    if (error) throw error
-    return data === true
+    const windowStart = new Date(Math.floor(now / windowMs) * windowMs)
+
+    const [row] = await db
+      .insert(rateLimits)
+      .values({ key, windowStart, count: 1 })
+      .onConflictDoUpdate({
+        target: [rateLimits.key, rateLimits.windowStart],
+        set: { count: sql`${rateLimits.count} + 1` },
+      })
+      .returning({ count: rateLimits.count })
+
+    // Opportunistic cleanup — same 1%-of-calls heuristic the original SQL
+    // function used, so the table doesn't grow unbounded without a cron job.
+    if (Math.random() < 0.01) {
+      db.delete(rateLimits)
+        .where(lt(rateLimits.windowStart, new Date(now - 24 * 60 * 60 * 1000)))
+        .catch(() => {})
+    }
+
+    return row.count <= opts.limit
   } catch (err) {
     console.error('[ratelimit] DB check failed, using in-memory fallback:', err instanceof Error ? err.message : err)
-    const entry = memoryStore.get(key)
-    if (!entry || entry.resetAt <= now) {
-      memoryStore.set(key, { count: 1, resetAt: now + windowMs })
-      return true
-    }
-    entry.count += 1
-    return entry.count <= opts.limit
+    return inMemoryFallback(key, windowMs, now, opts.limit)
   }
+}
+
+function inMemoryFallback(key: string, windowMs: number, now: number, limit: number): boolean {
+  const entry = memoryStore.get(key)
+  if (!entry || entry.resetAt <= now) {
+    memoryStore.set(key, { count: 1, resetAt: now + windowMs })
+    return true
+  }
+  entry.count += 1
+  return entry.count <= limit
 }

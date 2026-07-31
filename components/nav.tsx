@@ -1,81 +1,92 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
 import { signOut } from '@/app/actions/auth'
 import { checkAdminAccess } from '@/lib/admin'
-import MobileNavToggle from '@/components/MobileNavToggle'
-
-function supabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  return !!url && !!key && !url.includes('YOUR_PROJECT') && !key.startsWith('your_')
-}
+import SearchBar from '@/components/SearchBar'
+import CategoryBar from '@/components/CategoryBar'
+import HeaderDrawer from '@/components/HeaderDrawer'
 
 async function getUser() {
-  if (!supabaseConfigured()) return null
   try {
-    const supabase = await createClient()
-    const { data } = await supabase.auth.getUser()
-    return data.user ?? null
+    const session = await auth()
+    return session?.user ?? null
   } catch {
     return null
   }
 }
 
-export default async function Nav() {
+interface NavProps {
+  /** Hide the second-row category strip (e.g. on auth and legal pages) */
+  showCategories?: boolean
+  /** Category slug to mark as current in the strip */
+  activeCategory?: string
+  /** Seeds the header search field on the browse page */
+  searchValue?: string
+}
+
+/**
+ * Sticky marketplace header.
+ *
+ * Two rows, following the pattern every large marketplace converges on: brand +
+ * search + account on top, categories underneath. Search lives in the header on
+ * every page — once a visitor is past the homepage, the header search is the
+ * only way to start a new query without going back.
+ */
+export default async function Nav({
+  showCategories = true,
+  activeCategory,
+  searchValue = '',
+}: NavProps = {}) {
   const user = await getUser()
   const isAdmin = user ? Boolean(await checkAdminAccess(user.id, user.email)) : false
 
   return (
-    <nav className="nav">
-      <Link href="/" className="nav-logo nav-logo-image" aria-label="GetForged home">
-        {/*
-          Full GetForged lockup as a raster asset. We render the mark + wordmark
-          from one PNG so it stays pixel-identical to brand artwork.
-          - `priority` because the nav logo is above the fold on every page.
-          - intrinsic dimensions are 612×408 (3:2); CSS constrains the displayed
-            height via .nav-logo-image img.
-        */}
-        <Image
-          src="/getforged_logo.png"
-          alt="GetForged"
-          width={911}
-          height={274}
-          priority
-        />
-      </Link>
+    <header className="gf-header">
+      <div className="gf-header-row">
+        <Link href="/" className="gf-header-logo" aria-label="GetForged home">
+          <Image
+            src="/getforged_logo.png"
+            alt="GetForged"
+            width={911}
+            height={274}
+            priority
+          />
+        </Link>
 
-      <ul className="nav-links">
-        <li><Link href="/browse">Browse</Link></li>
-        <li><Link href="/concierge">Concierge</Link></li>
-        <li><Link href="/how-it-works/buyers">For Buyers</Link></li>
-        <li><Link href="/how-it-works/sellers">For Sellers</Link></li>
-        <li><Link href="/#pricing">Pricing</Link></li>
-      </ul>
+        <div className="gf-header-search">
+          <SearchBar id="gf-header-search" defaultValue={searchValue} placeholder="Search AI tools and automations" />
+        </div>
 
-      <MobileNavToggle />
+        <nav className="gf-header-nav" aria-label="Primary">
+          <Link href="/browse">Browse</Link>
+          <Link href="/concierge">Concierge</Link>
+          <Link href="/how-it-works/buyers">For buyers</Link>
+          <Link href="/how-it-works/sellers">For sellers</Link>
+        </nav>
 
-      <div className="nav-actions">
-        {user ? (
-          <>
-            <Link href="/wishlist" className="btn-ghost" aria-label="Wishlist" title="Wishlist">♥</Link>
-            <Link href="/dashboard" className="btn-ghost">Dashboard</Link>
-            {isAdmin && (
-              <Link href="/admin" className="btn-ghost">Admin</Link>
-            )}
-            <form action={signOut} style={{ display: 'inline' }}>
-              <button type="submit" className="btn-ghost" style={{ cursor: 'pointer', border: 'none', background: 'transparent' }}>
-                Sign Out
-              </button>
-            </form>
-          </>
-        ) : (
-          <>
-            <Link href="/login" className="btn-ghost">Sign In</Link>
-            <Link href="/login" className="btn-amber">List Your App</Link>
-          </>
-        )}
+        <div className="gf-header-actions">
+          {user ? (
+            <>
+              <Link href="/wishlist" className="btn btn-ghost-new gf-hide-sm">Saved</Link>
+              <Link href="/dashboard" className="btn btn-ghost-new">Dashboard</Link>
+              {isAdmin && <Link href="/admin" className="btn btn-ghost-new gf-hide-sm">Admin</Link>}
+              <form action={signOut}>
+                <button type="submit" className="btn btn-secondary">Sign out</button>
+              </form>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="btn btn-ghost-new gf-hide-sm">Sign in</Link>
+              <Link href="/submit" className="btn btn-primary">List your app</Link>
+            </>
+          )}
+
+          <HeaderDrawer authed={!!user} isAdmin={isAdmin} />
+        </div>
       </div>
-    </nav>
+
+      {showCategories && <CategoryBar activeSlug={activeCategory} />}
+    </header>
   )
 }

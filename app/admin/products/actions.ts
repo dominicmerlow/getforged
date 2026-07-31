@@ -2,17 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@/lib/supabase/server'
+import { eq, inArray } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { products } from '@/db/schema'
 import { checkAdminAccess, logAdminAction } from '@/lib/admin'
-
-function adminDb() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
 
 export type BulkResult =
   | { ok: true; affected: number }
@@ -21,12 +15,11 @@ export type BulkResult =
 type ProductStatus = 'draft' | 'live' | 'archived'
 
 async function gateAdminOrRedirect(): Promise<{ userId: string; email: string | null }> {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
-  return { userId: userData.user.id, email: userData.user.email ?? null }
+  return { userId: session.user.id, email: session.user.email ?? null }
 }
 
 function parseIds(formData: FormData): string[] {
@@ -58,16 +51,14 @@ export async function adminBulkUpdateStatus(
   }
   if (ids.length === 0) return { error: 'No products selected.' }
 
-  const db = adminDb()
-  const { error, data } = await db
-    .from('products')
-    .update({ status })
-    .in('id', ids)
-    .select('id')
+  let affected = 0
+  try {
+    const updated = await db.update(products).set({ status }).where(inArray(products.id, ids)).returning({ id: products.id })
+    affected = updated.length
+  } catch (err) {
+    return { error: `Update failed: ${err instanceof Error ? err.message : 'unknown error'}` }
+  }
 
-  if (error) return { error: `Update failed: ${error.message}` }
-
-  const affected = data?.length ?? 0
   await logAdminAction({
     actor_id: userId,
     actor_email: email,
@@ -87,9 +78,9 @@ export async function adminBulkUpdateStatus(
  * Mark or unmark products as featured. Featured products appear on the
  * homepage hero stack ahead of newest-first ordering.
  *
- * For v1 we just flip the boolean; admins can manually re-set featured_position
- * via the per-product editor (Phase 3.5). Default position is 0 so newly-
- * featured products land at the top.
+ * For v1 we just flip the boolean; admins can manually re-set featuredPosition
+ * via the per-product editor. Default position is 0 so newly-featured
+ * products land at the top.
  */
 export async function adminBulkSetFeatured(
   _prev: BulkResult | null,
@@ -103,31 +94,19 @@ export async function adminBulkSetFeatured(
 
   if (ids.length === 0) return { error: 'No products selected.' }
 
-  const db = adminDb()
-  // featured_position: when un-featuring, clear it; when featuring, set to 0
+  // featuredPosition: when un-featuring, clear it; when featuring, set to 0
   // unless the product already has one (don't disturb existing manual order).
-  const { data: priors } = await db
-    .from('products')
-    .select('id, featured_position')
-    .in('id', ids)
+  const priors = await db
+    .select({ id: products.id, featuredPosition: products.featuredPosition })
+    .from(products)
+    .where(inArray(products.id, ids))
 
-  const updates = (priors ?? []).map(row => ({
-    id: row.id,
-    featured,
-    featured_position: featured
-      ? (row.featured_position ?? 0)
-      : null,
-  }))
-
-  // Supabase doesn't have a true "bulk update with different values per row"
-  // in one call — we issue parallel updates. Fine for handfuls of rows; if
-  // this ever needs to scale to 100s we'd switch to an RPC.
   const results = await Promise.allSettled(
-    updates.map(u =>
-      db.from('products').update({
-        featured: u.featured,
-        featured_position: u.featured_position,
-      }).eq('id', u.id)
+    priors.map(row =>
+      db.update(products).set({
+        featured,
+        featuredPosition: featured ? (row.featuredPosition ?? 0) : null,
+      }).where(eq(products.id, row.id))
     )
   )
   const affected = results.filter(r => r.status === 'fulfilled').length
@@ -148,7 +127,7 @@ export async function adminBulkSetFeatured(
 
 /**
  * Set Forge of the Week — exclusive: at most one product can hold the flag
- * at a time. Action atomically clears the prior holder and sets the new one.
+ * at a time. Action clears the prior holder and sets the new one.
  *
  * Pass `productId="none"` to clear without setting a new pick.
  */
@@ -161,16 +140,15 @@ export async function adminSetForgeOfTheWeek(
   const productId = String(formData.get('productId') ?? '').trim()
   if (!productId) return { error: 'No product specified.' }
 
-  const db = adminDb()
-  // Clear the current pick first (always safe — no-op if none set)
-  await db.from('products').update({ forge_of_the_week: false }).eq('forge_of_the_week', true)
+  try {
+    // Clear the current pick first (always safe — no-op if none set)
+    await db.update(products).set({ forgeOfTheWeek: false }).where(eq(products.forgeOfTheWeek, true))
 
-  if (productId !== 'none') {
-    const { error } = await db
-      .from('products')
-      .update({ forge_of_the_week: true })
-      .eq('id', productId)
-    if (error) return { error: `Set failed: ${error.message}` }
+    if (productId !== 'none') {
+      await db.update(products).set({ forgeOfTheWeek: true }).where(eq(products.id, productId))
+    }
+  } catch (err) {
+    return { error: `Set failed: ${err instanceof Error ? err.message : 'unknown error'}` }
   }
 
   await logAdminAction({
@@ -189,7 +167,7 @@ export async function adminSetForgeOfTheWeek(
 
 /**
  * Hard delete — superadmin-only, gated client-side by a confirm modal.
- * Cascades via the existing FK constraints (sales_pages, reviews, purchases).
+ * Cascades via the existing FK constraints (salesPages, reviews, purchases).
  */
 export async function adminBulkDelete(
   _prev: BulkResult | null,
@@ -199,15 +177,17 @@ export async function adminBulkDelete(
   const ids = parseIds(formData)
   if (ids.length === 0) return { error: 'No products selected.' }
 
-  const db = adminDb()
   // Snapshot for audit so we know what was deleted
-  const { data: priors } = await db
-    .from('products')
-    .select('id, slug, title, status')
-    .in('id', ids)
+  const priors = await db
+    .select({ id: products.id, slug: products.slug, title: products.title, status: products.status })
+    .from(products)
+    .where(inArray(products.id, ids))
 
-  const { error } = await db.from('products').delete().in('id', ids)
-  if (error) return { error: `Delete failed: ${error.message}` }
+  try {
+    await db.delete(products).where(inArray(products.id, ids))
+  } catch (err) {
+    return { error: `Delete failed: ${err instanceof Error ? err.message : 'unknown error'}` }
+  }
 
   await logAdminAction({
     actor_id: userId,

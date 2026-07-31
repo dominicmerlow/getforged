@@ -1,54 +1,57 @@
+import { Link2, Sparkles, ShoppingBag, Banknote } from 'lucide-react'
+
+/* Lucide SVGs rather than the emoji this section used to render: emoji are
+   drawn by the OS, so 🔗 was a different colour, weight and size on every
+   visitor's machine, and screen readers announce them as prose. */
 const STEPS = [
   {
     num: '01',
-    icon: '🔗',
-    title: 'Connect Your App',
-    desc: 'Submit your product URL. GetForged crawls your app, extracts features, screenshots and copy automatically.',
+    Icon: Link2,
+    title: 'Connect your app',
+    desc: 'Submit your product URL. GetForged crawls your app and extracts features, screenshots and copy automatically.',
   },
   {
     num: '02',
-    icon: '✨',
-    title: 'AI Writes Your Page',
-    desc: 'Claude API generates a full buyer-facing sales page — headline, benefits, use-cases, SEO. You review and publish.',
+    Icon: Sparkles,
+    title: 'AI writes your page',
+    desc: 'Claude generates a full buyer-facing sales page — headline, benefits, use cases, SEO. You review and publish.',
   },
   {
     num: '03',
-    icon: '🛒',
-    title: 'Buyers Discover & Buy',
-    desc: 'SME buyers browse by category, watch demos, try free trials, and purchase licensed or exclusive versions.',
+    Icon: ShoppingBag,
+    title: 'Buyers discover and buy',
+    desc: 'Buyers browse by category, watch demos, and purchase a licence or exclusive rights.',
   },
   {
     num: '04',
-    icon: '💸',
-    title: 'You Get Paid',
-    desc: 'Revenue lands in your Stripe account. Sell licences for recurring income — or list your full business for exit via Flippa.',
+    Icon: Banknote,
+    title: 'You get paid',
+    desc: 'Revenue lands in your Stripe account. Sell licences for recurring income, or list the whole business for exit.',
   },
 ]
 
 export default function HowItWorks() {
   return (
-    <section className="section">
-      <div className="section-tag">How it works</div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
-        <h2 className="section-title">
-          From <span>URL</span><br />
-          to listed<br />
-          in 48 hours.
-        </h2>
-        <p className="section-body">
-          Submit your app URL. Our AI crawls it, writes the sales page, and publishes your listing.
-          Buyers find you. You earn.
-        </p>
+    <section className="gf-section">
+      <div className="gf-section-head">
+        <div>
+          <h2 className="gf-section-title">From URL to listed in 48 hours</h2>
+          <p className="gf-section-sub">
+            Submit your app URL. Our AI crawls it, writes the sales page, and publishes your
+            listing. Buyers find you. You earn.
+          </p>
+        </div>
       </div>
 
       <div className="how-grid">
-        {STEPS.map((step) => (
-          <div key={step.num} className="how-card reveal">
-            <div className="how-num">{step.num}</div>
-            <div className="how-icon">{step.icon}</div>
-            <h3>{step.title}</h3>
-            <p>{step.desc}</p>
+        {STEPS.map(({ num, Icon, title, desc }) => (
+          <div key={num} className="how-card reveal">
+            <div className="how-icon">
+              <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+            </div>
+            <div className="how-num">Step {num}</div>
+            <h3>{title}</h3>
+            <p>{desc}</p>
           </div>
         ))}
       </div>

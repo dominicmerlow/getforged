@@ -2,18 +2,13 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
+import { dbConfigured } from '@/lib/db'
 import LoginForm from './LoginForm'
 
 export const metadata: Metadata = {
   title: 'Sign in',
-  description: 'Sign in to your GetForged seller account with a magic link.',
-}
-
-function supabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  return !!url && !!key && !url.includes('YOUR_PROJECT') && !key.startsWith('your_')
+  description: 'Sign in to your GetForged seller account.',
 }
 
 export default async function LoginPage({
@@ -23,15 +18,12 @@ export default async function LoginPage({
 }) {
   const { error } = await searchParams
 
-  if (supabaseConfigured()) {
-    const supabase = await createClient()
-    const { data } = await supabase.auth.getUser()
-    if (data.user) redirect('/dashboard')
-  }
+  const session = await auth()
+  if (session?.user) redirect('/dashboard')
 
   return (
     <>
-      <Nav />
+      <Nav showCategories={false} />
       <main>
         <section className="section" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
           <div style={{ display: 'grid', gap: 24, maxWidth: 420, width: '100%', justifyItems: 'start' }}>
@@ -40,13 +32,12 @@ export default async function LoginPage({
               Sign in
             </h1>
             <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, margin: 0 }}>
-              We&apos;ll email you a one-time link. No passwords.
+              Use a password, a magic link, or continue with Google or GitHub.
             </p>
 
-            {!supabaseConfigured() && (
+            {!dbConfigured() && (
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, padding: 12, border: '1px dashed var(--ink)' }}>
-                Supabase env vars are still placeholders — magic links won&apos;t send until you set
-                {' '}<code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in <code>.env.local</code>.
+                <code>DATABASE_URL</code> is not set — sign-in won&apos;t work until the database is configured.
               </p>
             )}
 

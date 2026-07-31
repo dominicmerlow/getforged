@@ -1,7 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { eq } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { products, sellers, salesPages, errorLog } from '@/db/schema'
 import { scrapeUrl } from '@/lib/firecrawl'
 import { generateSalesPageSmart, llmConfigured } from '@/lib/llm'
 import { sendDraftReadyEmail } from '@/lib/resend'
@@ -46,16 +49,13 @@ function stubSalesPage(
   }
 }
 
-async function findUniqueSlug(
-  baseSlug: string,
-  supabase: Awaited<ReturnType<typeof createServiceClient>>
-): Promise<string> {
+async function findUniqueSlug(baseSlug: string): Promise<string> {
   let slug = baseSlug
   let n = 2
   // Cap at 20 attempts to avoid infinite loops in pathological cases
   for (let i = 0; i < 20; i++) {
-    const { data } = await supabase.from('products').select('id').eq('slug', slug).maybeSingle()
-    if (!data) return slug
+    const existing = await db.query.products.findFirst({ where: eq(products.slug, slug) })
+    if (!existing) return slug
     slug = `${baseSlug}-${n++}`
   }
   // Extremely unlikely — append random suffix
@@ -94,20 +94,15 @@ export async function submitProduct(
   }
 
   // ── 2. Auth check ────────────────────────────────────────────
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) return { error: 'You must be signed in to submit a product.' }
+  const session = await auth()
+  if (!session?.user) return { error: 'You must be signed in to submit a product.' }
 
-  const { data: sellerRow } = await supabase
-    .from('sellers')
-    .select('id, display_name')
-    .eq('user_id', userData.user.id)
-    .maybeSingle()
+  const sellerRow = await db.query.sellers.findFirst({ where: eq(sellers.userId, session.user.id) })
   if (!sellerRow) return { error: 'Seller profile not found. Try signing out and back in.' }
 
   // ── 2b. Submissions paused gate (admin feature flag) ─────────
   // Server-side enforcement — never trust the client. Fail-OPEN if the
-  // settings read throws so a transient Supabase issue doesn't block sellers.
+  // settings read throws so a transient DB issue doesn't block sellers.
   try {
     const paused = await getSetting('site.submissions_paused')
     if (paused) {
@@ -152,74 +147,71 @@ export async function submitProduct(
     )
   }
 
-  // ── 5. Compute unique slug via service role (bypasses RLS) ───
-  const service = await createServiceClient()
+  // ── 5. Compute unique slug ────────────────────────────────────
   const baseSlug = slugify(name) || 'product'
-  const slug = await findUniqueSlug(baseSlug, service)
+  const slug = await findUniqueSlug(baseSlug)
 
   // ── 6. Insert product (draft) ────────────────────────────────
   const screenshots = scraped.screenshot ? [scraped.screenshot] : null
-  const { data: productInsert, error: productErr } = await service
-    .from('products')
-    .insert({
-      seller_id: sellerRow.id,
-      title: name,
-      tagline: generated.headline,
-      description: generated.subheadline,
-      features: generated.features,
-      use_cases: generated.use_cases,
-      price_licensed: priceLicensed,
-      price_exclusive: priceExclusive,
-      status: 'draft',
-      slug,
-      source_url: productUrl,
-      category,
-      screenshots,
-      demo_url,
-    })
-    .select('id')
-    .single()
-
-  if (productErr || !productInsert) {
-    await service.from('error_log').insert({
+  let productId: string
+  try {
+    const [productInsert] = await db
+      .insert(products)
+      .values({
+        sellerId: sellerRow.id,
+        title: name,
+        tagline: generated.headline,
+        description: generated.subheadline,
+        features: generated.features as unknown as Record<string, unknown>[],
+        useCases: generated.use_cases as unknown as Record<string, unknown>[],
+        priceLicensed,
+        priceExclusive,
+        status: 'draft',
+        slug,
+        sourceUrl: productUrl,
+        category,
+        screenshots,
+        demoUrl: demo_url,
+      })
+      .returning({ id: products.id })
+    if (!productInsert) throw new Error('no id returned')
+    productId = productInsert.id
+  } catch (err) {
+    await db.insert(errorLog).values({
       scenario: 'submit-product-insert',
-      payload: { name, slug, productUrl, userId: userData.user.id } as object,
-      error_message: productErr?.message ?? 'no id returned',
-    })
-    return { error: productErr?.message ?? 'Could not save product.' }
+      payload: { name, slug, productUrl, userId: session.user.id },
+      errorMessage: err instanceof Error ? err.message : 'unknown error',
+    }).catch(() => {})
+    return { error: err instanceof Error ? err.message : 'Could not save product.' }
   }
 
-  const productId = productInsert.id as string
-
   // ── 7. Insert sales_page (1:1 with product) ──────────────────
-  const { error: spErr } = await service.from('sales_pages').insert({
-    product_id: productId,
-    headline: generated.headline,
-    subheadline: generated.subheadline,
-    problem_statement: generated.problem_statement,
-    body_copy: {
-      features: generated.features,
-      use_cases: generated.use_cases,
-    } as object,
-    cta_primary: generated.cta_primary,
-    cta_secondary: generated.cta_secondary,
-    meta_title: generated.meta_title,
-    meta_description: generated.meta_description,
-  })
-  if (spErr) {
-    await service.from('error_log').insert({
-      scenario: 'submit-salespage-insert',
-      payload: { productId, slug } as object,
-      error_message: spErr.message,
+  try {
+    await db.insert(salesPages).values({
+      productId,
+      headline: generated.headline,
+      subheadline: generated.subheadline,
+      problemStatement: generated.problem_statement,
+      bodyCopy: { features: generated.features, use_cases: generated.use_cases },
+      ctaPrimary: generated.cta_primary,
+      ctaSecondary: generated.cta_secondary,
+      metaTitle: generated.meta_title,
+      metaDescription: generated.meta_description,
     })
+  } catch (err) {
+    await db.insert(errorLog).values({
+      scenario: 'submit-salespage-insert',
+      payload: { productId, slug },
+      errorMessage: err instanceof Error ? err.message : 'unknown error',
+    }).catch(() => {})
     // Non-fatal: product exists, seller can still edit/approve
   }
 
   // ── 8. Email seller (async, non-blocking of response) ────────
   try {
     await sendDraftReadyEmail(
-      userData.user.email ?? 'unknown',
-      sellerRow.display_name,
+      session.user.email ?? 'unknown',
+      sellerRow.displayName,
       name,
       productId
     )

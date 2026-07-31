@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { eq } from 'drizzle-orm'
 import Nav from '@/components/nav'
 import Footer from '@/components/footer'
-import { createServiceClient } from '@/lib/supabase/server'
+import { db, dbConfigured } from '@/lib/db'
+import { claimInvites, products } from '@/db/schema'
 import ClaimForm from './ClaimForm'
 
 export const dynamic = 'force-dynamic'
@@ -14,42 +16,25 @@ export const metadata: Metadata = {
 
 type FeatureLike = { title?: string; description?: string }
 
-interface InviteRow {
-  id: string
-  status: 'sent' | 'viewed' | 'claimed' | 'expired' | 'revoked'
-  expires_at: string
-  prospect_name: string | null
-  source: string
-  product: {
-    id: string
-    title: string
-    tagline: string | null
-    description: string | null
-    features: FeatureLike[] | null
-    screenshots: string[] | null
-    category: string | null
-  } | null
-}
-
 export default async function ClaimPage({
   params,
 }: {
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
-  const service = await createServiceClient()
 
-  const { data: inviteRaw } = await service
-    .from('claim_invites')
-    .select('id, status, expires_at, prospect_name, source, product:products(id, title, tagline, description, features, screenshots, category)')
-    .eq('token', token)
-    .maybeSingle()
-
-  const invite = inviteRaw
-    ? ({ ...inviteRaw, product: Array.isArray(inviteRaw.product) ? inviteRaw.product[0] : inviteRaw.product } as InviteRow)
+  const row = dbConfigured()
+    ? await db
+        .select({ invite: claimInvites, product: products })
+        .from(claimInvites)
+        .innerJoin(products, eq(products.id, claimInvites.productId))
+        .where(eq(claimInvites.token, token))
+        .limit(1)
+        .then(rows => rows[0] ?? null)
+        .catch(() => null)
     : null
 
-  if (!invite || !invite.product) {
+  if (!row) {
     return (
       <>
         <Nav />
@@ -73,7 +58,8 @@ export default async function ClaimPage({
     )
   }
 
-  const isExpired = invite.status === 'expired' || new Date(invite.expires_at) < new Date()
+  const { invite, product } = row
+  const isExpired = invite.status === 'expired' || invite.expiresAt < new Date()
   const isRevoked = invite.status === 'revoked'
   const isClaimed = invite.status === 'claimed'
 
@@ -126,15 +112,13 @@ export default async function ClaimPage({
   // Mark viewed (first view only — don't downgrade an already-claimed row,
   // and no need to re-stamp on every reload).
   if (invite.status === 'sent') {
-    await service
-      .from('claim_invites')
-      .update({ status: 'viewed', viewed_at: new Date().toISOString() })
-      .eq('id', invite.id)
+    await db.update(claimInvites)
+      .set({ status: 'viewed', viewedAt: new Date() })
+      .where(eq(claimInvites.id, invite.id))
   }
 
-  const product = invite.product
-  const greetingName = invite.prospect_name ? invite.prospect_name.split(' ')[0] : null
-  const features = (product.features ?? []).filter(f => f.title)
+  const greetingName = invite.prospectName ? invite.prospectName.split(' ')[0] : null
+  const features = ((product.features ?? []) as FeatureLike[]).filter(f => f.title)
   const screenshot = product.screenshots?.[0] ?? null
 
   return (

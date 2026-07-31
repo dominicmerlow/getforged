@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import type Stripe from 'stripe'
+import { eq } from 'drizzle-orm'
 import { getStripe, stripeConfigured } from '@/lib/stripe'
-import { createServiceClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db'
+import { errorLog, purchases, products, sellers, users } from '@/db/schema'
 import { sendPurchaseReceiptEmail, sendSellerSaleNotification, sendReviewRequestEmail } from '@/lib/resend'
 
 export const runtime = 'nodejs'
@@ -12,9 +14,19 @@ const PG_UNIQUE_VIOLATION = '23505'
 
 type PurchaseRow = {
   id: string
-  receipt_sent_at: string | null
-  seller_notified_at: string | null
-  review_request_sent_at: string | null
+  receiptSentAt: Date | null
+  sellerNotifiedAt: Date | null
+  reviewRequestSentAt: Date | null
+}
+
+async function logError(scenario: string, payload: object, message: string) {
+  try {
+    await db.insert(errorLog).values({ scenario, payload, errorMessage: message })
+  } catch (err) {
+    // The error log itself failing is not worth failing the request over —
+    // it's already best-effort diagnostics, not a correctness path.
+    console.error('[stripe-webhook] error_log insert failed:', err instanceof Error ? err.message : err)
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -64,12 +76,11 @@ export async function POST(request: NextRequest) {
   // ── Validation failure on event payload: permanent. 200 + ignored so Stripe
   //    stops retrying. Log to error_log so we notice if real events lack metadata.
   if (!productId || !purchaseType) {
-    const supabase = await createServiceClient()
-    await supabase.from('error_log').insert({
-      scenario: 'stripe-webhook-bad-metadata',
-      payload: { session_id: session.id, metadata } as object,
-      error_message: 'missing product_id or purchase_type in session metadata',
-    })
+    await logError(
+      'stripe-webhook-bad-metadata',
+      { session_id: session.id, metadata },
+      'missing product_id or purchase_type in session metadata'
+    )
     return NextResponse.json({ received: true, ignored: 'missing metadata' })
   }
 
@@ -77,62 +88,60 @@ export async function POST(request: NextRequest) {
   const buyerEmail =
     session.customer_details?.email ?? session.customer_email ?? null
 
-  const supabase = await createServiceClient()
-
-  // ── Idempotent INSERT. The partial unique index on stripe_payment_id makes
+  // ── Idempotent INSERT. The partial unique index on stripePaymentId makes
   //    this atomic — concurrent retries can't both succeed. On unique-violation
   //    (23505) we read the existing row to drive email idempotency.
   let purchase: PurchaseRow | null = null
 
-  const { data: inserted, error: insertErr } = await supabase
-    .from('purchases')
-    .insert({
-      buyer_id: buyerId || null,
-      product_id: productId,
-      purchase_type: purchaseType,
-      amount: amountGBP,
-      stripe_payment_id: session.id,
-      // receipt_sent_at, seller_notified_at and review_request_sent_at
-      // intentionally left NULL — emails are sent below and timestamps
-      // recorded only on success.
-    })
-    .select('id, receipt_sent_at, seller_notified_at, review_request_sent_at')
-    .single()
-
-  if (insertErr) {
-    if (insertErr.code === PG_UNIQUE_VIOLATION) {
+  try {
+    const [inserted] = await db
+      .insert(purchases)
+      .values({
+        buyerId: buyerId || null,
+        productId,
+        purchaseType,
+        amount: amountGBP,
+        stripePaymentId: session.id,
+        // receiptSentAt, sellerNotifiedAt and reviewRequestSentAt
+        // intentionally left NULL — emails are sent below and timestamps
+        // recorded only on success.
+      })
+      .returning({
+        id: purchases.id,
+        receiptSentAt: purchases.receiptSentAt,
+        sellerNotifiedAt: purchases.sellerNotifiedAt,
+        reviewRequestSentAt: purchases.reviewRequestSentAt,
+      })
+    purchase = inserted
+  } catch (insertErr) {
+    const code = insertErr && typeof insertErr === 'object' && 'code' in insertErr ? (insertErr as { code?: string }).code : undefined
+    if (code === PG_UNIQUE_VIOLATION) {
       // Duplicate retry. Read the existing row to determine which emails
       // (if any) still need to be sent.
-      const { data: existing, error: selectErr } = await supabase
-        .from('purchases')
-        .select('id, receipt_sent_at, seller_notified_at, review_request_sent_at')
-        .eq('stripe_payment_id', session.id)
-        .maybeSingle()
+      const existing = await db.query.purchases.findFirst({
+        where: eq(purchases.stripePaymentId, session.id),
+        columns: { id: true, receiptSentAt: true, sellerNotifiedAt: true, reviewRequestSentAt: true },
+      })
 
-      if (selectErr || !existing) {
+      if (!existing) {
         // Genuinely transient — couldn't read the row we know exists. Ask Stripe to retry.
-        await supabase.from('error_log').insert({
-          scenario: 'stripe-webhook-duplicate-readback-failed',
-          payload: { session_id: session.id } as object,
-          error_message: selectErr?.message ?? 'row vanished after unique violation',
-        })
+        await logError(
+          'stripe-webhook-duplicate-readback-failed',
+          { session_id: session.id },
+          'row vanished after unique violation'
+        )
         return NextResponse.json(
           { error: 'failed to read existing purchase' },
           { status: 500 }
         )
       }
-      purchase = existing as PurchaseRow
+      purchase = existing
     } else {
       // Real DB write failure — 500 so Stripe retries.
-      await supabase.from('error_log').insert({
-        scenario: 'stripe-webhook',
-        payload: { session_id: session.id, metadata } as object,
-        error_message: insertErr.message,
-      })
-      return NextResponse.json({ error: insertErr.message }, { status: 500 })
+      const msg = insertErr instanceof Error ? insertErr.message : 'unknown insert error'
+      await logError('stripe-webhook', { session_id: session.id, metadata }, msg)
+      return NextResponse.json({ error: msg }, { status: 500 })
     }
-  } else {
-    purchase = inserted as PurchaseRow
   }
 
   // ── Email idempotency. Each email is independently gated on its own
@@ -141,114 +150,92 @@ export async function POST(request: NextRequest) {
   //    NOTE: even if emails fail, we return 200. The purchase row exists;
   //    we won't ask Stripe to retry just for email delivery (Resend's job).
   if (buyerEmail && productSlug && purchase) {
-    const needsBuyerReceipt = purchase.receipt_sent_at === null
-    const needsSellerNotice = purchase.seller_notified_at === null
-    const needsReviewRequest = purchase.review_request_sent_at === null
+    const needsBuyerReceipt = purchase.receiptSentAt === null
+    const needsSellerNotice = purchase.sellerNotifiedAt === null
+    const needsReviewRequest = purchase.reviewRequestSentAt === null
 
     if (needsBuyerReceipt || needsSellerNotice || needsReviewRequest) {
-      const { data: productRow } = await supabase
-        .from('products')
-        .select('title, price_licensed, price_exclusive, seller:sellers!inner(user_id, display_name)')
-        .eq('id', productId)
-        .maybeSingle()
+      const productRow = await db
+        .select({ title: products.title, sellerUserId: sellers.userId, sellerDisplayName: sellers.displayName })
+        .from(products)
+        .innerJoin(sellers, eq(products.sellerId, sellers.id))
+        .where(eq(products.id, productId))
+        .limit(1)
+        .then(rows => rows[0] ?? null)
 
       const title = productRow?.title ?? 'your new product'
 
       // ── Buyer receipt
       if (needsBuyerReceipt) {
         try {
-          await sendPurchaseReceiptEmail(
-            buyerEmail,
-            title,
-            purchaseType,
-            amountGBP,
-            productSlug
-          )
+          await sendPurchaseReceiptEmail(buyerEmail, title, purchaseType, amountGBP, productSlug)
           // Stamp only on success. If this UPDATE itself fails, we accept the
           // (rare) risk of a duplicate receipt on the next retry — better than
           // marking sent before delivery confirmed.
-          const { error: stampErr } = await supabase
-            .from('purchases')
-            .update({ receipt_sent_at: new Date().toISOString() })
-            .eq('id', purchase.id)
-          if (stampErr) {
-            await supabase.from('error_log').insert({
-              scenario: 'stripe-webhook-receipt-stamp-failed',
-              payload: { session_id: session.id, purchase_id: purchase.id } as object,
-              error_message: stampErr.message,
-            })
+          try {
+            await db.update(purchases).set({ receiptSentAt: new Date() }).where(eq(purchases.id, purchase.id))
+          } catch (stampErr) {
+            await logError(
+              'stripe-webhook-receipt-stamp-failed',
+              { session_id: session.id, purchase_id: purchase.id },
+              stampErr instanceof Error ? stampErr.message : 'unknown'
+            )
           }
         } catch (err) {
-          // Email send failed — leave receipt_sent_at NULL so the next retry tries again.
-          await supabase.from('error_log').insert({
-            scenario: 'stripe-webhook-email',
-            payload: { session_id: session.id } as object,
-            error_message: err instanceof Error ? err.message : 'unknown',
-          })
+          // Email send failed — leave receiptSentAt NULL so the next retry tries again.
+          await logError('stripe-webhook-email', { session_id: session.id }, err instanceof Error ? err.message : 'unknown')
         }
       }
 
       // ── Seller notification
       if (needsSellerNotice && productRow) {
-        const sellerObj = Array.isArray(productRow.seller) ? productRow.seller[0] : productRow.seller
-        if (sellerObj) {
-          try {
-            const { data: sellerUser } = await supabase.auth.admin.getUserById(sellerObj.user_id)
-            if (sellerUser?.user?.email) {
-              await sendSellerSaleNotification(
-                sellerUser.user.email,
-                sellerObj.display_name,
-                title,
-                purchaseType,
-                amountGBP,
-                session.customer_email ?? buyerEmail,
+        try {
+          const sellerUser = await db.query.users.findFirst({
+            where: eq(users.id, productRow.sellerUserId),
+            columns: { email: true },
+          })
+          if (sellerUser?.email) {
+            await sendSellerSaleNotification(
+              sellerUser.email,
+              productRow.sellerDisplayName,
+              title,
+              purchaseType,
+              amountGBP,
+              session.customer_email ?? buyerEmail,
+            )
+            try {
+              await db.update(purchases).set({ sellerNotifiedAt: new Date() }).where(eq(purchases.id, purchase.id))
+            } catch (stampErr) {
+              await logError(
+                'stripe-webhook-seller-stamp-failed',
+                { session_id: session.id, purchase_id: purchase.id },
+                stampErr instanceof Error ? stampErr.message : 'unknown'
               )
-              const { error: stampErr } = await supabase
-                .from('purchases')
-                .update({ seller_notified_at: new Date().toISOString() })
-                .eq('id', purchase.id)
-              if (stampErr) {
-                await supabase.from('error_log').insert({
-                  scenario: 'stripe-webhook-seller-stamp-failed',
-                  payload: { session_id: session.id, purchase_id: purchase.id } as object,
-                  error_message: stampErr.message,
-                })
-              }
             }
-          } catch (err) {
-            await supabase.from('error_log').insert({
-              scenario: 'stripe-webhook-seller-email',
-              payload: { session_id: session.id } as object,
-              error_message: err instanceof Error ? err.message : 'unknown',
-            })
           }
+        } catch (err) {
+          await logError('stripe-webhook-seller-email', { session_id: session.id }, err instanceof Error ? err.message : 'unknown')
         }
       }
 
       // ── Review request. Ideally this would be delayed a few days after
       //    delivery rather than fired alongside the receipt, but there's no
       //    scheduled-job infra yet — sending immediately beats never sending
-      //    at all (the function existed unwired before this).
+      //    at all.
       if (needsReviewRequest) {
         try {
           await sendReviewRequestEmail(buyerEmail, title, productSlug)
-          const { error: stampErr } = await supabase
-            .from('purchases')
-            .update({ review_request_sent_at: new Date().toISOString() })
-            .eq('id', purchase.id)
-          if (stampErr) {
-            await supabase.from('error_log').insert({
-              scenario: 'stripe-webhook-review-request-stamp-failed',
-              payload: { session_id: session.id, purchase_id: purchase.id } as object,
-              error_message: stampErr.message,
-            })
+          try {
+            await db.update(purchases).set({ reviewRequestSentAt: new Date() }).where(eq(purchases.id, purchase.id))
+          } catch (stampErr) {
+            await logError(
+              'stripe-webhook-review-request-stamp-failed',
+              { session_id: session.id, purchase_id: purchase.id },
+              stampErr instanceof Error ? stampErr.message : 'unknown'
+            )
           }
         } catch (err) {
-          await supabase.from('error_log').insert({
-            scenario: 'stripe-webhook-review-request-email',
-            payload: { session_id: session.id } as object,
-            error_message: err instanceof Error ? err.message : 'unknown',
-          })
+          await logError('stripe-webhook-review-request-email', { session_id: session.id }, err instanceof Error ? err.message : 'unknown')
         }
       }
     }

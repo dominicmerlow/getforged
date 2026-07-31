@@ -2,22 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@/lib/supabase/server'
+import { eq } from 'drizzle-orm'
+import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { products } from '@/db/schema'
 import { checkAdminAccess, logAdminAction } from '@/lib/admin'
-
-/**
- * Service-role client used to read/write any product regardless of RLS.
- * Admin-edit page uses this so we can touch anyone's listing — the gate
- * upstream is the role check (`checkAdminAccess`), not RLS.
- */
-function adminDb() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } }
-  )
-}
 
 export type AdminEditState =
   | { error: string }
@@ -25,7 +14,7 @@ export type AdminEditState =
   | null
 
 /** Fields the admin editor is allowed to mutate. Whitelisted to keep the diff
- *  predictable and prevent ‑accidental‑ writes to seller_id / slug / etc. */
+ *  predictable and prevent accidental writes to sellerId / slug / etc. */
 const EDITABLE_FIELDS = [
   'title',
   'description',
@@ -62,12 +51,11 @@ function parseBool(raw: FormDataEntryValue | null): boolean {
 }
 
 async function gateAdminOrRedirect(): Promise<{ userId: string; email: string | null }> {
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) redirect('/login')
-  const role = await checkAdminAccess(userData.user.id, userData.user.email)
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+  const role = await checkAdminAccess(session.user.id, session.user.email)
   if (!role) redirect('/')
-  return { userId: userData.user.id, email: userData.user.email ?? null }
+  return { userId: session.user.id, email: session.user.email ?? null }
 }
 
 /**
@@ -96,8 +84,10 @@ function computeDiff<T extends Record<string, unknown>>(
 }
 
 /**
- * Admin product edit. Bypasses seller-ownership; gated only on admin role.
- * Every mutation lands in admin_audit with a before/after diff.
+ * Admin product edit. Bypasses seller-ownership; gated only on admin role —
+ * there is no RLS backstop anymore, so `checkAdminAccess` above IS the
+ * security boundary for this entire action. Every mutation lands in
+ * admin_audit with a before/after diff.
  */
 export async function adminEditProduct(
   productId: string,
@@ -106,28 +96,14 @@ export async function adminEditProduct(
 ): Promise<AdminEditState> {
   const { userId, email } = await gateAdminOrRedirect()
 
-  const db = adminDb()
-
-  // Load existing row — service-role bypasses RLS, so this finds any product.
-  const { data: before, error: fetchErr } = await db
-    .from('products')
-    .select(
-      'id, slug, seller_id, title, description, price_licensed, price_exclusive, category, status, featured, featured_position, forge_of_the_week, internal_notes'
-    )
-    .eq('id', productId)
-    .maybeSingle()
-
-  if (fetchErr) return { error: `Could not load product: ${fetchErr.message}` }
+  const before = await db.query.products.findFirst({ where: eq(products.id, productId) })
   if (!before) return { error: 'Product not found.' }
 
   // ── Read form fields ─────────────────────────────────────────
   const title = String(formData.get('title') ?? '').trim()
   const description = String(formData.get('description') ?? '').trim() || null
   const category = String(formData.get('category') ?? '').trim() || null
-  const status = String(formData.get('status') ?? '').trim() as
-    | 'draft'
-    | 'live'
-    | 'archived'
+  const status = String(formData.get('status') ?? '').trim() as 'draft' | 'live' | 'archived'
 
   const priceLicensed = parseNumber(String(formData.get('price_licensed') ?? ''))
   const priceExclusive = parseNumber(String(formData.get('price_exclusive') ?? ''))
@@ -150,34 +126,53 @@ export async function adminEditProduct(
     description,
     category,
     status,
-    price_licensed: priceLicensed,
-    price_exclusive: priceExclusive,
+    priceLicensed,
+    priceExclusive,
     featured,
-    featured_position: featured ? (featuredPosition ?? 0) : null,
-    forge_of_the_week: forgeOfTheWeek,
-    internal_notes: internalNotes,
+    featuredPosition: featured ? (featuredPosition ?? 0) : null,
+    forgeOfTheWeek,
+    internalNotes,
   }
 
-  // ── Forge of the Week is exclusive: clear any prior holder before setting ──
-  if (forgeOfTheWeek && !before.forge_of_the_week) {
-    await db
-      .from('products')
-      .update({ forge_of_the_week: false })
-      .eq('forge_of_the_week', true)
+  try {
+    // Forge of the Week is exclusive: clear any prior holder before setting.
+    if (forgeOfTheWeek && !before.forgeOfTheWeek) {
+      await db.update(products).set({ forgeOfTheWeek: false }).where(eq(products.forgeOfTheWeek, true))
+    }
+    await db.update(products).set(after).where(eq(products.id, productId))
+  } catch (err) {
+    return { error: `Update failed: ${err instanceof Error ? err.message : 'unknown error'}` }
   }
 
-  // ── Apply update ─────────────────────────────────────────────
-  const { error: updateErr } = await db
-    .from('products')
-    .update(after)
-    .eq('id', productId)
-
-  if (updateErr) return { error: `Update failed: ${updateErr.message}` }
-
-  // ── Compute diff for audit ───────────────────────────────────
+  // ── Compute diff for audit (snake_case keys, matching the audit log's
+  // established naming convention across the rest of the app) ──────────
+  const beforeSnake = {
+    title: before.title,
+    description: before.description,
+    price_licensed: before.priceLicensed,
+    price_exclusive: before.priceExclusive,
+    category: before.category,
+    status: before.status,
+    featured: before.featured,
+    featured_position: before.featuredPosition,
+    forge_of_the_week: before.forgeOfTheWeek,
+    internal_notes: before.internalNotes,
+  }
+  const afterSnake = {
+    title: after.title,
+    description: after.description,
+    price_licensed: after.priceLicensed,
+    price_exclusive: after.priceExclusive,
+    category: after.category,
+    status: after.status,
+    featured: after.featured,
+    featured_position: after.featuredPosition,
+    forge_of_the_week: after.forgeOfTheWeek,
+    internal_notes: after.internalNotes,
+  }
   const diff = computeDiff(
-    before as Record<EditableField, unknown>,
-    after as Record<EditableField, unknown>,
+    beforeSnake as Record<EditableField, unknown>,
+    afterSnake as Record<EditableField, unknown>,
     EDITABLE_FIELDS
   )
 
@@ -189,7 +184,7 @@ export async function adminEditProduct(
     target_id: productId,
     payload: {
       slug: before.slug,
-      seller_id: before.seller_id,
+      seller_id: before.sellerId,
       changed: diff.changed,
       before: diff.before,
       after: diff.after,
@@ -207,7 +202,7 @@ export async function adminEditProduct(
 }
 
 /**
- * Force-archive convenience action — used by the "🚫 Force archive" button
+ * Force-archive convenience action — used by the "Force archive" button
  * inside the admin editor. Same gate + audit as adminEditProduct, but only
  * touches the status column so the audit entry stays tidy.
  */
@@ -217,24 +212,21 @@ export async function adminForceArchiveProduct(
   _formData: FormData
 ): Promise<AdminEditState> {
   const { userId, email } = await gateAdminOrRedirect()
-  const db = adminDb()
 
-  const { data: before, error: fetchErr } = await db
-    .from('products')
-    .select('id, slug, seller_id, status')
-    .eq('id', productId)
-    .maybeSingle()
-  if (fetchErr) return { error: `Could not load product: ${fetchErr.message}` }
+  const before = await db.query.products.findFirst({
+    where: eq(products.id, productId),
+    columns: { id: true, slug: true, sellerId: true, status: true },
+  })
   if (!before) return { error: 'Product not found.' }
   if (before.status === 'archived') {
     return { error: 'Product is already archived.' }
   }
 
-  const { error: updateErr } = await db
-    .from('products')
-    .update({ status: 'archived' })
-    .eq('id', productId)
-  if (updateErr) return { error: `Archive failed: ${updateErr.message}` }
+  try {
+    await db.update(products).set({ status: 'archived' }).where(eq(products.id, productId))
+  } catch (err) {
+    return { error: `Archive failed: ${err instanceof Error ? err.message : 'unknown error'}` }
+  }
 
   await logAdminAction({
     actor_id: userId,
@@ -244,7 +236,7 @@ export async function adminForceArchiveProduct(
     target_id: productId,
     payload: {
       slug: before.slug,
-      seller_id: before.seller_id,
+      seller_id: before.sellerId,
       before: { status: before.status },
       after: { status: 'archived' },
       changed: ['status'],

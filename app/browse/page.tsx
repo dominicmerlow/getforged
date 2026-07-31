@@ -3,6 +3,8 @@ import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 import ScrollReveal from '@/components/scroll-reveal'
 import { listLiveProducts } from '@/lib/products'
+import { getBookmarkedIds } from '@/lib/bookmarks'
+import { auth } from '@/auth'
 import BrowseClient from '@/components/BrowseClient'
 
 export const revalidate = 60
@@ -12,29 +14,50 @@ export const metadata: Metadata = {
   description: 'Every AI-built tool on GetForged — browse apps, automations, and websites priced for small businesses.',
 }
 
-export default async function BrowsePage() {
-  const products = await listLiveProducts()
+/** One auth check + one bookmark query for the page, passed down to every card. */
+async function loadSaveState(): Promise<{ authed: boolean; savedIds: string[] }> {
+  try {
+    const session = await auth()
+    if (!session?.user) return { authed: false, savedIds: [] }
+    return { authed: true, savedIds: await getBookmarkedIds() }
+  } catch {
+    return { authed: false, savedIds: [] }
+  }
+}
+
+export default async function BrowsePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
+  const [products, { authed, savedIds }, params] = await Promise.all([
+    listLiveProducts(),
+    loadSaveState(),
+    searchParams,
+  ])
+  const q = params.q ?? ''
 
   return (
     <>
-      <Nav />
+      <Nav searchValue={q} />
       <main>
-        <section className="section">
-          <div className="products-header">
-            <div>
-              <div className="section-tag">Catalogue</div>
-              <h1 className="section-title" style={{ fontSize: 'clamp(40px,5.5vw,72px)' }}>
-                All <span>{products.length}</span> products
-              </h1>
-              <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, marginTop: 12, maxWidth: 640 }}>
-                Every tool below was built by an AI developer and is ready to ship. Licence for a one-time fee or buy exclusive rights.
-              </p>
-            </div>
+        <section className="gf-section">
+          <div style={{ marginBottom: 28 }}>
+            <h1 className="gf-section-title" style={{ marginBottom: 6 }}>
+              {q ? `Results for “${q}”` : 'All listings'}
+            </h1>
+            <p className="gf-section-sub">
+              Every tool here was built by an AI developer and is ready to ship. Licence it for a
+              one-time fee, or buy exclusive rights.
+            </p>
           </div>
 
-          <div style={{ marginTop: 48 }}>
-            <BrowseClient products={products} />
-          </div>
+          <BrowseClient
+            products={products}
+            initialSearch={q}
+            savedIds={savedIds}
+            authed={authed}
+          />
         </section>
       </main>
       <Footer />
