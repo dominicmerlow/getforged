@@ -29,7 +29,7 @@ const CATEGORIES: CategoryMeta[] = [
     h1: 'AI Automations for small businesses',
     tagline: 'Stop doing it manually.',
     description:
-      'Ready-to-deploy automation tools that wire up your inbox, CRM, invoices, and workflows — without writing a line of code. Built by AI developers, priced like software.',
+      'Ready-to-deploy automation tools that wire up your inbox, CRM, invoices, and workflows, without writing a line of code. Built by AI developers, priced like software.',
     useCases: [
       'Auto-route inbound leads to the right rep',
       'Generate invoices from completed jobs',
@@ -38,7 +38,7 @@ const CATEGORIES: CategoryMeta[] = [
     ],
     metaTitle: 'AI Automation Tools for Small Business | GetForged',
     metaDescription:
-      'Buy pre-built AI automation tools for your business. Auto-route leads, sync data, trigger follow-ups — installed in hours, not months.',
+      'Buy pre-built AI automation tools for your business. Auto-route leads, sync data, trigger follow-ups. Installed in hours, not months.',
   },
   {
     slug: 'web-apps',
@@ -47,7 +47,7 @@ const CATEGORIES: CategoryMeta[] = [
     h1: 'Web apps & internal tools, ready to ship',
     tagline: 'Hire the app, not the developer.',
     description:
-      'Full web applications and internal dashboards built with AI — portals, trackers, client-facing tools. Licence them outright instead of paying a dev agency £8k to build from scratch.',
+      'Full web applications and internal dashboards built with AI: portals, trackers, client-facing tools. Licence them outright instead of paying a dev agency £8k to build from scratch.',
     useCases: [
       'Client portals with real-time project status',
       'Internal ops dashboards for your team',
@@ -56,7 +56,7 @@ const CATEGORIES: CategoryMeta[] = [
     ],
     metaTitle: 'AI-Built Web Apps & Internal Tools | GetForged',
     metaDescription:
-      'Pre-built web apps and internal tools for small businesses. Client portals, dashboards, ops trackers — licence them today for a fraction of custom dev cost.',
+      'Pre-built web apps and internal tools for small businesses. Client portals, dashboards, ops trackers. Licence them today for a fraction of custom dev cost.',
   },
   {
     slug: 'crm-sales',
@@ -74,7 +74,7 @@ const CATEGORIES: CategoryMeta[] = [
     ],
     metaTitle: 'AI-Built CRM & Sales Tools for Small Teams | GetForged',
     metaDescription:
-      'CRM tools and sales automation for small businesses. Pipeline management, lead scoring, proposal generation — built by AI devs, priced for SMEs.',
+      'CRM tools and sales automation for small businesses. Pipeline management, lead scoring, proposal generation, built by AI devs, priced for SMEs.',
   },
   {
     slug: 'marketing',
@@ -83,7 +83,7 @@ const CATEGORIES: CategoryMeta[] = [
     h1: 'Marketing & growth tools powered by AI',
     tagline: 'More leads. Less guesswork.',
     description:
-      'AI-built marketing tools that generate content, qualify leads, and run outreach — without a full marketing stack. Install in hours and see results in days.',
+      'AI-built marketing tools that generate content, qualify leads, and run outreach, without a full marketing stack. Install in hours and see results in days.',
     useCases: [
       'AI copywriting tools trained on your brand',
       'Lead magnet generators and landing page builders',
@@ -101,7 +101,7 @@ const CATEGORIES: CategoryMeta[] = [
     h1: 'AI tools built for e-commerce operators',
     tagline: 'Sell more. Support less.',
     description:
-      'E-commerce tools that automate your store operations — from product descriptions to returns handling to customer support. AI-built, one-time purchase.',
+      'E-commerce tools that automate your store operations, from product descriptions to returns handling to customer support. AI-built, one-time purchase.',
     useCases: [
       'AI product description generators at scale',
       'Returns and refund workflow automation',
@@ -110,7 +110,7 @@ const CATEGORIES: CategoryMeta[] = [
     ],
     metaTitle: 'AI E-Commerce Tools & Automation | GetForged',
     metaDescription:
-      'AI-built e-commerce tools for online store operators. Product copy, returns automation, inventory alerts — buy once, deploy immediately.',
+      'AI-built e-commerce tools for online store operators. Product copy, returns automation, inventory alerts. Buy once, deploy immediately.',
   },
   {
     slug: 'operations',
@@ -128,7 +128,7 @@ const CATEGORIES: CategoryMeta[] = [
     ],
     metaTitle: 'AI Operations & Workflow Automation Tools | GetForged',
     metaDescription:
-      'Pre-built AI operations tools for small businesses. Approval workflows, automated reporting, scheduling, and more — install in hours.',
+      'Pre-built AI operations tools for small businesses. Approval workflows, automated reporting, scheduling, and more. Install in hours.',
   },
 ]
 
@@ -218,14 +218,18 @@ export default async function CategoryPage({
               >
                 {cat.label}
               </div>
+              {/* Tagline and description are deliberately quieter than the H1 —
+                  the headline is the only thing on this hero that should read
+                  first. Amber on the tagline gives it presence without letting
+                  it compete on size. */}
               <p
                 style={{
                   fontFamily: 'var(--font-serif)',
                   fontStyle: 'italic',
-                  fontSize: 'clamp(18px, 2.5vw, 26px)',
-                  opacity: 0.7,
-                  marginBottom: 12,
-                  fontWeight: 400,
+                  fontSize: 'clamp(16px, 1.8vw, 20px)',
+                  color: 'var(--gf-amber)',
+                  marginBottom: 10,
+                  fontWeight: 500,
                 }}
               >
                 {cat.tagline}
@@ -233,10 +237,16 @@ export default async function CategoryPage({
               <h1
                 style={{
                   fontFamily: 'var(--font-serif)',
-                  fontSize: 'clamp(32px, 4.5vw, 58px)',
-                  fontWeight: 600,
-                  lineHeight: 1.1,
-                  marginBottom: 24,
+                  /* The global `h1, h2, ... { color: var(--gf-text) }` rule beats
+                     the colour this dark section sets on itself, which rendered
+                     the title in ink on an ink background. Set it explicitly. */
+                  color: 'var(--paper)',
+                  fontSize: 'clamp(40px, 6vw, 78px)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.02,
+                  marginBottom: 20,
+                  textWrap: 'balance',
                 }}
               >
                 {cat.h1}
@@ -244,11 +254,11 @@ export default async function CategoryPage({
               <p
                 style={{
                   fontFamily: 'var(--font-sans)',
-                  fontSize: 18,
+                  fontSize: 17,
                   lineHeight: 1.6,
-                  opacity: 0.8,
-                  maxWidth: 560,
-                  marginBottom: 36,
+                  opacity: 0.72,
+                  maxWidth: 540,
+                  marginBottom: 32,
                 }}
               >
                 {cat.description}

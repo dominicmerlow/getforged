@@ -11,7 +11,7 @@ export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Browse AI-Built Apps & Tools',
-  description: 'Every AI-built tool on GetForged — browse apps, automations, and websites priced for small businesses.',
+  description: 'Every AI-built tool on GetForged: browse apps, automations, and websites priced for small businesses.',
 }
 
 /** One auth check + one bookmark query for the page, passed down to every card. */

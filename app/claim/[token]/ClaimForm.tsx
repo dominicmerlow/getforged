@@ -15,7 +15,7 @@ export default function ClaimForm({ token }: { token: string }) {
   if (ok) {
     return (
       <p style={{ fontFamily: 'var(--font-serif)', fontSize: 18, lineHeight: 1.5, margin: 0 }}>
-        Check your inbox — we sent you a sign-in link. Click it to claim this listing.
+        Check your inbox. We sent you a sign-in link. Click it to claim this listing.
       </p>
     )
   }
@@ -65,7 +65,7 @@ export default function ClaimForm({ token }: { token: string }) {
           justifySelf: 'start',
         }}
       >
-        {pending ? 'Sending…' : 'Claim my listing — free'}
+        {pending ? 'Sending…' : 'Claim my listing (free)'}
       </button>
     </form>
   )

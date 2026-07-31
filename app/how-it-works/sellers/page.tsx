@@ -10,7 +10,7 @@ import {
 } from '@/components/HowItWorksShared'
 
 export const metadata: Metadata = {
-  title: 'How it works — for sellers',
+  title: 'How it works: for sellers',
   description:
     'Turn your weekend AI builds into real revenue. Drop a URL, we generate the sales page, and send qualified buyers to your listing.',
 }
@@ -24,30 +24,25 @@ export default function SellersPage() {
         <section className="section" style={{ paddingBottom: 32 }}>
           <div className="section-tag">For sellers</div>
           <h1
-            className="section-title"
-            style={{
-              fontSize: 'clamp(48px, 7vw, 96px)',
-              maxWidth: 960,
-              lineHeight: 1.02,
-            }}
+            className="section-title hiw-hero-title"
+            style={{ maxWidth: 960 }}
           >
             Turn your <span>weekend builds</span>
             <br />
             into real monthly revenue.
           </h1>
           <p
+            className="hiw-hero-lede"
             style={{
               fontFamily: 'var(--font-serif)',
-              fontSize: 'clamp(20px, 2vw, 26px)',
-              lineHeight: 1.45,
               color: 'var(--warm-ink-dim)',
-              maxWidth: 780,
-              marginTop: 24,
+              maxWidth: 700,
+              marginTop: 20,
             }}
           >
             You built the thing. You don&apos;t want to write sales copy, run
-            Stripe, chase SEO, or do support. GetForged handles the marketplace —
-            you ship the app, we bring the buyers. Keep 85% of every sale.
+            Stripe, chase SEO, or do support. GetForged handles the marketplace.
+            You ship the app, we bring the buyers. Keep 85% of every sale.
           </p>
 
           <div style={{ display: 'flex', gap: 16, marginTop: 32, flexWrap: 'wrap' }}>
@@ -74,7 +69,7 @@ export default function SellersPage() {
               body={
                 <>
                   We send you a magic link. One click and you&apos;re in. Your
-                  seller profile is created automatically — no onboarding
+                  seller profile is created automatically. No onboarding
                   slideshow.
                 </>
               }
@@ -141,7 +136,7 @@ export default function SellersPage() {
               body={
                 <>
                   We scrape your site, run it through Claude and DeepSeek, and
-                  generate a full sales page — headline, features, use cases,
+                  generate a full sales page: headline, features, use cases,
                   SEO copy. All in about 15 seconds.
                 </>
               }
@@ -197,7 +192,7 @@ export default function SellersPage() {
                 <>
                   Your dashboard shows the AI-generated draft alongside a full
                   edit form. Fix the headline, add AI models you use, set a
-                  licence price, an exclusive price — or both. Takes 2 minutes.
+                  licence price, an exclusive price, or both. Takes 2 minutes.
                 </>
               }
               illustration={
@@ -236,7 +231,7 @@ export default function SellersPage() {
               body={
                 <>
                   Hit <em>Approve → Live</em> and your product is public on the
-                  marketplace. Nothing is auto-posted — you&apos;re always in
+                  marketplace. Nothing is auto-posted. You&apos;re always in
                   control of what goes live.
                 </>
               }
@@ -274,7 +269,7 @@ export default function SellersPage() {
                     }}
                   >
                     Your draft ships to <code style={{ fontFamily: 'var(--font-mono)' }}>/products/invoicebot-pro</code>.
-                    SEO metadata, social cards, sitemap entry — all
+                    SEO metadata, social cards, sitemap entry, all
                     automatic.
                   </div>
                 </IllustrationFrame>
@@ -288,7 +283,7 @@ export default function SellersPage() {
                 <>
                   Every sale drops into your connected Stripe account.
                   Platform commission is <strong style={{ color: 'var(--warm-ink)' }}>15%</strong>. You
-                  keep 85% — on both licences and exclusive buy-outs. No
+                  keep 85%, on both licences and exclusive buy-outs. No
                   hidden fees, no payout minimums.
                 </>
               }

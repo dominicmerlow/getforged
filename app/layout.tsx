@@ -37,24 +37,24 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'GetForged — AI App Marketplace',
+    default: 'GetForged: AI App Marketplace',
     template: '%s | GetForged',
   },
   description:
-    'Buy pre-built AI apps, automations and internal tools — made by expert builders, priced for small businesses. Install in hours, not months.',
+    'Buy pre-built AI apps, automations and internal tools, made by expert builders, priced for small businesses. Install in hours, not months.',
   metadataBase: new URL('https://getforged.io'),
   openGraph: {
     type: 'website',
     locale: 'en_GB',
     url: 'https://getforged.io',
     siteName: 'GetForged',
-    title: 'GetForged — AI App Marketplace',
-    description: 'Buy pre-built AI apps, automations and internal tools — made by expert builders, priced for small businesses. Install in hours, not months.',
+    title: 'GetForged: AI App Marketplace',
+    description: 'Buy pre-built AI apps, automations and internal tools, made by expert builders, priced for small businesses. Install in hours, not months.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'GetForged — AI App Marketplace',
-    description: 'Buy pre-built AI apps, automations and internal tools — made by expert builders, priced for small businesses. Install in hours, not months.',
+    title: 'GetForged: AI App Marketplace',
+    description: 'Buy pre-built AI apps, automations and internal tools, made by expert builders, priced for small businesses. Install in hours, not months.',
   },
 }
 

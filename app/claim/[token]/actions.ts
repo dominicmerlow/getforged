@@ -19,7 +19,7 @@ export async function claimProduct(
 ): Promise<ClaimState> {
   const ip = await getClientIp()
   const allowed = await checkRateLimit({ bucket: 'claim', identifier: ip, limit: 5, windowSeconds: 3600 })
-  if (!allowed) return { error: 'Too many attempts — please try again later.' }
+  if (!allowed) return { error: 'Too many attempts. Please try again later.' }
 
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   if (!email || !EMAIL_RE.test(email)) {

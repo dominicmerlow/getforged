@@ -95,7 +95,7 @@ export default async function AdminPage() {
       </div>
 
       <div className="gf-panel" style={{ marginBottom: 24 }}>
-        <div className="gf-panel-head">Moderation queue — pending review ({drafts.length})</div>
+        <div className="gf-panel-head">Moderation queue: pending review ({drafts.length})</div>
         {drafts.length === 0 ? (
           <div className="gf-panel-body" style={{ textAlign: 'center', color: 'var(--gf-text-2)' }}>
             No products awaiting review.
@@ -142,7 +142,7 @@ export default async function AdminPage() {
       </div>
 
       <div className="gf-panel">
-        <div className="gf-panel-head">Recent sales — last 20 purchases</div>
+        <div className="gf-panel-head">Recent sales: last 20 purchases</div>
         {recentPurchases.length === 0 ? (
           <div className="gf-panel-body" style={{ textAlign: 'center', color: 'var(--gf-text-2)' }}>
             No purchases yet.

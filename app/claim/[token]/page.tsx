@@ -97,7 +97,7 @@ export default async function ClaimPage({
               This link has expired
             </h1>
             <p style={{ marginTop: 16, fontFamily: 'var(--font-serif)', fontSize: 18 }}>
-              No worries — you can still list your app in a couple of minutes.
+              No worries. You can still list your app in a couple of minutes.
             </p>
             <Link href="/submit" className="btn-amber" style={{ display: 'inline-block', marginTop: 24, padding: '14px 32px' }}>
               List your app free →
@@ -128,7 +128,7 @@ export default async function ClaimPage({
         <section className="section" style={{ maxWidth: 780 }}>
           <div className="section-tag">Your listing is ready</div>
           <h1 className="section-title" style={{ fontSize: 'clamp(32px,5vw,60px)' }}>
-            {greetingName ? `Hi ${greetingName} — ` : ''}
+            {greetingName ? `Hi ${greetingName}, ` : ''}
             <span>{product.title}</span> is ready on GetForged
           </h1>
           <p style={{ marginTop: 16, fontFamily: 'var(--font-serif)', fontSize: 19, lineHeight: 1.5, maxWidth: 640 }}>
@@ -150,7 +150,7 @@ export default async function ClaimPage({
                 <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', fontFamily: 'var(--font-serif)', fontSize: 17 }}>
                   <span style={{ color: '#3fa85a', flexShrink: 0 }}>✓</span>
                   <span>
-                    <strong>{f.title}</strong>{f.description ? ` — ${f.description}` : ''}
+                    <strong>{f.title}</strong>{f.description ? `: ${f.description}` : ''}
                   </span>
                 </li>
               ))}

@@ -76,7 +76,7 @@ export default async function EditProductPage({
     <>
       <div className="section-tag">Editing</div>
       <h1 className="gf-admin-title">{p.title}</h1>
-      <p className="gf-admin-sub">Status: {p.status} · /{p.slug ?? '—'}</p>
+      <p className="gf-admin-sub">Status: {p.status} · /{p.slug ?? '-'}</p>
 
       <EditForm product={editableProduct} salesPage={editableSalesPage} />
     </>

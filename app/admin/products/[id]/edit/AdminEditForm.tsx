@@ -259,7 +259,7 @@ export default function AdminEditForm({
               defaultChecked={!!product.forge_of_the_week}
               value="true"
             />
-            <span>Forge of the Week (exclusive — selecting this clears any existing pick)</span>
+            <span>Forge of the Week (exclusive: selecting this clears any existing pick)</span>
           </label>
         </div>
 
@@ -278,7 +278,7 @@ export default function AdminEditForm({
               defaultValue={product.internal_notes ?? ''}
               rows={5}
               style={{ ...textareaStyle, fontFamily: 'var(--font-mono)', fontSize: 13 }}
-              placeholder="e.g. Talked to seller 2026-04-15 about misleading screenshot — agreed to update by EOM."
+              placeholder="e.g. Talked to seller 2026-04-15 about misleading screenshot, agreed to update by EOM."
             />
           </label>
         </div>

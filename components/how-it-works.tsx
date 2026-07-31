@@ -14,7 +14,7 @@ const STEPS = [
     num: '02',
     Icon: Sparkles,
     title: 'AI writes your page',
-    desc: 'Claude generates a full buyer-facing sales page — headline, benefits, use cases, SEO. You review and publish.',
+    desc: 'Claude generates a full buyer-facing sales page: headline, benefits, use cases, SEO. You review and publish.',
   },
   {
     num: '03',

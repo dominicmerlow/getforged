@@ -37,7 +37,7 @@ export default async function LoginPage({
 
             {!dbConfigured() && (
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, padding: 12, border: '1px dashed var(--ink)' }}>
-                <code>DATABASE_URL</code> is not set — sign-in won&apos;t work until the database is configured.
+                <code>DATABASE_URL</code> is not set. Sign-in won&apos;t work until the database is configured.
               </p>
             )}
 

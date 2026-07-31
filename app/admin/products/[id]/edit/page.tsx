@@ -103,7 +103,7 @@ export default async function AdminProductEditPage({
           fontSize: 13,
           lineHeight: 1.6,
         }}>
-          <strong style={{ color: '#b97314' }}>Admin edit — this bypasses ownership.</strong>{' '}
+          <strong style={{ color: '#b97314' }}>Admin edit: this bypasses ownership.</strong>{' '}
           All changes are logged to <code>admin_audit</code> with a before/after diff.
         </div>
 
@@ -124,7 +124,7 @@ export default async function AdminProductEditPage({
             <div style={{ marginTop: 4, fontWeight: 600 }}>
               {sellerRow?.displayName ?? '(unknown)'}
             </div>
-            <div style={{ color: '#6b6b6b' }}>{sellerEmail ?? '—'}</div>
+            <div style={{ color: '#6b6b6b' }}>{sellerEmail ?? '-'}</div>
           </div>
           <div>
             <div style={{ color: '#6b6b6b', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Slug</div>

@@ -24,7 +24,7 @@ export async function sendDraftReadyEmail(
   await resend.emails.send({
     from: `GetForged <${FROM}>`,
     to: sellerEmail,
-    subject: `Your listing draft is ready — ${productTitle}`,
+    subject: `Your listing draft is ready: ${productTitle}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 24px; background: #0c0b09; color: #f8f4ee;">
         <h1 style="font-size: 32px; color: #e8920a; margin-bottom: 8px;">Your draft is ready.</h1>

@@ -166,13 +166,13 @@ img, svg, video { max-width: 100%; }
   max-width: var(--gf-container);
   margin: 0 auto;
   padding: 0 24px;
-  height: 72px;
+  height: 88px;
   display: flex;
   align-items: center;
   gap: 24px;
 }
 .gf-header-logo { display: flex; align-items: center; flex-shrink: 0; }
-.gf-header-logo img { height: 40px; width: auto; display: block; }
+.gf-header-logo img { height: 60px; width: auto; display: block; }
 
 .gf-header-search { flex: 1; max-width: 620px; }
 
@@ -182,14 +182,21 @@ img, svg, video { max-width: 100%; }
   gap: 24px;
   margin-left: auto;
 }
-.gf-header-nav a {
+.gf-header-nav a,
+.gf-header-nav button {
   font-family: var(--font-sans), sans-serif;
   font-size: 15px;
   font-weight: 600;
   color: var(--gf-text-2);
   transition: color 0.15s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: inherit;
 }
-.gf-header-nav a:hover { color: var(--gf-text); }
+.gf-header-nav a:hover,
+.gf-header-nav button:hover { color: var(--gf-text); }
 
 .gf-header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
@@ -278,7 +285,9 @@ img, svg, video { max-width: 100%; }
   z-index: var(--z-drawer);
   padding: 8px 24px 20px;
 }
-.gf-drawer a, .gf-drawer button {
+/* Scoped to nav: the drawer also contains the search field, whose submit button
+   must not be stretched to a full-width list row. */
+.gf-drawer nav a, .gf-drawer nav button {
   display: block;
   width: 100%;
   text-align: left;
@@ -489,6 +498,20 @@ img, svg, video { max-width: 100%; }
   font-style: normal;
   font-weight: 700;
   font-variation-settings: normal;
+}
+
+/* Page-opening hero on /how-it-works/*. The global .section-title size above is
+   set !important for the in-page section headings, which flattened these H1s to
+   32px — level with the lede underneath. These two classes restore the gap:
+   the title leads, the lede supports. */
+.hiw-hero-title {
+  font-size: clamp(40px, 5.5vw, 72px) !important;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+.hiw-hero-lede {
+  font-size: clamp(17px, 1.4vw, 20px);
+  line-height: 1.55;
 }
 .section-body {
   font-family: var(--font-body), sans-serif;
@@ -719,6 +742,89 @@ img, svg, video { max-width: 100%; }
     border-bottom: 1px solid var(--gf-line);
   }
   .gf-browse-sheet-body { padding: 20px; }
+}
+
+/* ─── 8b-ii. CONCIERGE MODAL ────────────────────────────────────────── */
+.gf-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgba(20, 16, 10, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(16px, 6vh, 72px) 16px;
+  overflow-y: auto;
+  animation: gf-modal-fade 0.16s ease-out;
+}
+.gf-modal-panel {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  background: var(--gf-surface);
+  border: 1px solid var(--gf-line);
+  border-radius: 10px;
+  box-shadow: 0 24px 64px rgba(20, 16, 10, 0.28);
+  outline: none;
+  animation: gf-modal-rise 0.18s ease-out;
+}
+.gf-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--gf-line);
+}
+.gf-modal-title {
+  font-family: var(--font-sans), sans-serif;
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--gf-text);
+  margin: 0;
+}
+.gf-modal-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--gf-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gf-text-2);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.gf-modal-close:hover { background: var(--gf-amber-tint); color: var(--gf-text); }
+.gf-modal-body { padding: 20px 24px 28px; }
+.gf-modal-lede {
+  font-family: var(--font-body), sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--gf-text-2);
+  margin: 0 0 20px;
+  max-width: 56ch;
+}
+/* ConciergeForm caps itself at 720px for the standalone page; inside the panel
+   it should just fill the available width. */
+.gf-modal-body > div { max-width: 100%; }
+
+@keyframes gf-modal-fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes gf-modal-rise {
+  from { opacity: 0; transform: translateY(10px) }
+  to   { opacity: 1; transform: translateY(0) }
+}
+
+@media (max-width: 600px) {
+  .gf-modal-backdrop { padding: 0; }
+  .gf-modal-panel { border-radius: 0; min-height: 100%; border: none; }
+  .gf-modal-head { padding: 18px 18px 14px; position: sticky; top: 0; background: var(--gf-surface); }
+  .gf-modal-body { padding: 18px 18px 32px; }
 }
 
 /* ─── 8c. PRODUCT DETAIL (gig layout) ───────────────────────────────── */
@@ -1437,7 +1543,8 @@ label { font-size: 14px; font-weight: 600; color: var(--gf-text); }
 }
 
 @media (max-width: 600px) {
-  .gf-header-row { height: 64px; gap: 12px; }
+  .gf-header-row { height: 76px; gap: 12px; }
+  .gf-header-logo img { height: 52px; }
   .gf-header-search { display: none; }
   .gf-hero-title { font-size: 30px; }
   .gf-grid, .product-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }

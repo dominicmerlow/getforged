@@ -23,7 +23,7 @@ function stubSalesPage(name: string, category: string, fallback: string): Genera
     features: [
       { title: 'Ready to deploy', description: 'Installs in minutes, no custom dev required.' },
       { title: 'Maintained', description: 'The builder handles updates and fixes.' },
-      { title: 'Transparent pricing', description: 'Pay once or licence — no surprise bills.' },
+      { title: 'Transparent pricing', description: 'Pay once or licence, no surprise bills.' },
     ],
     use_cases: [
       { title: 'Solo operators', description: 'Replace manual work with automation.' },
@@ -32,7 +32,7 @@ function stubSalesPage(name: string, category: string, fallback: string): Genera
     ],
     cta_primary: 'Get a licence',
     cta_secondary: 'Ask a question',
-    meta_title: `${name} — ${category} on GetForged`.slice(0, 60),
+    meta_title: `${name}: ${category} on GetForged`.slice(0, 60),
     meta_description: desc.slice(0, 155),
   }
 }

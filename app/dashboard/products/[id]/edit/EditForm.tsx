@@ -359,7 +359,7 @@ export default function EditForm({
           </label>
 
           <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)' }}>Features (one per line — <code>Title | description</code>)</span>
+            <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)' }}>Features (one per line: <code>Title | description</code>)</span>
             <textarea
               name="features"
               defaultValue={toLineList(features)}
@@ -370,7 +370,7 @@ export default function EditForm({
           </label>
 
           <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)' }}>Use cases (one per line — <code>Title | description</code>)</span>
+            <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)' }}>Use cases (one per line: <code>Title | description</code>)</span>
             <textarea
               name="use_cases"
               defaultValue={toLineList(useCases)}

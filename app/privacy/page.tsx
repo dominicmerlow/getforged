@@ -3,7 +3,7 @@ import Footer from '@/components/footer'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — GetForged',
+  title: 'Privacy Policy',
 }
 
 export default function PrivacyPage() {
@@ -26,25 +26,25 @@ export default function PrivacyPage() {
               1. What We Collect
             </h2>
             <p>
-              When you create an account, we collect your email address and the display name you choose. When you make a purchase or set up as a seller, Stripe collects your payment or payout details directly — GetForged never sees or stores your full card number or bank account details. We also collect standard usage data (pages visited, browser type, approximate location derived from IP) to understand how the Platform is used and to improve it.
+              When you create an account, we collect your email address and the display name you choose. When you make a purchase or set up as a seller, Stripe collects your payment or payout details directly. GetForged never sees or stores your full card number or bank account details. We also collect standard usage data (pages visited, browser type, approximate location derived from IP) to understand how the Platform is used and to improve it.
             </p>
 
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, marginBottom: '0.75rem', marginTop: '2.5rem' }}>
               2. How We Store Your Data
             </h2>
             <p>
-              User accounts and product data are stored in a managed Postgres database (Neon). Sign-in is handled by Auth.js, which supports Google, GitHub, one-time email links, and email-and-password login; if you use a password, it is never stored in plain text — only a bcrypt hash is kept. We retain your account data for as long as your account is active, plus a reasonable period after deletion for legal and fraud-prevention purposes.
+              User accounts and product data are stored in a managed Postgres database (Neon). Sign-in is handled by Auth.js, which supports Google, GitHub, one-time email links, and email-and-password login; if you use a password, it is never stored in plain text, only a bcrypt hash is kept. We retain your account data for as long as your account is active, plus a reasonable period after deletion for legal and fraud-prevention purposes.
             </p>
 
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, marginBottom: '0.75rem', marginTop: '2.5rem' }}>
               3. Third-Party Services
             </h2>
             <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-              <li><strong>Stripe</strong> — processes all payments. Stripe&apos;s own privacy policy governs the data you share with them at checkout.</li>
-              <li><strong>Resend</strong> — handles transactional email (order confirmations, magic-link sign-in, notifications). We share only your email address and the minimum data needed to send the relevant email.</li>
-              <li><strong>Neon</strong> — hosts the Postgres database that stores account and product data.</li>
-              <li><strong>Google and GitHub</strong> — if you choose to sign in with one of these, they confirm your identity to us; we receive only your name, email address and profile image from them.</li>
-              <li><strong>Vercel</strong> — hosts the application and the file storage used for seller-uploaded screenshots. Vercel may log request metadata for security and performance purposes.</li>
+              <li><strong>Stripe</strong> processes all payments. Stripe&apos;s own privacy policy governs the data you share with them at checkout.</li>
+              <li><strong>Resend</strong> handles transactional email (order confirmations, magic-link sign-in, notifications). We share only your email address and the minimum data needed to send the relevant email.</li>
+              <li><strong>Neon</strong> hosts the Postgres database that stores account and product data.</li>
+              <li><strong>Google and GitHub</strong>: if you choose to sign in with one of these, they confirm your identity to us; we receive only your name, email address and profile image from them.</li>
+              <li><strong>Vercel</strong> hosts the application and the file storage used for seller-uploaded screenshots. Vercel may log request metadata for security and performance purposes.</li>
             </ul>
             <p style={{ marginTop: '0.75rem' }}>
               We do not sell your data to any third party, ever. We do not use your data for advertising targeting on other platforms.

@@ -3,8 +3,9 @@ import type { GeneratedSalesPage } from './types'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-const SYSTEM_PROMPT = `You are a senior SaaS copywriter for GetForged — an AI app marketplace connecting builders to small businesses.
+const SYSTEM_PROMPT = `You are a senior SaaS copywriter for GetForged, an AI app marketplace connecting builders to small businesses.
 Your job: write a compelling, buyer-focused sales page for a product listed on GetForged.
+House style: never use em dashes. Use a comma, colon, or full stop instead.
 Return VALID JSON only. No markdown, no code blocks, no commentary. Just the raw JSON object.`
 
 const USER_PROMPT = (scrapedContent: string, productName: string, category: string) => `

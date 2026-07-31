@@ -3,7 +3,7 @@ import Footer from '@/components/footer'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Seller Agreement — GetForged',
+  title: 'Seller Agreement',
 }
 
 export default function SellerAgreementPage() {
@@ -33,7 +33,7 @@ export default function SellerAgreementPage() {
               2. Intellectual Property Ownership
             </h2>
             <p>
-              You must own all intellectual property rights in everything you list. This includes the source code, any assets bundled with the product, and any third-party libraries — which must be licensed in a way that permits the sale and use described in your listing. You are solely responsible for ensuring your product does not infringe patents, trademarks, copyrights, or trade secrets belonging to others.
+              You must own all intellectual property rights in everything you list. This includes the source code, any assets bundled with the product, and any third-party libraries, which must be licensed in a way that permits the sale and use described in your listing. You are solely responsible for ensuring your product does not infringe patents, trademarks, copyrights, or trade secrets belonging to others.
             </p>
             <p style={{ marginTop: '0.75rem' }}>
               By listing a product, you grant GetForged a non-exclusive, royalty-free licence to display product information, screenshots, and promotional materials on the Platform and in marketing materials for the purposes of operating the marketplace.
@@ -50,7 +50,7 @@ export default function SellerAgreementPage() {
               4. Payout Schedule
             </h2>
             <p>
-              Payouts are processed via Stripe Connect. Once Stripe Connect is fully live on the Platform, sellers with a connected Stripe account will receive payouts on a rolling 7-day basis after each sale clears the refund window. <strong>Currently, payouts are processed manually</strong> — we will contact you directly to arrange payment for completed sales. You must provide accurate payment details and keep them up to date.
+              Payouts are processed via Stripe Connect. Once Stripe Connect is fully live on the Platform, sellers with a connected Stripe account will receive payouts on a rolling 7-day basis after each sale clears the refund window. <strong>Currently, payouts are processed manually</strong>. We will contact you directly to arrange payment for completed sales. You must provide accurate payment details and keep them up to date.
             </p>
 
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, marginBottom: '0.75rem', marginTop: '2.5rem' }}>

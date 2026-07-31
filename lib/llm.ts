@@ -35,8 +35,9 @@ function freeModels(): string[] {
   return DEFAULT_FREE_MODELS
 }
 
-const SYSTEM_PROMPT = `You are a senior SaaS copywriter for GetForged — an AI app marketplace connecting builders to small businesses.
+const SYSTEM_PROMPT = `You are a senior SaaS copywriter for GetForged, an AI app marketplace connecting builders to small businesses.
 Your job: write a compelling, buyer-focused sales page for a product listed on GetForged.
+House style: never use em dashes. Use a comma, colon, or full stop instead.
 Return VALID JSON only. No markdown, no code blocks, no commentary. Just the raw JSON object.`
 
 const userPrompt = (scrapedContent: string, productName: string, category: string) => `
@@ -226,7 +227,7 @@ export async function generateSalesPageSmart(
 
   throw new Error(
     errors.length > 0
-      ? `All LLM providers failed — ${errors.join(' | ')}`
+      ? `All LLM providers failed: ${errors.join(' | ')}`
       : 'No LLM provider configured (set OPENROUTER_API_KEY or ANTHROPIC_API_KEY)'
   )
 }
@@ -320,7 +321,7 @@ export async function generateSmall(prompt: string): Promise<string> {
 
   throw new Error(
     errors.length > 0
-      ? `generateSmall: all providers failed — ${errors.join(' | ')}`
+      ? `generateSmall: all providers failed: ${errors.join(' | ')}`
       : 'generateSmall: no LLM provider configured (set OPENROUTER_API_KEY or ANTHROPIC_API_KEY)'
   )
 }

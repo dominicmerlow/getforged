@@ -51,7 +51,7 @@ export async function createProspectBatch(
     .filter(l => l.length > 0 && !l.startsWith('#'))
 
   if (lines.length === 0) return { error: 'No rows found.' }
-  if (lines.length > 50) return { error: 'Max 50 rows per batch — split into smaller batches.' }
+  if (lines.length > 50) return { error: 'Max 50 rows per batch. Split into smaller batches.' }
 
   const results: ProspectRowResult[] = []
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'

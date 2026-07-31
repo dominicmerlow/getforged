@@ -13,7 +13,7 @@ export default function NotFound() {
             Page not found.
           </h1>
           <p style={{ fontFamily: 'var(--font-serif)', fontSize: 22, maxWidth: 480, margin: 0 }}>
-            This page doesn&apos;t exist — or was removed.
+            This page doesn&apos;t exist, or was removed.
           </p>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
             <Link href="/" className="btn-hero-primary" style={{ padding: '14px 28px' }}>Go home</Link>

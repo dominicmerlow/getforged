@@ -45,7 +45,7 @@ export default function NewsletterCapture({
       setEmail('')
     } catch {
       setStatus('error')
-      setMessage('Network error — please try again.')
+      setMessage('Network error. Please try again.')
     }
   }
 

@@ -46,7 +46,7 @@ export default function AdminBatchScreenshotButton() {
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, margin: 0 }}>
         This re-scrapes every live product&apos;s <code>source_url</code> via Firecrawl
         (~1 credit per product). Existing screenshots are kept as gallery thumbs.
-        Concurrency is 2 — expect ~3 seconds per product.
+        Concurrency is 2. Expect ~3 seconds per product.
       </p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button

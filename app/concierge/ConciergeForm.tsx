@@ -30,11 +30,11 @@ const EXAMPLE_PROMPTS: { label: string; query: string }[] = [
   },
   {
     label: 'Reply to Google reviews faster',
-    query: 'I get too many Google and Trustpilot reviews to keep up with — I need something that drafts replies for me to approve.',
+    query: 'I get too many Google and Trustpilot reviews to keep up with. I need something that drafts replies for me to approve.',
   },
   {
     label: 'Lightweight CRM for my team of 5',
-    query: 'I run a small service business and need a simple CRM to track leads and follow-ups — Salesforce is overkill.',
+    query: 'I run a small service business and need a simple CRM to track leads and follow-ups. Salesforce is overkill.',
   },
   {
     label: 'Embeddable booking system',
@@ -115,7 +115,7 @@ export default function ConciergeForm() {
             rows={4}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Describe what you need — e.g. 'I need something to automate my client invoices and send reminders'"
+            placeholder="Describe what you need, e.g. 'I need something to automate my client invoices and send reminders'"
             style={{
               ...inputStyle,
               resize: 'vertical',
@@ -186,7 +186,7 @@ export default function ConciergeForm() {
                 </div>
                 <p style={{ fontFamily: 'var(--font-serif)', fontSize: 18, lineHeight: 1.5, margin: 0 }}>
                   We don&apos;t have an exact match for &ldquo;{resolvedQuery}&rdquo; in the
-                  marketplace today. The catalogue grows weekly — leave your email
+                  marketplace today. The catalogue grows weekly. Leave your email
                   and we&apos;ll ping you when something close lands.
                 </p>
                 <NewsletterCapture

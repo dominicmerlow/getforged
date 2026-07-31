@@ -18,7 +18,7 @@ export const SETTINGS_CACHE_TAG = 'site-settings'
 export const SETTINGS_REGISTRY = {
   'site.maintenance_mode': {
     default: false,
-    description: 'Maintenance mode — non-admins see a static "back soon" page',
+    description: 'Maintenance mode: non-admins see a static "back soon" page',
     kind: 'boolean' as const,
   },
   'site.signups_paused': {

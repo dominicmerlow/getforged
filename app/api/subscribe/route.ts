@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const ip = await getClientIp()
   const allowed = await checkRateLimit({ bucket: 'subscribe', identifier: ip, limit: 5, windowSeconds: 3600 })
   if (!allowed) {
-    return NextResponse.json({ error: 'Too many requests — please try again later.' }, { status: 429 })
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
   }
 
   let body: { email?: string; source?: string }
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // wrong.
     console.error('[subscribe] insert failed:', err instanceof Error ? err.message : err)
     return NextResponse.json(
-      { error: 'Subscription service is warming up — please email hello@getforged.io for now.' },
+      { error: 'Subscription service is warming up. Please email hello@getforged.io for now.' },
       { status: 503 }
     )
   }

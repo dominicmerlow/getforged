@@ -27,7 +27,7 @@ export async function sendSellerMessage(
 
   const ip = await getClientIp()
   const allowed = await checkRateLimit({ bucket: 'contact', identifier: ip, limit: 5, windowSeconds: 3600 })
-  if (!allowed) return { error: 'Too many messages sent — please try again later.' }
+  if (!allowed) return { error: 'Too many messages sent. Please try again later.' }
 
   const senderName = String(formData.get('sender_name') ?? '').trim()
   const senderEmail = String(formData.get('sender_email') ?? '').trim()
@@ -98,7 +98,7 @@ export async function sendSellerMessage(
               From <strong>${escapeHtml(senderName)}</strong> &lt;${escapeHtml(senderEmail)}&gt;
             </p>
             <p style="margin: 0 0 24px; color: #666; font-size: 13px;">
-              Hit Reply to respond directly — your reply goes to the sender, not to GetForged.
+              Hit Reply to respond directly. Your reply goes to the sender, not to GetForged.
             </p>
             <blockquote style="margin: 0 0 24px; padding: 16px 20px; border-left: 3px solid #b97314; background: #f7f2e8; font-size: 15px; line-height: 1.5; color: #2a2217;">
               ${escapeHtml(body).replace(/\n/g, '<br />')}
