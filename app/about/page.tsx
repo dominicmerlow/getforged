@@ -4,7 +4,7 @@ import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 
 export const metadata: Metadata = {
-  title: 'About GetForged',
+  title: 'About',
   description: 'GetForged is the marketplace for AI-built apps and automations. Pre-built, priced like software, owned like assets.',
 }
 

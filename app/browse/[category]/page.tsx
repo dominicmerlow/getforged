@@ -17,9 +17,13 @@ interface CategoryMeta {
   tagline: string
   description: string
   useCases: string[]
+  /* Unbranded: the root layout's title template appends '| GetForged'. Use
+     withBrand() anywhere the template does not apply (OG tags, JSON-LD). */
   metaTitle: string
   metaDescription: string
 }
+
+const withBrand = (title: string) => `${title} | GetForged`
 
 const CATEGORIES: CategoryMeta[] = [
   {
@@ -36,7 +40,7 @@ const CATEGORIES: CategoryMeta[] = [
       'Sync data between tools without Zapier tax',
       'Trigger follow-ups when deals go cold',
     ],
-    metaTitle: 'AI Automation Tools for Small Business | GetForged',
+    metaTitle: 'AI Automation Tools for Small Business',
     metaDescription:
       'Buy pre-built AI automation tools for your business. Auto-route leads, sync data, trigger follow-ups. Installed in hours, not months.',
   },
@@ -54,7 +58,7 @@ const CATEGORIES: CategoryMeta[] = [
       'Booking and scheduling tools',
       'Document and asset management apps',
     ],
-    metaTitle: 'AI-Built Web Apps & Internal Tools | GetForged',
+    metaTitle: 'AI-Built Web Apps & Internal Tools',
     metaDescription:
       'Pre-built web apps and internal tools for small businesses. Client portals, dashboards, ops trackers. Licence them today for a fraction of custom dev cost.',
   },
@@ -72,7 +76,7 @@ const CATEGORIES: CategoryMeta[] = [
       'Proposal generators that pull from your CRM',
       'Follow-up schedulers tied to deal stage',
     ],
-    metaTitle: 'AI-Built CRM & Sales Tools for Small Teams | GetForged',
+    metaTitle: 'AI-Built CRM & Sales Tools for Small Teams',
     metaDescription:
       'CRM tools and sales automation for small businesses. Pipeline management, lead scoring, proposal generation, built by AI devs, priced for SMEs.',
   },
@@ -90,7 +94,7 @@ const CATEGORIES: CategoryMeta[] = [
       'Email sequence builders for cold outreach',
       'Social content schedulers with AI captions',
     ],
-    metaTitle: 'AI Marketing & Growth Tools for Small Business | GetForged',
+    metaTitle: 'AI Marketing & Growth Tools for Small Business',
     metaDescription:
       'Pre-built AI marketing tools: lead gen, content creation, email outreach, and more. Built by AI developers, ready to deploy today.',
   },
@@ -108,7 +112,7 @@ const CATEGORIES: CategoryMeta[] = [
       'Inventory alert systems with reorder logic',
       'Post-purchase email flows and review requests',
     ],
-    metaTitle: 'AI E-Commerce Tools & Automation | GetForged',
+    metaTitle: 'AI E-Commerce Tools & Automation',
     metaDescription:
       'AI-built e-commerce tools for online store operators. Product copy, returns automation, inventory alerts. Buy once, deploy immediately.',
   },
@@ -126,7 +130,7 @@ const CATEGORIES: CategoryMeta[] = [
       'Staff scheduling and shift management',
       'Onboarding checklists that run on autopilot',
     ],
-    metaTitle: 'AI Operations & Workflow Automation Tools | GetForged',
+    metaTitle: 'AI Operations & Workflow Automation Tools',
     metaDescription:
       'Pre-built AI operations tools for small businesses. Approval workflows, automated reporting, scheduling, and more. Install in hours.',
   },
@@ -150,7 +154,7 @@ export async function generateMetadata({
     title: cat.metaTitle,
     description: cat.metaDescription,
     openGraph: {
-      title: cat.metaTitle,
+      title: withBrand(cat.metaTitle),
       description: cat.metaDescription,
       type: 'website',
     },
@@ -171,7 +175,7 @@ export default async function CategoryPage({
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: cat.metaTitle,
+    name: withBrand(cat.metaTitle),
     description: cat.metaDescription,
     url: `${process.env.NEXT_PUBLIC_APP_URL}/browse/${cat.slug}`,
   }
