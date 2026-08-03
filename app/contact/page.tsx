@@ -4,7 +4,7 @@ import Nav from '@/components/nav'
 import Footer from '@/components/footer'
 
 export const metadata: Metadata = {
-  title: 'Contact GetForged',
+  title: 'Contact',
   description: 'Get in touch with GetForged — for builders, buyers, press and partnerships.',
 }
 
