@@ -127,7 +127,10 @@ function SubscribeForm({
             flex: '1 1 240px',
             padding: '12px 14px',
             fontFamily: 'var(--font-mono)',
-            fontSize: 14,
+            // 16px, not 14: iOS Safari force-zooms the viewport on focus for
+            // anything smaller and never zooms back out. This is an inline
+            // style, so no stylesheet rule can correct it from outside.
+            fontSize: 16,
             border: '1px solid var(--ink, #2a2217)',
             background: 'var(--paper, #fafaf5)',
             color: 'var(--ink, #2a2217)',

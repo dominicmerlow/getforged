@@ -1532,3 +1532,80 @@ label { font-size: 14px; font-weight: 600; color: var(--gf-text); }
   }
   .reveal { opacity: 1; transform: none; }
 }
+
+
+/* ── Mobile touch hardening ────────────────────────────────────────────────
+   iOS Safari force-zooms the viewport whenever a focused field is under 16px
+   and never zooms back out; the search input was 15px. Phone-only so the
+   desktop density is untouched. */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* The search field and the category chips are the two controls a phone
+     visitor actually drives the marketplace with — 40px and 30px respectively,
+     both under the 44px touch minimum. */
+  .gf-search-input {
+    height: 44px;
+  }
+
+  .gf-chip {
+    height: 44px;
+    padding: 0 16px;
+  }
+
+  /* Footer category links sit at the line-box height of their 14px text — 17px
+     measured — and are the main way a phone visitor browses by category.
+     Padding builds the tap area without moving the text; the negative margin
+     keeps the list's visual rhythm unchanged. */
+  .gf-footer-col ul li a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-block: -13px;
+  }
+
+  /* A single-line card title gives the anchor a 22px line box; 11px of
+     block padding either side brings the tap area to exactly 44px without
+     shifting the text. inline-block is required — padding on an inline box
+     does not contribute to layout height. */
+  .gf-card-title a {
+    display: inline-block;
+    padding-block: 11px;
+  }
+
+  /* Privacy / Terms / Cookies in the footer's legal rail, 22px each. */
+  .gf-footer-legal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    /* "Terms" is only 41px of text; the inline padding takes the target past
+       44px in both axes. The negative margin keeps the rail's spacing. */
+    padding-inline: 8px;
+    margin-inline: -8px;
+  }
+
+  /* The browse toolbar's Filters button (38px) and every card's "+Compare"
+     (32px) — the two controls that drive the marketplace on a phone. */
+  .btn.btn-secondary,
+  .gf-browse-toolbar button,
+  .gf-card-foot button {
+    min-height: 44px;
+  }
+}
+
+body {
+  /* Stops rubber-band scroll chaining to browser chrome / pull-to-refresh. */
+  overscroll-behavior-y: none;
+  /* In landscape the notch eats one side; resolves to 0 without a cutout. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+html {
+  /* The header is sticky, so a bare #anchor jump lands under it. */
+  scroll-padding-top: 9rem;
+}

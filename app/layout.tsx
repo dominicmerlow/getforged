@@ -1,9 +1,21 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans, Inter } from 'next/font/google'
 import PostHogProvider from '@/components/PostHogProvider'
 import { CompareProvider } from '@/components/CompareProvider'
 import CompareBar from '@/components/CompareBar'
 import './globals.css'
+
+/**
+ * `viewportFit: "cover"` is what makes `env(safe-area-inset-*)` resolve to a
+ * real value instead of 0 — without it the floating CompareBar sits under the
+ * iPhone home indicator. `userScalable` is left alone so pinch-zoom stays on.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#fafaf5',
+}
 
 /*
   Two-font system (see design-system/MASTER.md §3).

@@ -25,7 +25,9 @@ export default function CompareBar() {
       style={{
         position: 'fixed',
         left: '50%',
-        bottom: 24,
+        // Clears the iPhone home indicator; resolves to a flat 24px on
+        // hardware without one. Needs viewport-fit=cover, set in layout.tsx.
+        bottom: 'calc(24px + env(safe-area-inset-bottom))',
         transform: 'translateX(-50%)',
         zIndex: 50,
         background: 'var(--ink, #2a2217)',
