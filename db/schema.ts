@@ -114,6 +114,11 @@ export const sellers = pgTable('sellers', {
   avatarUrl: text('avatar_url'),
   toolTags: text('tool_tags').array(),
   stripeAccountId: text('stripe_account_id'),
+  // Cached from the account.updated webhook (charges_enabled && payouts_enabled
+  // && details_submitted) so checkout can gate on it without a live Stripe API
+  // call per request. Sellers without this true have no way to receive a
+  // split payout — checkout refuses to sell their products until it's true.
+  stripePayoutsEnabled: boolean('stripe_payouts_enabled').notNull().default(false),
   verified: boolean('verified').default(false),
   // Migration 015 — house account that owns unclaimed prospect listings.
   isHouseAccount: boolean('is_house_account').notNull().default(false),
@@ -228,6 +233,15 @@ export const purchases = pgTable('purchases', {
   sellerNotifiedAt: timestamp('seller_notified_at', { withTimezone: true }),
   // Migration 014
   reviewRequestSentAt: timestamp('review_request_sent_at', { withTimezone: true }),
+  // Stripe Connect — captured at webhook time so the admin refund action can
+  // call stripe.refunds.create({ payment_intent }) without a lookup roundtrip.
+  // stripePaymentId above stays the Checkout Session id (cs_...) for the
+  // existing idempotency constraint; this is the separate PaymentIntent id
+  // (pi_...) refunds actually key on.
+  stripePaymentIntentId: text('stripe_payment_intent_id'),
+  applicationFeeAmount: numeric('application_fee_amount', { precision: 10, scale: 2, mode: 'number' }),
+  refundedAt: timestamp('refunded_at', { withTimezone: true }),
+  refundAmount: numeric('refund_amount', { precision: 10, scale: 2, mode: 'number' }),
 }, (table) => ({
   // Migration 006 — partial unique index; NULLs (pre-Stripe historical rows)
   // are exempt so the constraint only governs real payment idempotency.

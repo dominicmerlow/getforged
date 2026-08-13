@@ -3,6 +3,7 @@ import { eq, and, desc, sql } from 'drizzle-orm'
 import { formatPrice } from '@/lib/utils'
 import { adminUpdateStatus } from './actions'
 import AdminBatchScreenshotButton from '@/components/AdminBatchScreenshotButton'
+import RefundButton from '@/components/RefundButton'
 import { auth } from '@/auth'
 import { checkAdminAccess } from '@/lib/admin'
 import { db, dbConfigured } from '@/lib/db'
@@ -44,6 +45,7 @@ export default async function AdminPage() {
       .select({
         id: purchases.id, amount: purchases.amount, purchaseType: purchases.purchaseType,
         createdAt: purchases.createdAt, productTitle: products.title,
+        refundedAt: purchases.refundedAt, stripePaymentIntentId: purchases.stripePaymentIntentId,
       })
       .from(purchases)
       .innerJoin(products, eq(purchases.productId, products.id))
@@ -156,6 +158,7 @@ export default async function AdminPage() {
                   <th>Type</th>
                   <th>Date</th>
                   <th className="num">Amount</th>
+                  <th style={{ textAlign: 'right' }}>Refund</th>
                 </tr>
               </thead>
               <tbody>
@@ -165,6 +168,15 @@ export default async function AdminPage() {
                     <td>{row.purchaseType}</td>
                     <td>{row.createdAt?.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                     <td className="num">{formatPrice(row.amount ?? 0)}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      {row.refundedAt ? (
+                        <span style={{ color: 'var(--gf-text-2)', fontSize: 13 }}>Refunded</span>
+                      ) : row.stripePaymentIntentId ? (
+                        <RefundButton purchaseId={row.id} />
+                      ) : (
+                        <span style={{ color: 'var(--gf-text-2)', fontSize: 13 }}>—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

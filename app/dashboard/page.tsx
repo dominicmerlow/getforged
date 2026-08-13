@@ -7,7 +7,7 @@ import { db, dbConfigured } from '@/lib/db'
 import { products, sellers, salesPages, messages } from '@/db/schema'
 import type { ProductStatus } from '@/lib/types'
 import { formatPrice } from '@/lib/utils'
-import { updateProductStatus } from './actions'
+import { updateProductStatus, startStripeOnboarding } from './actions'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -46,9 +46,9 @@ function Empty({ children }: { children: React.ReactNode }) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ claimed?: string }>
+  searchParams: Promise<{ claimed?: string; connect?: string }>
 }) {
-  const { claimed } = await searchParams
+  const { claimed, connect } = await searchParams
 
   if (!dbConfigured()) {
     return (
@@ -107,6 +107,41 @@ export default async function DashboardPage({
           fontSize: 14,
         }}>
           Your listing has been claimed. Review it below and publish when you&apos;re ready.
+        </div>
+      )}
+
+      {connect === '1' && sellerRow.stripePayoutsEnabled && (
+        <div style={{
+          marginBottom: 20,
+          padding: '12px 16px',
+          border: '1px solid var(--gf-amber)',
+          background: 'var(--gf-amber-tint)',
+          borderRadius: 'var(--gf-radius)',
+          fontSize: 14,
+        }}>
+          ✓ Stripe connected — you&apos;re set up to receive payouts.
+        </div>
+      )}
+
+      {!sellerRow.stripePayoutsEnabled && (
+        <div className="gf-panel" style={{ marginBottom: 20 }}>
+          <div className="gf-panel-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                {sellerRow.stripeAccountId ? 'Finish connecting Stripe' : 'Connect Stripe to get paid'}
+              </div>
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--gf-text-2)' }}>
+                {sellerRow.stripeAccountId
+                  ? 'Your Stripe setup is incomplete — buyers can browse your listings, but you can’t sell until this is finished.'
+                  : 'You need a connected Stripe account before any of your listings can go live for sale. Takes a couple of minutes.'}
+              </p>
+            </div>
+            <form action={startStripeOnboarding}>
+              <button type="submit" className="btn btn-primary">
+                {sellerRow.stripeAccountId ? 'Finish setup' : 'Connect Stripe'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
 

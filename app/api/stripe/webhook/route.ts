@@ -61,12 +61,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `signature failed: ${msg}` }, { status: 400 })
   }
 
-  // ── Event types we don't handle: 200 + ignored. Stripe stops retrying.
-  if (event.type !== 'checkout.session.completed') {
-    return NextResponse.json({ received: true, ignored: event.type })
+  switch (event.type) {
+    case 'checkout.session.completed':
+      return handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
+    case 'account.updated':
+      return handleAccountUpdated(event.data.object as Stripe.Account)
+    case 'charge.refunded':
+      return handleChargeRefunded(event.data.object as Stripe.Charge)
+    case 'charge.dispute.created':
+      return handleDisputeCreated(event.data.object as Stripe.Dispute)
+    case 'payment_intent.payment_failed':
+      return handlePaymentFailed(event.data.object as Stripe.PaymentIntent)
+    default:
+      // Event types we don't handle: 200 + ignored. Stripe stops retrying.
+      return NextResponse.json({ received: true, ignored: event.type })
   }
+}
 
-  const session = event.data.object as Stripe.Checkout.Session
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const metadata = session.metadata ?? {}
   const productId = metadata.product_id
   const purchaseType = metadata.purchase_type as 'licensed' | 'exclusive' | undefined
@@ -87,6 +99,10 @@ export async function POST(request: NextRequest) {
   const amountGBP = (session.amount_total ?? 0) / 100
   const buyerEmail =
     session.customer_details?.email ?? session.customer_email ?? null
+  const paymentIntentId =
+    typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null
+  const feePence = Number(metadata.application_fee_pence ?? 0)
+  const applicationFeeAmount = Number.isFinite(feePence) && feePence > 0 ? feePence / 100 : null
 
   // ── Idempotent INSERT. The partial unique index on stripePaymentId makes
   //    this atomic — concurrent retries can't both succeed. On unique-violation
@@ -102,6 +118,8 @@ export async function POST(request: NextRequest) {
         purchaseType,
         amount: amountGBP,
         stripePaymentId: session.id,
+        stripePaymentIntentId: paymentIntentId,
+        applicationFeeAmount,
         // receiptSentAt, sellerNotifiedAt and reviewRequestSentAt
         // intentionally left NULL — emails are sent below and timestamps
         // recorded only on success.
@@ -241,5 +259,75 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  return NextResponse.json({ received: true })
+}
+
+/**
+ * Keeps sellers.stripePayoutsEnabled in sync with the account's real Stripe
+ * status. This is the authoritative path — /api/connect/return also syncs
+ * on redirect, but a seller can complete outstanding requirements (e.g.
+ * Stripe asks for more verification later) without ever hitting that route
+ * again, and checkout gates directly on this cached column.
+ */
+async function handleAccountUpdated(account: Stripe.Account) {
+  const enabled = !!(account.charges_enabled && account.payouts_enabled && account.details_submitted)
+  try {
+    await db.update(sellers).set({ stripePayoutsEnabled: enabled }).where(eq(sellers.stripeAccountId, account.id))
+  } catch (err) {
+    await logError(
+      'stripe-webhook-account-updated',
+      { account_id: account.id, enabled },
+      err instanceof Error ? err.message : 'unknown'
+    )
+    return NextResponse.json({ error: 'account sync failed' }, { status: 500 })
+  }
+  return NextResponse.json({ received: true })
+}
+
+/** Stamps the purchase as refunded. Covers both full and partial refunds. */
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  const paymentIntentId =
+    typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id
+  if (!paymentIntentId) {
+    return NextResponse.json({ received: true, ignored: 'no payment_intent on charge' })
+  }
+  try {
+    await db
+      .update(purchases)
+      .set({ refundedAt: new Date(), refundAmount: charge.amount_refunded / 100 })
+      .where(eq(purchases.stripePaymentIntentId, paymentIntentId))
+  } catch (err) {
+    await logError(
+      'stripe-webhook-charge-refunded',
+      { charge_id: charge.id, payment_intent: paymentIntentId },
+      err instanceof Error ? err.message : 'unknown'
+    )
+    return NextResponse.json({ error: 'refund stamp failed' }, { status: 500 })
+  }
+  return NextResponse.json({ received: true })
+}
+
+/**
+ * No dispute-response UI exists yet — this just guarantees the event is
+ * captured in error_log (visible via /admin/audit-adjacent tooling) instead
+ * of silently falling through the default "ignored" branch. A dispute is a
+ * chargeback risk that needs a human to look at Stripe's dashboard directly.
+ */
+async function handleDisputeCreated(dispute: Stripe.Dispute) {
+  await logError(
+    'stripe-webhook-dispute-created',
+    { dispute_id: dispute.id, charge: dispute.charge, amount: dispute.amount, reason: dispute.reason },
+    'New dispute — review in the Stripe dashboard.'
+  )
+  return NextResponse.json({ received: true })
+}
+
+/** Informational only — logged so failed-payment patterns are visible. */
+async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
+  await logError(
+    'stripe-webhook-payment-failed',
+    { payment_intent_id: paymentIntent.id, last_payment_error: paymentIntent.last_payment_error?.message ?? null },
+    paymentIntent.last_payment_error?.message ?? 'payment_intent.payment_failed'
+  )
   return NextResponse.json({ received: true })
 }

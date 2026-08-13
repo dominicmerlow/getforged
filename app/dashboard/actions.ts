@@ -7,6 +7,8 @@ import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { products, sellers } from '@/db/schema'
 import type { ProductStatus } from '@/lib/types'
+import { getStripe, getOrCreateConnectAccountId, stripeConfigured } from '@/lib/stripe'
+import { getOrigin } from '@/app/actions/auth'
 
 const ALLOWED_TRANSITIONS: Record<ProductStatus, ProductStatus[]> = {
   draft: ['live', 'archived'],
@@ -48,4 +50,32 @@ export async function updateProductStatus(formData: FormData) {
   revalidatePath('/dashboard')
   revalidatePath('/browse')
   revalidatePath(`/products/[slug]`, 'page')
+}
+
+/**
+ * Sends the seller to Stripe's hosted Connect Express onboarding. Reuses
+ * their existing account if one was already created (e.g. resuming after an
+ * incomplete first attempt) — Account Links are single-use and expire, so a
+ * fresh one is generated every call rather than cached.
+ */
+export async function startStripeOnboarding() {
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+
+  const sellerRow = await db.query.sellers.findFirst({ where: eq(sellers.userId, session.user.id) })
+  if (!sellerRow) redirect('/dashboard')
+  if (!stripeConfigured()) throw new Error('Stripe is not configured.')
+
+  const accountId = await getOrCreateConnectAccountId(sellerRow.id, session.user.email)
+  const stripe = getStripe()
+  const origin = await getOrigin()
+
+  const accountLink = await stripe.accountLinks.create({
+    account: accountId,
+    refresh_url: `${origin}/api/connect/refresh`,
+    return_url: `${origin}/api/connect/return`,
+    type: 'account_onboarding',
+  })
+
+  redirect(accountLink.url)
 }

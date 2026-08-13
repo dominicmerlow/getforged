@@ -4,9 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
-import { products } from '@/db/schema'
+import { products, purchases } from '@/db/schema'
 import { scrapeUrl } from '@/lib/firecrawl'
 import { checkAdminAccess, logAdminAction } from '@/lib/admin'
+import { getStripe, stripeConfigured } from '@/lib/stripe'
 
 export async function adminUpdateStatus(formData: FormData) {
   const session = await auth()
@@ -38,6 +39,69 @@ export async function adminUpdateStatus(formData: FormData) {
 
   revalidatePath('/admin')
   revalidatePath('/browse')
+}
+
+// ── Refunds ───────────────────────────────────────────────────────────────
+// Triggers the Stripe-side refund only. purchases.refundedAt / refundAmount
+// are stamped by the charge.refunded webhook once Stripe confirms it — same
+// "stamp on confirmed event, not on request" pattern the webhook already
+// uses for receipt/seller-notification emails, so a Stripe-side failure
+// after this call can't leave the DB claiming a refund that didn't happen.
+
+export async function adminRefundPurchase(formData: FormData) {
+  const session = await auth()
+  if (!session?.user) redirect('/login')
+
+  const role = await checkAdminAccess(session.user.id, session.user.email)
+  if (!role) redirect('/')
+
+  const purchaseId = String(formData.get('purchase_id') ?? '')
+  if (!purchaseId) return
+
+  const purchase = await db.query.purchases.findFirst({
+    where: eq(purchases.id, purchaseId),
+    columns: { id: true, stripePaymentIntentId: true, refundedAt: true, amount: true, productId: true },
+  })
+  if (!purchase) return
+  if (purchase.refundedAt) return // already refunded — avoid a duplicate Stripe call
+  if (!purchase.stripePaymentIntentId) {
+    await logAdminAction({
+      actor_id: session.user.id,
+      actor_email: session.user.email ?? null,
+      action: 'purchase.refund_failed',
+      target_type: 'purchase',
+      target_id: purchaseId,
+      payload: { reason: 'no stripe_payment_intent_id on this purchase (pre-Connect historical row?)' },
+    })
+    return
+  }
+  if (!stripeConfigured()) return
+
+  try {
+    const stripe = getStripe()
+    await stripe.refunds.create({ payment_intent: purchase.stripePaymentIntentId })
+  } catch (err) {
+    await logAdminAction({
+      actor_id: session.user.id,
+      actor_email: session.user.email ?? null,
+      action: 'purchase.refund_failed',
+      target_type: 'purchase',
+      target_id: purchaseId,
+      payload: { error: err instanceof Error ? err.message : 'unknown' },
+    })
+    return
+  }
+
+  await logAdminAction({
+    actor_id: session.user.id,
+    actor_email: session.user.email ?? null,
+    action: 'purchase.refund_requested',
+    target_type: 'purchase',
+    target_id: purchaseId,
+    payload: { amount: purchase.amount, product_id: purchase.productId },
+  })
+
+  revalidatePath('/admin')
 }
 
 // ── Batch screenshot regeneration ────────────────────────────────────────
