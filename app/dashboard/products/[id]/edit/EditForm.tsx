@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import Link from 'next/link'
 import MultiSelect from '@/components/MultiSelect'
+import FeatureRepeater from '@/components/FeatureRepeater'
 import { saveProduct, deleteProduct, type EditState } from './actions'
 import RegenerateScreenshotButton from './RegenerateScreenshotButton'
 import ScreenshotUploader from '@/components/ScreenshotUploader'
@@ -117,15 +118,6 @@ const sectionStyle: React.CSSProperties = {
   marginTop: 28,
   display: 'grid',
   gap: 16,
-}
-
-function toLineList(
-  items: { title?: string | null; description?: string | null }[] | null | undefined
-): string {
-  if (!items) return ''
-  return items
-    .map(i => (i.description ? `${i.title ?? ''} | ${i.description}` : i.title ?? ''))
-    .join('\n')
 }
 
 export default function EditForm({
@@ -358,26 +350,21 @@ export default function EditForm({
             <textarea name="problem_statement" defaultValue={salesPage?.problem_statement ?? ''} rows={3} style={textareaStyle} />
           </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)' }}>Features (one per line: <code>Title | description</code>)</span>
-            <textarea
-              name="features"
-              defaultValue={toLineList(features)}
-              rows={6}
-              style={{ ...textareaStyle, fontFamily: 'var(--font-mono)', fontSize: 13 }}
-              placeholder="Auto invoice chasing | Sends branded reminders on a schedule"
-            />
-          </label>
+          <FeatureRepeater
+            name="features"
+            label="Features"
+            initial={features.map(f => ({ title: f.title ?? '', description: f.description ?? '' }))}
+            titlePlaceholder="e.g. Auto invoice chasing"
+            descriptionPlaceholder="e.g. Sends branded reminders on a schedule"
+          />
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 13, fontFamily: 'var(--font-mono)' }}>Use cases (one per line: <code>Title | description</code>)</span>
-            <textarea
-              name="use_cases"
-              defaultValue={toLineList(useCases)}
-              rows={4}
-              style={{ ...textareaStyle, fontFamily: 'var(--font-mono)', fontSize: 13 }}
-            />
-          </label>
+          <FeatureRepeater
+            name="use_cases"
+            label="Use cases"
+            initial={useCases.map(u => ({ title: u.title ?? '', description: u.description ?? '' }))}
+            titlePlaceholder="e.g. Solo consultants"
+            descriptionPlaceholder="e.g. Chase unpaid invoices without the awkward follow-up email"
+          />
 
           <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1fr 1fr' }}>
             <label style={{ display: 'grid', gap: 6 }}>
