@@ -183,3 +183,76 @@ Set in `.env.local` / Vercel env — all documented with setup links in `.env.ex
 `DATABASE_URL` (Neon) · `AUTH_SECRET` · `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` ·
 `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` · `BLOB_READ_WRITE_TOKEN` (Vercel Blob). Then
 `npx drizzle-kit push` once to create the schema on the new database.
+
+---
+
+## 2026-08-18 — Ship schema changes with the deploy; stop hiding fallbacks
+
+### Why
+Production served the six hard-coded seed products to 126 real users for five days.
+`/browse` answered 200 the whole time, so nothing alerted. Two causes, one pattern:
+
+- `sellers.stripe_payouts_enabled` was added to `db/schema.ts` in e579d68 and deployed at
+  2026-08-13 10:41:57Z. Product queries began failing at 10:45:38Z — under four minutes later,
+  and never before. Both failing queries select that column; Postgres rejects the whole
+  statement when one column is missing. 4,294 + 2,865 failures.
+- `site_settings` was added in ca14f74 (2026-07-31) and never created at all — 2,685 failures
+  since 12:30Z that day.
+
+Both are the same root cause: the repo had no migration files, and `drizzle-kit push` is a
+manual step someone has to remember. `lib/db.ts`'s "degrade, don't crash" contract then made
+the result invisible.
+
+### Done
+- [x] `drizzle/0000_baseline.sql` + `drizzle/meta/` — first generated migration, hand-edited to
+      be idempotent (`IF NOT EXISTS` / `duplicate_object` guards on all 78 statements) so it can
+      adopt the drifted production database as well as build an empty one. Reverse-transform
+      diff confirmed the edit is purely additive. Ends with explicit `ADD COLUMN IF NOT EXISTS`
+      repairs for the five drifted columns.
+- [x] `scripts/migrate.ts` — runs from `npm run build` before `next build`. Applies migrations,
+      then re-reads `information_schema.columns` and fails the build listing any table/column
+      still missing versus the newest drizzle snapshot. Skips on preview deploys (they share the
+      production database) and on local builds with no DB URL; fails hard if `VERCEL_ENV` is
+      production and no URL resolves.
+- [x] `lib/db-url.ts` — the URL-resolution logic was duplicated in `lib/db.ts` and
+      `drizzle.config.ts`; now one module, imported by both plus the migrate script.
+- [x] `db:push` removed from package.json; `drizzle.config.ts` documents the generate→commit→deploy
+      flow instead.
+- [x] `lib/degraded.ts` + all 8 DB fallback sites rewired — each now names its fallback in the log
+      line and raises a Sentry error fingerprinted by scope, instead of a `console.error` nobody read.
+- [x] `app/api/health/route.ts` — 503 whenever a probe fails. The products probe is the full
+      `products ⋈ sellers` row select on purpose: a `select 1` would have stayed green through
+      this entire outage.
+- [x] `/api/health` added to `proxy.ts`'s maintenance-gate allowlist — otherwise maintenance mode
+      rewrites the probe to `/maintenance` and it answers 200 while the site is down.
+
+### Verified
+- Reverse-transform of `0000_baseline.sql` reproduces drizzle-kit's original output byte-for-byte
+  across all 78 statements (0 mismatches) — the idempotency edit added tokens and nothing else.
+- `scripts/migrate.ts` exercised on all three branches: local no-URL → skip/exit 0; production
+  no-URL → fail/exit 1; preview → skip/exit 0. The first run of this test **failed** and caught a
+  real bug: `vercel env pull` writes `VERCEL_ENV` into `.env.local`, so loading that file before
+  reading the variable made every local build think it was a preview deploy and skip migrating.
+  `VERCEL_ENV` is now captured from the real process environment before `loadEnvConfig`.
+
+- `tsc --noEmit` clean and `npm run build` green, both run on a local-disk copy of the repo
+  (see below). Falsified first: injecting `bogus: 1` into a `reportDegraded` call makes tsc fail
+  with TS2353, so the passing run carries information rather than being decorative.
+- End-to-end on the built app with no database configured: `GET /api/health` -> **503**
+  `{"status":"degraded","reason":"no database configured"}` while `GET /browse` -> **200**.
+  That contrast is the whole point — /browse is the page that hid the outage for five days.
+
+### Local builds do not work under G:\My Drive
+`npm run build` fails there with `TurbopackInternalError: failed to create junction point ...
+Incorrect function. (os error 1)`. Google Drive does not support symlinks, and Next 16 needs one
+to link the `@fastify/otel` copy of `import-in-the-middle` into `.next/node_modules`. Pre-existing
+and unrelated to this work — it hits `main` too. `tsc` technically runs but is I/O-starved (4.6s
+of CPU in 28 minutes, never finished). Everything above was verified by copying the repo to local
+disk and running `npm install` there, where a full build takes minutes. Worth moving the repo off
+Google Drive.
+
+### Not verified — needs a real database
+The migration SQL has **not been executed against Postgres**. There is no Docker or psql in this
+environment and the production credentials are redacted to `[SENSITIVE]` by `vercel env pull`, so
+neither the idempotent baseline nor `verifySchema()` has been observed running against a live
+database. Both need a smoke test on a scratch Neon branch before the first production deploy.

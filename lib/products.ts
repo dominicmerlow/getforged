@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { db, dbConfigured } from '@/lib/db'
 import { products, sellers, salesPages, reviews } from '@/db/schema'
 import { SEED_PRODUCTS, findSeedBySlug, type SeedProduct } from '@/lib/seed-products'
+import { reportDegraded } from '@/lib/degraded'
 
 export interface ProductListItem {
   id: string | null  // null when it's a seed-only product (no DB row)
@@ -218,7 +219,7 @@ async function fetchRatings(productIds: string[]): Promise<RatingIndex> {
       index.set(row.productId, { rating: Number(row.avgRating), count: Number(row.count) })
     }
   } catch (err) {
-    console.error('[products] fetchRatings failed:', err instanceof Error ? err.message : err)
+    reportDegraded({ scope: 'products.ratings', fallback: 'unrated product cards', error: err })
   }
   return index
 }
@@ -247,7 +248,7 @@ export async function listLiveProducts(): Promise<ProductListItem[]> {
     const ratings = await fetchRatings(rows.map(r => r.product.id))
     return rows.map(r => dbToListItem(r.product, r.seller, ratings))
   } catch (err) {
-    console.error('[products] listLiveProducts failed:', err instanceof Error ? err.message : err)
+    reportDegraded({ scope: 'products.list', fallback: 'the seed catalogue', error: err })
     return SEED_PRODUCTS.map(seedToListItem)
   }
 }
@@ -350,7 +351,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
         : undefined,
     }
   } catch (err) {
-    console.error('[products] getProductBySlug failed:', err instanceof Error ? err.message : err)
+    reportDegraded({ scope: 'products.detail', fallback: 'a seed product or a 404', error: err })
     const seed = findSeedBySlug(slug)
     return seed ? seedToDetail(seed) : null
   }

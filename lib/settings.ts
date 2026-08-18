@@ -12,6 +12,7 @@
 import { unstable_cache } from 'next/cache'
 import { db, dbConfigured } from '@/lib/db'
 import { siteSettings } from '@/db/schema'
+import { reportDegraded } from '@/lib/degraded'
 
 export const SETTINGS_CACHE_TAG = 'site-settings'
 
@@ -55,7 +56,7 @@ const fetchAllSettings = unstable_cache(
       for (const row of rows) out[row.key] = row.value
       return out
     } catch (err) {
-      console.error('[settings] read threw:', err instanceof Error ? err.message : err)
+      reportDegraded({ scope: 'settings', fallback: 'default feature flags', error: err })
       return {}
     }
   },

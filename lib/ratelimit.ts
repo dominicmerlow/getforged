@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import { lt, sql } from 'drizzle-orm'
 import { db, dbConfigured } from '@/lib/db'
 import { rateLimits } from '@/db/schema'
+import { reportDegraded } from '@/lib/degraded'
 
 /**
  * Best-effort client IP from Vercel/proxy forwarding headers. Not spoof-proof
@@ -77,7 +78,7 @@ export async function checkRateLimit(opts: RateLimitOptions): Promise<boolean> {
 
     return row.count <= opts.limit
   } catch (err) {
-    console.error('[ratelimit] DB check failed, using in-memory fallback:', err instanceof Error ? err.message : err)
+    reportDegraded({ scope: 'ratelimit', fallback: 'a per-instance in-memory rate limit', error: err })
     return inMemoryFallback(key, windowMs, now, opts.limit)
   }
 }
