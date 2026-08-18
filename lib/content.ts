@@ -16,6 +16,7 @@ import { unstable_cache } from 'next/cache'
 import { db, dbConfigured } from '@/lib/db'
 import { siteContent } from '@/db/schema'
 import { CONTENT_REGISTRY, type ContentKey, ALL_CONTENT_KEYS } from './content-defaults'
+import { reportDegraded } from '@/lib/degraded'
 
 export const CONTENT_CACHE_TAG = 'site-content'
 
@@ -39,7 +40,7 @@ const fetchAllOverrides = unstable_cache(
       for (const row of rows) out[row.key] = row.value
       return out
     } catch (err) {
-      console.error('[content] read threw:', err instanceof Error ? err.message : err)
+      reportDegraded({ scope: 'content', fallback: 'default site copy', error: err })
       return {}
     }
   },

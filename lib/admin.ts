@@ -21,6 +21,7 @@
 import { eq, and } from 'drizzle-orm'
 import { db, dbConfigured } from '@/lib/db'
 import { userRoles, adminAudit } from '@/db/schema'
+import { reportDegraded } from '@/lib/degraded'
 
 export type UserRole = 'superadmin' | 'admin' | 'moderator' | 'support'
 
@@ -74,7 +75,7 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
     }
     return null
   } catch (err) {
-    console.error('[admin] getUserRole failed:', err instanceof Error ? err.message : err)
+    reportDegraded({ scope: 'admin.role', fallback: 'no admin role (admins are locked out)', error: err })
     return null
   }
 }
@@ -161,6 +162,6 @@ export async function logAdminAction(entry: AuditEntry): Promise<void> {
       payload: entry.payload ?? null,
     })
   } catch (err) {
-    console.error('[admin-audit] insert failed:', err instanceof Error ? err.message : err)
+    reportDegraded({ scope: 'admin.audit', fallback: 'a dropped audit entry', error: err })
   }
 }

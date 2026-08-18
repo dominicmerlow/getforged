@@ -10,6 +10,7 @@
  *      all traffic is rewritten to `/maintenance` EXCEPT:
  *        - admin surfaces (/admin, /admin/*, /api/admin/*, /whoami)
  *        - auth flows (/api/auth/*, /login)
+ *        - the /api/health probe
  *        - the maintenance page itself
  *        - Next internals + static assets (caught by the matcher AND a
  *          defence-in-depth allowlist inside the fn)
@@ -35,6 +36,9 @@ import { checkAdminAccess } from '@/lib/admin'
 
 // Paths (and prefixes) that always bypass the maintenance gate.
 const ALLOW_PREFIXES = [
+  // Must bypass, or maintenance mode rewrites the health probe to /maintenance
+  // and it answers 200 — the monitor goes green precisely when the site is down.
+  '/api/health',
   '/admin',
   '/api/admin',
   '/whoami',
