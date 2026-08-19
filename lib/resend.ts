@@ -4,7 +4,10 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null
 
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@getforged.io'
+// Fallback must sit on a domain verified in the Resend workspace the API key
+// belongs to, or every send 403s — see .env.example. getforged.io is verified
+// nowhere; the apex getbrian.xyz is.
+const FROM = process.env.RESEND_FROM_EMAIL ?? 'getforged@getbrian.xyz'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.io'
 
 export async function sendDraftReadyEmail(
