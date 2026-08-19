@@ -366,9 +366,14 @@ export default async function ProductPage(
           <div className="gf-gig">
             {/* ── Main column ─────────────────────────────────────── */}
             <div className="gf-gig-main">
-              <h1 style={{ fontSize: 'clamp(26px, 3.4vw, 34px)', marginBottom: 14 }}>
-                {product.headline || product.title}
+              <h1 style={{ fontSize: 'clamp(26px, 3.4vw, 34px)', marginBottom: product.headline && product.headline !== product.title ? 6 : 14 }}>
+                {product.title}
               </h1>
+              {product.headline && product.headline !== product.title && (
+                <p style={{ fontSize: 'clamp(17px, 2vw, 20px)', color: 'var(--gf-text-2)', margin: '0 0 14px', lineHeight: 1.4 }}>
+                  {product.headline}
+                </p>
+              )}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
                 {product.seller?.display_name && (
