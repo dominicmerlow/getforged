@@ -61,14 +61,14 @@ export default function PrivacyPage() {
               5. Your Rights (GDPR)
             </h2>
             <p>
-              If you are located in the UK or EU, you have the right to access, correct, or delete your personal data. You may also request a portable copy of your data or object to certain processing. To exercise any of these rights, email privacy@getforged.io with &ldquo;Data Request&rdquo; in the subject line. We will respond within 30 days. You also have the right to lodge a complaint with your local data protection authority (in the UK: the ICO at ico.org.uk).
+              If you are located in the UK or EU, you have the right to access, correct, or delete your personal data. You may also request a portable copy of your data or object to certain processing. To exercise any of these rights, email getforged@getbrian.xyz with &ldquo;Data Request&rdquo; in the subject line. We will respond within 30 days. You also have the right to lodge a complaint with your local data protection authority (in the UK: the ICO at ico.org.uk).
             </p>
 
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, marginBottom: '0.75rem', marginTop: '2.5rem' }}>
               6. Data Retention & Deletion
             </h2>
             <p>
-              You may request deletion of your account at any time by emailing privacy@getforged.io. We will delete or anonymise your personal data within 30 days, except where retention is required by law (e.g., financial records for tax purposes, which may be kept for up to 7 years).
+              You may request deletion of your account at any time by emailing getforged@getbrian.xyz. We will delete or anonymise your personal data within 30 days, except where retention is required by law (e.g., financial records for tax purposes, which may be kept for up to 7 years).
             </p>
 
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, marginBottom: '0.75rem', marginTop: '2.5rem' }}>
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
             </p>
 
             <p style={{ marginTop: '3rem', opacity: 0.5, fontSize: 14, fontFamily: 'var(--font-mono)' }}>
-              Privacy questions? Email privacy@getforged.io
+              Privacy questions? Email getforged@getbrian.xyz
             </p>
           </div>
         </section>

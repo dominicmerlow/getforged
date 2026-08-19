@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/dashboard', '/api', '/auth'],
     },
-    sitemap: 'https://getforged.io/sitemap.xml',
+    sitemap: 'https://getforged.getbrian.xyz/sitemap.xml',
   }
 }

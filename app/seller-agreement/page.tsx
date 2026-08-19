@@ -82,11 +82,11 @@ export default function SellerAgreementPage() {
               7. Termination
             </h2>
             <p>
-              GetForged may suspend or remove individual listings or your entire seller account for breach of this agreement, high refund rates, IP disputes, or other conduct that is harmful to buyers or the Platform. We will attempt to provide reasonable notice unless immediate action is required to protect buyers. You may close your seller account at any time by emailing support@getforged.io; outstanding payouts for completed sales will still be remitted.
+              GetForged may suspend or remove individual listings or your entire seller account for breach of this agreement, high refund rates, IP disputes, or other conduct that is harmful to buyers or the Platform. We will attempt to provide reasonable notice unless immediate action is required to protect buyers. You may close your seller account at any time by emailing getforged@getbrian.xyz; outstanding payouts for completed sales will still be remitted.
             </p>
 
             <p style={{ marginTop: '3rem', opacity: 0.5, fontSize: 14, fontFamily: 'var(--font-mono)' }}>
-              Seller questions? Email sellers@getforged.io
+              Seller questions? Email getforged@getbrian.xyz
             </p>
           </div>
         </section>

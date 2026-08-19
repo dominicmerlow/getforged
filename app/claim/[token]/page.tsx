@@ -182,7 +182,7 @@ export default async function ClaimPage({
             This preview was drafted from public information about your product
             (found via {invite.source}). It isn&apos;t published or affiliated with
             you until you claim it. Want it taken down instead? Email{' '}
-            <a href="mailto:hello@getforged.io" style={{ color: 'var(--soft-amber, #b97314)' }}>hello@getforged.io</a>.
+            <a href="mailto:getforged@getbrian.xyz" style={{ color: 'var(--soft-amber, #b97314)' }}>getforged@getbrian.xyz</a>.
           </p>
         </section>
       </main>

@@ -11,7 +11,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY
 // Same constraint as lib/resend.ts: the fallback has to be on the verified
 // domain (apex getbrian.xyz) or Resend rejects the send with a 403.
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL ?? 'getforged@getbrian.xyz'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.vercel.app'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.getbrian.xyz'
 
 export type ContactState =
   | { error: string }

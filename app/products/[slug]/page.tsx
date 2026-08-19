@@ -275,7 +275,7 @@ export default async function ProductPage(
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    '@id': `https://getforged.io/products/${product.slug}`,
+    '@id': `https://getforged.getbrian.xyz/products/${product.slug}`,
     name: product.title,
     description: product.subheadline || product.tagline,
     image: heroImage ?? undefined,
@@ -286,7 +286,7 @@ export default async function ProductPage(
       price: rawPrice,
       priceCurrency: 'GBP',
       availability: 'https://schema.org/InStock',
-      url: `https://getforged.io/products/${product.slug}`,
+      url: `https://getforged.getbrian.xyz/products/${product.slug}`,
     } : undefined,
     // Only emit an aggregate rating when reviews actually exist — a fabricated
     // rating in structured data is a search-engine penalty, not just a lie.

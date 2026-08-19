@@ -33,7 +33,7 @@ export default function RefundPolicyPage() {
               How to Request a Refund
             </h2>
             <ol style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-              <li>Email <strong>support@getforged.io</strong> with the subject line &ldquo;Refund Request&rdquo;.</li>
+              <li>Email <strong>getforged@getbrian.xyz</strong> with the subject line &ldquo;Refund Request&rdquo;.</li>
               <li>Include your order ID (found in your purchase confirmation email) and a brief note on why you are requesting a refund.</li>
               <li>We will process your request within 3 business days. Refunds are returned to the original payment method via Stripe and typically appear within 5–10 business days depending on your bank.</li>
             </ol>
@@ -62,11 +62,11 @@ export default function RefundPolicyPage() {
               Contact
             </h2>
             <p>
-              If you have any questions about this policy or need help with an order, reach out at <strong>support@getforged.io</strong>. We aim to respond to all support queries within 1 business day.
+              If you have any questions about this policy or need help with an order, reach out at <strong>getforged@getbrian.xyz</strong>. We aim to respond to all support queries within 1 business day.
             </p>
 
             <p style={{ marginTop: '3rem', opacity: 0.5, fontSize: 14, fontFamily: 'var(--font-mono)' }}>
-              Order issues? Email support@getforged.io
+              Order issues? Email getforged@getbrian.xyz
             </p>
           </div>
         </section>

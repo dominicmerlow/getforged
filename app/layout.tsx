@@ -54,11 +54,11 @@ export const metadata: Metadata = {
   },
   description:
     'Buy pre-built AI apps, automations and internal tools, made by expert builders, priced for small businesses. Install in hours, not months.',
-  metadataBase: new URL('https://getforged.io'),
+  metadataBase: new URL('https://getforged.getbrian.xyz'),
   openGraph: {
     type: 'website',
     locale: 'en_GB',
-    url: 'https://getforged.io',
+    url: 'https://getforged.getbrian.xyz',
     siteName: 'GetForged',
     title: 'GetForged: AI App Marketplace',
     description: 'Buy pre-built AI apps, automations and internal tools, made by expert builders, priced for small businesses. Install in hours, not months.',

@@ -78,7 +78,7 @@ export default function ProductScreenshot({ src, title, emoji = '⚡', category,
   // Derive a plausible URL from title
   const fakeUrl = title
     ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '.app'
-    : 'app.getforged.io'
+    : 'getforged.getbrian.xyz'
 
   // Image / fallback area
   const mediaHeight = isHero ? 'auto' : 120
