@@ -103,7 +103,7 @@ async function tryOpenRouterModel(
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not set')
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.getbrian.xyz'
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -250,7 +250,7 @@ export async function generateSmall(prompt: string): Promise<string> {
       'meta-llama/llama-3.3-70b-instruct:free',
     ]
     const apiKey = process.env.OPENROUTER_API_KEY
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.vercel.app'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.getbrian.xyz'
 
     for (const model of smallModels) {
       try {

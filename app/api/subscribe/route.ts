@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // wrong.
     console.error('[subscribe] insert failed:', err instanceof Error ? err.message : err)
     return NextResponse.json(
-      { error: 'Subscription service is warming up. Please email hello@getforged.io for now.' },
+      { error: 'Subscription service is warming up. Please email getforged@getbrian.xyz for now.' },
       { status: 503 }
     )
   }

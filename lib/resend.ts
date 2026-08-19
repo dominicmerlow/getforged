@@ -8,7 +8,7 @@ const resend = process.env.RESEND_API_KEY
 // belongs to, or every send 403s — see .env.example. getforged.io is verified
 // nowhere; the apex getbrian.xyz is.
 const FROM = process.env.RESEND_FROM_EMAIL ?? 'getforged@getbrian.xyz'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.io'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.getbrian.xyz'
 
 export async function sendDraftReadyEmail(
   sellerEmail: string,
@@ -33,7 +33,7 @@ export async function sendDraftReadyEmail(
         <h1 style="font-size: 32px; color: #e8920a; margin-bottom: 8px;">Your draft is ready.</h1>
         <p style="color: #b8b0a4; margin-bottom: 24px;">Hey ${sellerName}, we've generated your AI sales page for <strong style="color: #f8f4ee;">${productTitle}</strong>. Review it, make any edits, then hit publish.</p>
         <a href="${reviewUrl}" style="display: inline-block; padding: 14px 28px; background: #e8920a; color: #0c0b09; font-weight: 700; text-decoration: none; border-radius: 3px; letter-spacing: 0.1em; text-transform: uppercase; font-size: 13px;">Review Your Listing →</a>
-        <p style="color: #7a7670; font-size: 12px; margin-top: 40px;">GetForged · <a href="${APP_URL}" style="color: #7a7670;">getforged.io</a></p>
+        <p style="color: #7a7670; font-size: 12px; margin-top: 40px;">GetForged · <a href="${APP_URL}" style="color: #7a7670;">getforged.getbrian.xyz</a></p>
       </div>
     `,
   })
@@ -78,7 +78,7 @@ export async function sendPurchaseReceiptEmail(
         <h1 style="font-size: 32px; color: #e8920a; margin-bottom: 8px;">You're in.</h1>
         <p style="color: #b8b0a4; margin-bottom: 24px;">Thanks for buying <strong style="color: #f8f4ee;">${productTitle}</strong> (${label}, ${formattedAmount}). The seller has been notified and will be in touch with access details shortly.</p>
         <a href="${productUrl}" style="display: inline-block; padding: 14px 28px; background: #e8920a; color: #0c0b09; font-weight: 700; text-decoration: none; border-radius: 3px; letter-spacing: 0.1em; text-transform: uppercase; font-size: 13px;">View Product →</a>
-        <p style="color: #7a7670; font-size: 12px; margin-top: 40px;">GetForged · <a href="${APP_URL}" style="color: #7a7670;">getforged.io</a></p>
+        <p style="color: #7a7670; font-size: 12px; margin-top: 40px;">GetForged · <a href="${APP_URL}" style="color: #7a7670;">getforged.getbrian.xyz</a></p>
       </div>
     `,
   })
@@ -111,7 +111,7 @@ export async function sendSellerSaleNotification(
         <p style="color: #b8b0a4; margin-bottom: 8px;">Hey ${sellerName}, <strong style="color: #f8f4ee;">${productTitle}</strong> was just purchased as a ${label} for <strong style="color: #e8920a;">${formattedAmount}</strong>.</p>
         <p style="color: #b8b0a4; margin-bottom: 24px;">Buyer: ${buyerEmail}. Reach out to deliver access.</p>
         <a href="${dashboardUrl}" style="display: inline-block; padding: 14px 28px; background: #e8920a; color: #0c0b09; font-weight: 700; text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase; font-size: 13px;">View Dashboard →</a>
-        <p style="color: #7a7670; font-size: 12px; margin-top: 40px;">GetForged · <a href="${APP_URL}" style="color: #7a7670;">getforged.io</a></p>
+        <p style="color: #7a7670; font-size: 12px; margin-top: 40px;">GetForged · <a href="${APP_URL}" style="color: #7a7670;">getforged.getbrian.xyz</a></p>
       </div>
     `,
   })
@@ -138,7 +138,7 @@ export async function sendReviewRequestEmail(
         <h1 style="font-size: 28px; color: #e8920a; margin-bottom: 8px;">Quick question.</h1>
         <p style="color: #b8b0a4; margin-bottom: 24px;">You bought <strong style="color: #f8f4ee;">${productTitle}</strong> recently. Got 30 seconds to leave a review? It helps other builders and keeps the marketplace honest.</p>
         <a href="${productUrl}#reviews" style="display: inline-block; padding: 14px 28px; background: #e8920a; color: #0c0b09; font-weight: 700; text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase; font-size: 13px;">Leave a Review →</a>
-        <p style="color: #7a7670; font-size: 12px; margin-top: 40px;">GetForged · <a href="${APP_URL}" style="color: #7a7670;">getforged.io</a></p>
+        <p style="color: #7a7670; font-size: 12px; margin-top: 40px;">GetForged · <a href="${APP_URL}" style="color: #7a7670;">getforged.getbrian.xyz</a></p>
       </div>
     `,
   })

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { listLiveProductSlugs } from '@/lib/products'
 
-const BASE = 'https://getforged.io'
+const BASE = 'https://getforged.getbrian.xyz'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const slugs = await listLiveProductSlugs()

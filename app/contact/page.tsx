@@ -24,14 +24,14 @@ const channels = [
   {
     label: 'Press & partnerships',
     detail: 'Interviews, brand assets, and integration enquiries.',
-    cta: 'Email hello@getforged.io',
-    href: 'mailto:hello@getforged.io',
+    cta: 'Email getforged@getbrian.xyz',
+    href: 'mailto:getforged@getbrian.xyz',
   },
   {
     label: 'Buyer & seller support',
     detail: 'Refunds, payouts, account questions, anything in-flight.',
-    cta: 'Email support@getforged.io',
-    href: 'mailto:support@getforged.io',
+    cta: 'Email getforged@getbrian.xyz',
+    href: 'mailto:getforged@getbrian.xyz',
   },
 ]
 

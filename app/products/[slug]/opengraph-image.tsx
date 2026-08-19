@@ -67,7 +67,7 @@ export default async function Image({
               letterSpacing: '0.05em',
             }}
           >
-            getforged.io
+            getforged.getbrian.xyz
           </div>
         </div>
       ),
@@ -212,7 +212,7 @@ export default async function Image({
               fontWeight: 500,
             }}
           >
-            getforged.io
+            getforged.getbrian.xyz
           </div>
         </div>
       </div>

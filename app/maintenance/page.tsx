@@ -70,13 +70,13 @@ export default function MaintenancePage() {
         >
           Need us urgently?{' '}
           <a
-            href="mailto:hello@getforged.io"
+            href="mailto:getforged@getbrian.xyz"
             style={{
               color: 'var(--warm-ink, #2a2217)',
               textDecoration: 'underline',
             }}
           >
-            hello@getforged.io
+            getforged@getbrian.xyz
           </a>
         </div>
       </div>

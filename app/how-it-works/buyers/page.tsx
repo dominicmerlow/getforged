@@ -169,7 +169,7 @@ export default function BuyersPage() {
               illustration={
                 <IllustrationFrame caption="your inbox, 90 seconds later">
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--warm-muted)' }}>
-                    noreply@getforged.io
+                    getforged@getbrian.xyz
                   </div>
                   <div style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontStyle: 'italic', color: 'var(--warm-ink)' }}>
                     You bought InvoiceBot Pro: here&apos;s your deploy kit

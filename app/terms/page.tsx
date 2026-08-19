@@ -74,7 +74,7 @@ export default function TermsPage() {
               6. Termination
             </h2>
             <p>
-              GetForged may suspend or terminate your account at any time for breach of these terms, fraudulent activity, or at our sole discretion with reasonable notice. You may close your account at any time by contacting support@getforged.io. Outstanding obligations (e.g., pending payouts or active licences) survive termination.
+              GetForged may suspend or terminate your account at any time for breach of these terms, fraudulent activity, or at our sole discretion with reasonable notice. You may close your account at any time by contacting getforged@getbrian.xyz. Outstanding obligations (e.g., pending payouts or active licences) survive termination.
             </p>
 
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, marginBottom: '0.75rem', marginTop: '2.5rem' }}>
@@ -92,7 +92,7 @@ export default function TermsPage() {
             </p>
 
             <p style={{ marginTop: '3rem', opacity: 0.5, fontSize: 14, fontFamily: 'var(--font-mono)' }}>
-              Questions? Email legal@getforged.io
+              Questions? Email getforged@getbrian.xyz
             </p>
           </div>
         </section>

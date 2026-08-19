@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       // Seller-uploaded screenshots (app/api/upload/route.ts → Vercel Blob)
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
-      { protocol: 'https', hostname: 'getforged.io' },
+      { protocol: 'https', hostname: 'getforged.getbrian.xyz' },
     ],
   },
 }
