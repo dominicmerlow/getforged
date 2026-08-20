@@ -314,6 +314,12 @@ export default async function ProductPage(
     <InfoNotice>Preview listing: not yet purchasable</InfoNotice>
   ) : checkoutPaused ? (
     <InfoNotice tone="warn">Checkout temporarily paused, back soon</InfoNotice>
+  ) : !product.sellerPayoutsEnabled ? (
+    /* /api/checkout refuses to sell for a seller with no payouts-enabled
+       Connect account, and every newly-invited seller is in that state until
+       they finish onboarding. Rendering the Buy button anyway sends the buyer
+       to a raw JSON error page. */
+    <InfoNotice tone="warn">This seller is still setting up payments — not purchasable yet</InfoNotice>
   ) : (
     <BuyButton
       slug={product.slug}
