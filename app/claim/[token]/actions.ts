@@ -5,7 +5,7 @@ import { signIn } from '@/auth'
 import { db } from '@/lib/db'
 import { claimInvites } from '@/db/schema'
 import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
-import { shouldBlockNewSignup } from '@/app/actions/auth'
+import { shouldBlockNewSignup } from '@/lib/signup-pause'
 import { SIGNUPS_PAUSED_MSG } from '@/lib/auth-constants'
 
 export type ClaimState = { error: string } | { ok: true } | null

@@ -9,6 +9,7 @@ import { products, sellers, salesPages } from '@/db/schema'
 import { slugify } from '@/lib/utils'
 import { scrapeUrl } from '@/lib/firecrawl'
 import { logAdminAction } from '@/lib/admin'
+import { checkRateLimit } from '@/lib/ratelimit'
 
 function parseCsv(raw: string): string[] | null {
   const items = raw
@@ -223,6 +224,18 @@ export async function regenerateScreenshot(
   const product = row.product
   if (!product.sourceUrl) {
     return { error: 'No source URL on file. Add one in the Source URL field first.' }
+  }
+
+  // Same paid scrape as /submit, and the caller owns the product so ownership
+  // is no obstacle to looping it.
+  const withinLimit = await checkRateLimit({
+    bucket: 'screenshot',
+    identifier: session.user.id,
+    limit: 10,
+    windowSeconds: 3600,
+  })
+  if (!withinLimit) {
+    return { error: 'Too many screenshot regenerations in the last hour. Try again shortly.' }
   }
 
   let scraped

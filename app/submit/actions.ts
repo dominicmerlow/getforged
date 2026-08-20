@@ -11,6 +11,7 @@ import { sendDraftReadyEmail } from '@/lib/resend'
 import { getSetting } from '@/lib/settings'
 import { slugify } from '@/lib/utils'
 import type { GeneratedSalesPage } from '@/lib/types'
+import { checkRateLimit } from '@/lib/ratelimit'
 
 export type SubmitState =
   | { error: string }
@@ -99,6 +100,21 @@ export async function submitProduct(
 
   const sellerRow = await db.query.sellers.findFirst({ where: eq(sellers.userId, session.user.id) })
   if (!sellerRow) return { error: 'Seller profile not found. Try signing out and back in.' }
+
+  // Every call past this point costs real money: a Firecrawl scrape, then up
+  // to five OpenRouter attempts falling through to paid Anthropic. Anyone can
+  // register, so without a limit one account converts into unlimited spend on
+  // our bill. Keyed on the user, not the IP — the IP limit is the wrong shape
+  // for an authenticated, per-account cost.
+  const withinSubmitLimit = await checkRateLimit({
+    bucket: 'submit',
+    identifier: session.user.id,
+    limit: 5,
+    windowSeconds: 3600,
+  })
+  if (!withinSubmitLimit) {
+    return { error: 'You have submitted several listings in the last hour. Try again shortly.' }
+  }
 
   // ── 2b. Submissions paused gate (admin feature flag) ─────────
   // Server-side enforcement — never trust the client. Fail-OPEN if the
