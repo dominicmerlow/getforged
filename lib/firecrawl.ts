@@ -1,3 +1,4 @@
+import { assertPublicUrl, safeFetch } from '@/lib/ssrf'
 // Firecrawl v1 scrape — returns markdown + a real full-page screenshot URL.
 // We pass `formats: ['markdown', 'screenshot@fullPage']` instead of relying on
 // og:image, which is small, often missing, and not representative of the app.
@@ -26,6 +27,12 @@ export interface ScrapeResult {
 }
 
 export async function scrapeUrl(url: string): Promise<ScrapeResult> {
+  // Validate before either branch. The Firecrawl path fetches from their
+  // egress rather than ours, which narrows the blast radius but does not
+  // remove it — and the key being unset (or rotated) silently switches us to
+  // the fallback below, which fetches from inside our own network.
+  await assertPublicUrl(url)
+
   const apiKey = process.env.FIRECRAWL_API_KEY
 
   // ── Free fallback: basic fetch + text extraction ─────────────
@@ -76,7 +83,9 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
 
 // ── FREE fallback: native fetch (no Firecrawl needed) ───────────
 async function scrapeUrlFallback(url: string): Promise<ScrapeResult> {
-  const response = await fetch(url, {
+  // safeFetch, not fetch: a public URL is free to 302 into link-local space
+  // and fetch would follow it without asking.
+  const response = await safeFetch(url, {
     headers: { 'User-Agent': 'GetForged-Scraper/1.0' },
     signal: AbortSignal.timeout(10000),
   })

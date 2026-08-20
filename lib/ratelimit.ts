@@ -5,15 +5,27 @@ import { rateLimits } from '@/db/schema'
 import { reportDegraded } from '@/lib/degraded'
 
 /**
- * Best-effort client IP from Vercel/proxy forwarding headers. Not spoof-proof
- * (a determined abuser can rotate IPs), but it's the standard signal
- * available without adding auth/captcha friction to anonymous endpoints.
+ * Best-effort client IP from the proxy forwarding headers.
+ *
+ * Takes the RIGHTMOST entry of `x-forwarded-for`, not the leftmost. The
+ * header is a chain the client can prepend to at will — sending
+ * `X-Forwarded-For: 1.2.3.4` makes the leftmost value entirely
+ * attacker-chosen, so a rotating header would reset every bucket on every
+ * request and nullify all of these limits at once. The rightmost entry is the
+ * one our own proxy appended, and is the only part we did not receive from
+ * the client.
+ *
+ * Still not spoof-proof against someone with many real IPs — nothing at this
+ * layer is — but it is no longer defeated by editing one header.
  */
 export async function getClientIp(): Promise<string> {
   try {
     const h = await headers()
     const fwd = h.get('x-forwarded-for')
-    if (fwd) return fwd.split(',')[0].trim()
+    if (fwd) {
+      const hops = fwd.split(',').map(s => s.trim()).filter(Boolean)
+      if (hops.length > 0) return hops[hops.length - 1]
+    }
     return h.get('x-real-ip') ?? 'unknown'
   } catch {
     return 'unknown'

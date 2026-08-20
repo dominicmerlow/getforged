@@ -11,6 +11,8 @@ import { db, dbConfigured } from '@/lib/db'
 import { users, pendingDisplayNames } from '@/db/schema'
 import { getSetting } from '@/lib/settings'
 import { SIGNUPS_PAUSED_MSG } from '@/lib/auth-constants'
+import { shouldBlockNewSignup } from '@/lib/signup-pause'
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 
 export type AuthState = { error?: string; message?: string } | null
 
@@ -19,28 +21,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export async function getOrigin(): Promise<string> {
   const h = await headers()
   return h.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-}
-
-/**
- * Returns true if the sign-in request should be blocked because
- * `site.signups_paused` is on AND no user row exists for this email (i.e. it
- * would create a new account).
- *
- * Fail-OPEN: any error in the setting read or user lookup returns false so
- * legitimate logins are never broken by infrastructure hiccups.
- */
-export async function shouldBlockNewSignup(email: string): Promise<boolean> {
-  try {
-    const paused = await getSetting('site.signups_paused')
-    if (!paused) return false
-    if (!dbConfigured()) return false
-
-    const existing = await db.query.users.findFirst({ where: eq(users.email, email) })
-    return !existing
-  } catch (err) {
-    console.error('[auth] signup-pause check threw:', err instanceof Error ? err.message : err)
-    return false
-  }
 }
 
 /**
@@ -65,6 +45,37 @@ async function safeSignIn(action: () => Promise<unknown>, successMessage: string
   }
 }
 
+/**
+ * Throttle for the authentication entry points.
+ *
+ * None of these were limited: `signIn('resend', ...)` mails a magic link on
+ * every call, so an unthrottled loop is unbounded Resend spend, mail-bombing
+ * of any third-party address, and domain-reputation damage. The password
+ * paths are the same shape against bcrypt.
+ *
+ * Limited on the IP and on the submitted address independently: an attacker
+ * with many IPs must not be able to bomb one inbox, and one IP must not be
+ * able to spray many.
+ */
+async function withinAuthLimit(email: string): Promise<boolean> {
+  const ip = await getClientIp()
+  const byIp = await checkRateLimit({
+    bucket: 'auth-ip',
+    identifier: ip,
+    limit: 10,
+    windowSeconds: 900,
+  })
+  if (!byIp) return false
+  return checkRateLimit({
+    bucket: 'auth-email',
+    identifier: email,
+    limit: 5,
+    windowSeconds: 900,
+  })
+}
+
+const AUTH_RATE_LIMITED = 'Too many attempts. Wait a few minutes and try again.'
+
 export async function signInWithEmail(
   _prev: AuthState,
   formData: FormData
@@ -72,6 +83,10 @@ export async function signInWithEmail(
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   if (!email || !EMAIL_RE.test(email)) {
     return { error: 'Enter a valid email address.' }
+  }
+
+  if (!(await withinAuthLimit(email))) {
+    return { error: AUTH_RATE_LIMITED }
   }
 
   if (await shouldBlockNewSignup(email)) {
@@ -107,6 +122,10 @@ export async function signUpWithNameAndEmail(
     return { error: 'Enter a valid email address.' }
   }
 
+  if (!(await withinAuthLimit(email))) {
+    return { error: AUTH_RATE_LIMITED }
+  }
+
   if (await shouldBlockNewSignup(email)) {
     return { error: SIGNUPS_PAUSED_MSG }
   }
@@ -140,6 +159,10 @@ export async function signInWithPassword(
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   const password = String(formData.get('password') ?? '')
   if (!email || !EMAIL_RE.test(email)) return { error: 'Enter a valid email address.' }
+
+  if (!(await withinAuthLimit(email))) {
+    return { error: AUTH_RATE_LIMITED }
+  }
   if (!password) return { error: 'Enter your password.' }
 
   try {
@@ -171,6 +194,10 @@ export async function registerWithPassword(
   if (!name || name.length < 2) return { error: 'Enter your name (at least 2 characters).' }
   if (name.length > 80) return { error: 'Name is too long (max 80 characters).' }
   if (!email || !EMAIL_RE.test(email)) return { error: 'Enter a valid email address.' }
+
+  if (!(await withinAuthLimit(email))) {
+    return { error: AUTH_RATE_LIMITED }
+  }
   if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
 
   if (!dbConfigured()) return { error: 'Sign-up is not available right now.' }
