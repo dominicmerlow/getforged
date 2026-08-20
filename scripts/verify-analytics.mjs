@@ -1,93 +1,82 @@
 #!/usr/bin/env node
 /**
- * Is analytics actually running on the deployed site?
+ * Is analytics actually collecting on the deployed site?
  *
- * `NEXT_PUBLIC_*` is inlined into the client bundle at BUILD time, so the
- * question "is PostHog configured" cannot be answered by looking at the Vercel
- * environment — only by looking at what was compiled. On 2026-08-20 the
- * variable was absent from the build, `posthog.init()` never ran, and all
- * twelve `@/lib/analytics` call sites were silent no-ops while the dashboard
- * showed the key as set.
+ * There are two independent halves, and they fail for different reasons, so
+ * this reports them separately:
  *
- * The control assertion matters as much as the main one: if we fail to find
- * the PostHog init code at all, "no key found" would be indistinguishable
- * from "looked in the wrong file", and this check would pass for the wrong
- * reason the moment a chunk gets renamed.
+ *   1. CODE  — is `<Analytics />` mounted in the deployed build? Fixed by
+ *              shipping components/AnalyticsProvider.tsx.
+ *   2. TOGGLE — is Web Analytics switched on for the project? Fixed in the
+ *              Vercel dashboard (Project -> Analytics -> Enable). Nothing in
+ *              this repo can turn it on.
+ *
+ * Both must hold. The predecessor of this file checked PostHog, which was
+ * configured in the dashboard and absent from every build, because
+ * `NEXT_PUBLIC_*` is inlined at build time — a whole class of failure that
+ * disappears with Vercel Web Analytics, since there is no key to inline.
+ *
+ * The control matters: `/_vercel/insights/script.js` returning 200 only means
+ * something if a neighbouring bogus path under the same prefix returns 404.
+ * Otherwise a catch-all rewrite would make this check pass unconditionally.
  *
  * Usage: npm run verify:analytics [base-url]     (exit 0 = pass, 1 = fail)
  */
 const BASE = (process.argv[2] ?? 'https://getforged.getbrian.xyz').replace(/\/$/, '')
 
-const failures = []
+const results = []
 const notes = []
 
-async function text(url) {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`)
-  return res.text()
+async function status(path) {
+  const res = await fetch(`${BASE}${path}`, { redirect: 'manual' })
+  return res.status
 }
 
-const html = await text(`${BASE}/`)
-const chunks = [...new Set(
-  [...html.matchAll(/\/_next\/static\/chunks\/[a-zA-Z0-9._-]+\.js/g)].map(m => m[0])
-)]
-notes.push(`${chunks.length} client chunks referenced by /`)
+// ── 1. CODE: the component injects a script pointing at this path ──────
+const html = await fetch(`${BASE}/`).then(r => r.text())
+const mounted = html.includes('/_vercel/insights')
+results.push([
+  'CODE: <Analytics /> is mounted in the deployed build',
+  mounted,
+  mounted ? '' : 'no /_vercel/insights reference in the homepage HTML - the build predates AnalyticsProvider, or it is not rendered',
+])
 
-let bundle = ''
-for (const chunk of chunks) {
-  bundle += await text(`${BASE}${chunk}`)
-}
+// ── 2. TOGGLE: the collection script is served only when enabled ───────
+const scriptStatus = await status('/_vercel/insights/script.js')
+const enabled = scriptStatus === 200
+notes.push(`/_vercel/insights/script.js -> HTTP ${scriptStatus}`)
+results.push([
+  'TOGGLE: Web Analytics is enabled for the project',
+  enabled,
+  enabled ? '' : `script.js returned ${scriptStatus} - enable it in Vercel: Project -> Analytics -> Enable`,
+])
 
-// Control: did we actually load the code that initialises PostHog? The
-// placeholder guard string is unique to components/PostHogProvider.tsx.
-const foundInitCode = bundle.includes('phc_xxxx') && bundle.includes('api_host')
-if (!foundInitCode) {
-  failures.push(
-    'CONTROL FAILED: the PostHog init code is not in any chunk this script read — ' +
-    'a "no key" result below would be meaningless. Widen the chunk search.'
-  )
-}
+// ── Control: prove a 200 above is not a catch-all ─────────────────────
+const bogusStatus = await status('/_vercel/insights/definitely-not-a-real-file.js')
+notes.push(`control path -> HTTP ${bogusStatus}`)
+results.push([
+  'CONTROL: an unknown path under the same prefix does NOT return 200',
+  bogusStatus !== 200,
+  bogusStatus === 200
+    ? 'a bogus path also returns 200, so the TOGGLE assertion above proves nothing'
+    : '',
+])
 
-// A real project key is `phc_` plus a long random string. The literal
-// `phc_xxxx` in the source guard must not count as one.
-const keys = [...new Set(
-  [...bundle.matchAll(/phc_[A-Za-z0-9_-]{16,}/g)].map(m => m[0])
-)].filter(k => !k.startsWith('phc_xxxx'))
-
-if (keys.length === 0) {
-  failures.push(
-    'no PostHog project key is compiled into the bundle — NEXT_PUBLIC_POSTHOG_KEY was ' +
-    'not set at BUILD time. Setting it in Vercel is not enough; the app must be rebuilt.'
-  )
-} else {
-  notes.push(`PostHog key compiled in: ${keys[0].slice(0, 12)}... (${keys.length} distinct)`)
-}
-
-// The ingestion host must be PostHog's API host, not the dashboard host.
-const host = bundle.match(/api_host:\s*([A-Za-z0-9_$]+|"[^"]+")/)
-const literalHosts = [...new Set(
-  [...bundle.matchAll(/https:\/\/[a-z]{2}(?:\.i)?\.posthog\.com/g)].map(m => m[0])
-)]
-if (literalHosts.length > 0) notes.push(`posthog hosts in bundle: ${literalHosts.join(', ')}`)
-if (host) notes.push(`api_host expression: ${host[1]}`)
-if (literalHosts.includes('https://eu.posthog.com') && !literalHosts.some(h => h.includes('.i.'))) {
-  notes.push(
-    'NOTE: the only host present is the dashboard host (eu.posthog.com), not the ' +
-    'ingestion host (eu.i.posthog.com). Set NEXT_PUBLIC_POSTHOG_HOST explicitly to the ' +
-    'value in your PostHog setup snippet rather than relying on the code default.'
-  )
-}
-
-// Sentry rides in the same provider and has the same build-time constraint.
-if (!/https:\/\/[a-zA-Z0-9]+@[a-z0-9.]*sentry\.io/.test(bundle)) {
-  notes.push('NEXT_PUBLIC_SENTRY_DSN is also absent from the build (client errors go nowhere).')
+// Sentry rides in the same provider and does still need a build-time DSN.
+if (!/https:\/\/[a-zA-Z0-9]+@[a-z0-9.]*sentry\.io/.test(html)) {
+  notes.push('NEXT_PUBLIC_SENTRY_DSN not detected in the page (client errors may go nowhere).')
 }
 
 for (const n of notes) console.log(`  - ${n}`)
 console.log('')
-if (failures.length > 0) {
-  console.error(`FAIL - ${failures.length} problem(s) with analytics on ${BASE}`)
-  for (const f of failures) console.error(`  x ${f}`)
+let failed = 0
+for (const [label, ok, detail] of results) {
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? '\n          ' + detail : ''}`)
+  if (!ok) failed++
+}
+console.log('')
+if (failed > 0) {
+  console.error(`FAIL - ${failed} of ${results.length} assertions failed on ${BASE}`)
   process.exit(1)
 }
-console.log(`PASS - analytics is compiled into the deployed bundle at ${BASE}`)
+console.log(`PASS - analytics is mounted and collecting on ${BASE}`)
