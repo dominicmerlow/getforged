@@ -6,16 +6,18 @@ import { eq, and, inArray } from 'drizzle-orm'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { claimInvites } from '@/db/schema'
-import { checkAdminAccess, logAdminAction, type UserRole } from '@/lib/admin'
+import { checkAdminAccess, logAdminAction, roleAtLeast, type UserRole } from '@/lib/admin'
 import { createProspectDraft } from '@/lib/prospects'
 
 const DEFAULT_CATEGORY = 'AI Automation'
 
-async function gateOrRedirect(): Promise<{ userId: string; email: string | null; role: UserRole }> {
+async function gateOrRedirect(
+  minimum: UserRole = 'admin'
+): Promise<{ userId: string; email: string | null; role: UserRole }> {
   const session = await auth()
   if (!session?.user) redirect('/login')
   const role = await checkAdminAccess(session.user.id, session.user.email)
-  if (!role) redirect('/')
+  if (!roleAtLeast(role, minimum)) redirect('/admin')
   return { userId: session.user.id, email: session.user.email ?? null, role }
 }
 

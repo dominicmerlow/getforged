@@ -31,6 +31,29 @@ export const ALL_ROLES: UserRole[] = ['superadmin', 'admin', 'moderator', 'suppo
 // "buyer" / "seller" tier (those live on `sellers` table, not user_roles).
 export const ADMIN_ROLES: UserRole[] = ['superadmin', 'admin', 'moderator', 'support']
 
+const ROLE_RANK: Record<UserRole, number> = {
+  superadmin: 4,
+  admin: 3,
+  moderator: 2,
+  support: 1,
+}
+
+/**
+ * True when `role` sits at or above `minimum` in the hierarchy documented at
+ * the top of this file.
+ *
+ * `checkAdminAccess` answers "are you staff", and every admin action used to
+ * stop there — but ADMIN_ROLES contains all four tiers, so `support`
+ * (documented read-only) could grant itself `admin`, revoke the owner's
+ * `superadmin`, issue Stripe refunds, hard-delete products and switch on
+ * maintenance mode. The gate proves you are staff; this decides which staff
+ * you have to be.
+ */
+export function roleAtLeast(role: UserRole | null, minimum: UserRole): role is UserRole {
+  if (!role) return false
+  return ROLE_RANK[role] >= ROLE_RANK[minimum]
+}
+
 // ── Env-var fallback ─────────────────────────────────────────────────
 function parseAdminEmails(): string[] {
   const raw = process.env.ADMIN_EMAIL

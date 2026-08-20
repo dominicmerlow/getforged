@@ -6,18 +6,23 @@ import { eq, and } from 'drizzle-orm'
 import { auth, signIn } from '@/auth'
 import { db } from '@/lib/db'
 import { sellers, userRoles } from '@/db/schema'
-import { checkAdminAccess, logAdminAction, ALL_ROLES, type UserRole } from '@/lib/admin'
+import { checkAdminAccess, logAdminAction, roleAtLeast, ALL_ROLES, type UserRole } from '@/lib/admin'
 
 export type UserActionResult =
   | { ok: true; user_id: string; message?: string }
   | { error: string }
   | null
 
-async function gateOrRedirect(): Promise<{ userId: string; email: string | null; role: UserRole }> {
+async function gateOrRedirect(
+  minimum: UserRole = 'admin'
+): Promise<{ userId: string; email: string | null; role: UserRole }> {
   const session = await auth()
   if (!session?.user) redirect('/login')
   const role = await checkAdminAccess(session.user.id, session.user.email)
-  if (!role) redirect('/')
+  // `checkAdminAccess` returning truthy only proves the caller is staff of
+  // SOME tier - including `support`, which is documented read-only. Each
+  // action names the tier it actually requires.
+  if (!roleAtLeast(role, minimum)) redirect('/admin')
   return { userId: session.user.id, email: session.user.email ?? null, role }
 }
 
@@ -100,16 +105,12 @@ export async function adminGrantRole(
   _prev: UserActionResult,
   formData: FormData
 ): Promise<UserActionResult> {
-  const { userId: actorId, email: actorEmail, role: actorRole } = await gateOrRedirect()
+  const { userId: actorId, email: actorEmail } = await gateOrRedirect('superadmin')
 
-  // Only superadmin can grant superadmin
   const targetUserId = String(formData.get('user_id') ?? '')
   const role = String(formData.get('role') ?? '') as UserRole
   if (!targetUserId) return { error: 'No user_id' }
   if (!ALL_ROLES.includes(role)) return { error: `Invalid role: ${role}` }
-  if (role === 'superadmin' && actorRole !== 'superadmin') {
-    return { error: 'Only superadmins can grant superadmin' }
-  }
 
   try {
     await db.insert(userRoles).values({ userId: targetUserId, role, grantedBy: actorId }).onConflictDoNothing()
@@ -134,7 +135,7 @@ export async function adminRevokeRole(
   _prev: UserActionResult,
   formData: FormData
 ): Promise<UserActionResult> {
-  const { userId: actorId, email: actorEmail, role: actorRole } = await gateOrRedirect()
+  const { userId: actorId, email: actorEmail, role: actorRole } = await gateOrRedirect('superadmin')
 
   const targetUserId = String(formData.get('user_id') ?? '')
   const role = String(formData.get('role') ?? '') as UserRole
@@ -181,7 +182,7 @@ export async function adminSendMagicLink(
   _prev: UserActionResult,
   formData: FormData
 ): Promise<UserActionResult> {
-  const { userId: actorId, email: actorEmail } = await gateOrRedirect()
+  const { userId: actorId, email: actorEmail } = await gateOrRedirect('support')
 
   const targetEmail = String(formData.get('email') ?? '').trim().toLowerCase()
   if (!targetEmail) return { error: 'No email' }

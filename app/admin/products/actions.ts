@@ -6,7 +6,7 @@ import { eq, inArray } from 'drizzle-orm'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { products } from '@/db/schema'
-import { checkAdminAccess, logAdminAction } from '@/lib/admin'
+import { checkAdminAccess, logAdminAction, roleAtLeast, type UserRole } from '@/lib/admin'
 
 export type BulkResult =
   | { ok: true; affected: number }
@@ -14,12 +14,14 @@ export type BulkResult =
 
 type ProductStatus = 'draft' | 'live' | 'archived'
 
-async function gateAdminOrRedirect(): Promise<{ userId: string; email: string | null }> {
+async function gateAdminOrRedirect(
+  minimum: UserRole = 'admin'
+): Promise<{ userId: string; email: string | null; role: UserRole }> {
   const session = await auth()
   if (!session?.user) redirect('/login')
   const role = await checkAdminAccess(session.user.id, session.user.email)
-  if (!role) redirect('/')
-  return { userId: session.user.id, email: session.user.email ?? null }
+  if (!roleAtLeast(role, minimum)) redirect('/admin')
+  return { userId: session.user.id, email: session.user.email ?? null, role }
 }
 
 function parseIds(formData: FormData): string[] {
@@ -173,7 +175,7 @@ export async function adminBulkDelete(
   _prev: BulkResult | null,
   formData: FormData
 ): Promise<BulkResult> {
-  const { userId, email } = await gateAdminOrRedirect()
+  const { userId, email } = await gateAdminOrRedirect('superadmin')
   const ids = parseIds(formData)
   if (ids.length === 0) return { error: 'No products selected.' }
 
