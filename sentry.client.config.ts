@@ -22,7 +22,7 @@ if (dsn) {
     // Performance monitoring — modest sample rate for launch.
     tracesSampleRate: 0.2,
     // Strip URLs that aren't ours (extension scripts etc.)
-    allowUrls: [/getforged\.io/, /getforged\.vercel\.app/, /localhost/],
+    allowUrls: [/getforged\.getbrian\.xyz/, /localhost/],
     environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
   })
 }

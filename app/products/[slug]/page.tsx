@@ -23,6 +23,7 @@ import { db, dbConfigured } from '@/lib/db'
 import { reviews as reviewsTable, purchases, products, sellers } from '@/db/schema'
 import { getSetting } from '@/lib/settings'
 import { categoryByDbValue } from '@/lib/categories'
+import { jsonLdScript } from '@/lib/jsonld'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -328,7 +329,7 @@ export default async function ProductPage(
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
       <Nav activeCategory={cat?.slug} />
       <ViewTracker

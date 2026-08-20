@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { siteContent } from '@/db/schema'
-import { checkAdminAccess, logAdminAction } from '@/lib/admin'
+import { checkAdminAccess, logAdminAction, roleAtLeast, type UserRole } from '@/lib/admin'
 import { CONTENT_REGISTRY, type ContentKey, type ContentKind, ALL_CONTENT_KEYS } from '@/lib/content-defaults'
 import { CONTENT_CACHE_TAG } from '@/lib/content'
 
@@ -14,6 +14,21 @@ export type ContentSaveState =
   | { error: string }
   | { ok: true; key: string; reset?: boolean }
   | null
+
+/**
+ * Strip every tag except a small inline allowlist, and every attribute except
+ * `class` on `<span>`. Deliberately a rejecting filter rather than a silent
+ * rewriter: `coerceValue` compares the result to the input and errors when
+ * they differ, so an admin sees what was refused instead of wondering why
+ * their markup vanished.
+ */
+const RICH_ALLOWED = /^(?:\/?(?:em|strong|b|i|u|br)|span(?: class="[a-zA-Z0-9 _-]*")?|\/span)$/
+
+function sanitiseRich(html: string): string {
+  return html.replace(/<([^>]*)>/g, (whole, inner: string) =>
+    RICH_ALLOWED.test(inner.trim()) ? whole : ''
+  )
+}
 
 /**
  * Whitelist+coerce the raw form input into the shape declared by the registry.
@@ -28,9 +43,24 @@ function coerceValue(key: ContentKey, raw: string): { value: unknown } | { error
   switch (kind) {
     case 'text':
     case 'multiline':
-    case 'rich':
       if (trimmed.length > 8000) return { error: 'Value too long (max 8000 chars).' }
       return { value: trimmed }
+
+    case 'rich': {
+      // `rich` values are rendered with dangerouslySetInnerHTML into the
+      // homepage h1/sub and the pricing heading (components/hero.tsx,
+      // components/pricing.tsx), so whatever is stored here executes for
+      // every visitor. Allow the handful of inline tags the copy actually
+      // uses and strip the rest at write time rather than trusting the
+      // author — "the author is staff" is exactly the assumption a
+      // privilege-escalation bug invalidates.
+      if (trimmed.length > 8000) return { error: 'Value too long (max 8000 chars).' }
+      const sanitised = sanitiseRich(trimmed)
+      if (sanitised !== trimmed) {
+        return { error: 'Only <em>, <strong>, <b>, <i>, <br> and <span class="..."> are allowed in this field.' }
+      }
+      return { value: sanitised }
+    }
 
     case 'boolean': {
       const t = trimmed.toLowerCase()
@@ -63,7 +93,7 @@ export async function saveContent(
   if (!session?.user) redirect('/login')
 
   const role = await checkAdminAccess(session.user.id, session.user.email)
-  if (!role) redirect('/')
+  if (!roleAtLeast(role, 'admin')) redirect('/admin')
 
   const rawKey = String(formData.get('key') ?? '')
   if (!ALL_CONTENT_KEYS.includes(rawKey as ContentKey)) {
@@ -137,7 +167,7 @@ export async function resetContent(
   if (!session?.user) redirect('/login')
 
   const role = await checkAdminAccess(session.user.id, session.user.email)
-  if (!role) redirect('/')
+  if (!roleAtLeast(role, 'admin')) redirect('/admin')
 
   const rawKey = String(formData.get('key') ?? '')
   if (!ALL_CONTENT_KEYS.includes(rawKey as ContentKey)) {

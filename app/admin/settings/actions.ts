@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { siteSettings } from '@/db/schema'
-import { checkAdminAccess, logAdminAction } from '@/lib/admin'
+import { checkAdminAccess, logAdminAction, roleAtLeast, type UserRole } from '@/lib/admin'
 import { SETTINGS_REGISTRY, type SettingKey, ALL_SETTING_KEYS, SETTINGS_CACHE_TAG } from '@/lib/settings'
 
 export type SettingResult =
@@ -21,7 +21,7 @@ export async function updateSetting(
   const session = await auth()
   if (!session?.user) redirect('/login')
   const role = await checkAdminAccess(session.user.id, session.user.email)
-  if (!role) redirect('/')
+  if (!roleAtLeast(role, 'admin')) redirect('/admin')
 
   const rawKey = String(formData.get('key') ?? '')
   if (!ALL_SETTING_KEYS.includes(rawKey as SettingKey)) {

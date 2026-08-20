@@ -6,7 +6,7 @@ import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { products, purchases } from '@/db/schema'
 import { scrapeUrl } from '@/lib/firecrawl'
-import { checkAdminAccess, logAdminAction } from '@/lib/admin'
+import { checkAdminAccess, logAdminAction, roleAtLeast, type UserRole } from '@/lib/admin'
 import { getStripe, stripeConfigured } from '@/lib/stripe'
 
 export async function adminUpdateStatus(formData: FormData) {
@@ -14,7 +14,7 @@ export async function adminUpdateStatus(formData: FormData) {
   if (!session?.user) redirect('/login')
 
   const role = await checkAdminAccess(session.user.id, session.user.email)
-  if (!role) redirect('/')
+  if (!roleAtLeast(role, 'moderator')) redirect('/admin')
 
   const id = String(formData.get('id') ?? '')
   const status = String(formData.get('status') ?? '')
@@ -53,7 +53,7 @@ export async function adminRefundPurchase(formData: FormData) {
   if (!session?.user) redirect('/login')
 
   const role = await checkAdminAccess(session.user.id, session.user.email)
-  if (!role) redirect('/')
+  if (!roleAtLeast(role, 'admin')) redirect('/admin')
 
   const purchaseId = String(formData.get('purchase_id') ?? '')
   if (!purchaseId) return
@@ -149,7 +149,7 @@ export async function adminBatchRegenerateScreenshots(): Promise<BatchScreenshot
   if (!session?.user) redirect('/login')
 
   const role = await checkAdminAccess(session.user.id, session.user.email)
-  if (!role) redirect('/')
+  if (!roleAtLeast(role, 'admin')) redirect('/admin')
 
   const liveProducts = await db
     .select({ id: products.id, slug: products.slug, sourceUrl: products.sourceUrl, screenshots: products.screenshots })

@@ -6,6 +6,7 @@ import ScrollReveal from '@/components/scroll-reveal'
 import { listLiveProducts } from '@/lib/products'
 import BrowseClient from '@/components/BrowseClient'
 import CategoryHeroIllustration from '@/components/CategoryHeroIllustration'
+import { jsonLdScript } from '@/lib/jsonld'
 
 export const revalidate = 60
 
@@ -186,7 +187,7 @@ export default async function CategoryPage({
       <main>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
         />
 
         {/* Category hero */}
