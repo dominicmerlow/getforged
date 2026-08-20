@@ -225,16 +225,30 @@ async function fetchRatings(productIds: string[]): Promise<RatingIndex> {
 }
 
 /**
+ * Whether the seed catalogue may stand in for real data.
+ *
+ * Only outside production. Seed products exist so a developer with no
+ * DATABASE_URL still gets a shop to click through — that is the whole job. In
+ * production they are a lie with a 200 status code: six invented listings at
+ * invented prices stood in for a dead database for five days while every page
+ * looked fine and nothing alerted.
+ *
+ * An empty or broken catalogue in production must render as empty. That is
+ * ugly for as long as it lasts, and /api/health returns 503 throughout, which
+ * is the point — someone finds out.
+ */
+function seedFallbackAllowed(): boolean {
+  return process.env.NODE_ENV !== 'production'
+}
+
+/**
  * Options for {@link listLiveProducts}.
  *
- * `fallback` decides what an empty or broken catalogue looks like:
- *
- * - `true` (default) — return {@link SEED_PRODUCTS}. Right for a *page*: a
- *   shop with nothing in it looks broken to a human, so we show something.
- * - `false` — return `[]`. Required for every *machine-readable* surface
- *   (sitemap, prerender manifest, feeds). A crawler told about six products
- *   that do not exist will index six phantom listings as the whole catalogue,
- *   and unlike a human it never notices the shop was simply empty.
+ * `fallback: false` forces the empty result even outside production. Required
+ * for machine-readable surfaces (sitemap, prerender manifest, feeds): a
+ * crawler told about six products that do not exist will index six phantom
+ * listings as the entire catalogue, and unlike a human it never notices the
+ * shop was simply empty. Leaving it unset gives the environment default.
  */
 export interface ListLiveProductsOptions {
   fallback?: boolean
@@ -243,7 +257,7 @@ export interface ListLiveProductsOptions {
 export async function listLiveProducts(
   options: ListLiveProductsOptions = {}
 ): Promise<ProductListItem[]> {
-  const { fallback = true } = options
+  const { fallback = seedFallbackAllowed() } = options
   const onFailure = () => (fallback ? SEED_PRODUCTS.map(seedToListItem) : [])
 
   if (!dbConfigured()) {
@@ -278,35 +292,16 @@ export async function listLiveProducts(
   }
 }
 
-/**
- * True when there are no live listings at all — i.e. the browse pages are
- * currently rendering the seed catalogue rather than a real one.
- *
- * Only consulted on the detail-page miss path, so it costs nothing on the hot
- * path. Errs towards `false` (404 the slug) when the count itself fails: a
- * broken count is not evidence that a phantom product exists.
- */
-async function catalogueIsEmpty(): Promise<boolean> {
-  try {
-    const [row] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(products)
-      .where(eq(products.status, 'live'))
-    return Number(row?.count ?? 0) === 0
-  } catch (err) {
-    reportDegraded({
-      scope: 'products.catalogueCount',
-      fallback: 'a 404 for unknown slugs',
-      error: err,
-    })
-    return false
-  }
+/** Seed detail for `slug`, but only where the seed catalogue is permitted. */
+function seedDetailIfAllowed(slug: string): ProductDetail | null {
+  if (!seedFallbackAllowed()) return null
+  const seed = findSeedBySlug(slug)
+  return seed ? seedToDetail(seed) : null
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
   if (!dbConfigured()) {
-    const seed = findSeedBySlug(slug)
-    return seed ? seedToDetail(seed) : null
+    return seedDetailIfAllowed(slug)
   }
   try {
     let row: ProductRow | null = null
@@ -354,16 +349,11 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
     }
 
     if (!row) {
-      // The database answered, and it has no such live listing. Serve seed
-      // data only if the shop is *actually* running on seed data right now
-      // (zero live rows, so /browse is showing seed cards that have to link
-      // somewhere). With a real catalogue live, an unknown slug is a 404 —
-      // anything else renders a full, plausible, unbuyable product page.
-      if (await catalogueIsEmpty()) {
-        const seed = findSeedBySlug(slug)
-        return seed ? seedToDetail(seed) : null
-      }
-      return null
+      // The database answered and has no such live listing. In production
+      // that is a 404 — rendering a seed product instead publishes a
+      // complete, plausible page for something nobody can buy, carrying
+      // InStock structured data.
+      return seedDetailIfAllowed(slug)
     }
 
     const list = dbToListItem(row, sellerRow)
@@ -409,9 +399,14 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
         : undefined,
     }
   } catch (err) {
-    reportDegraded({ scope: 'products.detail', fallback: 'a seed product or a 404', error: err })
-    const seed = findSeedBySlug(slug)
-    return seed ? seedToDetail(seed) : null
+    reportDegraded({
+      scope: 'products.detail',
+      fallback: seedFallbackAllowed() ? 'a seed product or a 404' : 'a 404',
+      error: err,
+    })
+    // A failed query is not evidence that this product exists. In production
+    // the honest answer is 404, not a phantom listing.
+    return seedDetailIfAllowed(slug)
   }
 }
 

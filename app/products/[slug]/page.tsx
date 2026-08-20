@@ -281,7 +281,10 @@ export default async function ProductPage(
     image: heroImage ?? undefined,
     category: product.category,
     brand: { '@type': 'Organization', name: 'GetForged' },
-    offers: rawPrice != null ? {
+    // A seed product has no row, no seller and no Stripe destination, so it
+    // must never carry a machine-readable in-stock offer, even on the
+    // non-production pages where it still renders.
+    offers: rawPrice != null && !isSeedProduct ? {
       '@type': 'Offer',
       price: rawPrice,
       priceCurrency: 'GBP',
