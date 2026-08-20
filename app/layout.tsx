@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans, Inter } from 'next/font/google'
-import PostHogProvider from '@/components/PostHogProvider'
+import AnalyticsProvider from '@/components/AnalyticsProvider'
 import { CompareProvider } from '@/components/CompareProvider'
 import CompareBar from '@/components/CompareBar'
 import './globals.css'
@@ -77,12 +77,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${plusJakarta.variable} ${inter.variable}`}
     >
       <body>
-        <PostHogProvider>
+        <AnalyticsProvider>
           <CompareProvider>
             {children}
             <CompareBar />
           </CompareProvider>
-        </PostHogProvider>
+        </AnalyticsProvider>
       </body>
     </html>
   )
