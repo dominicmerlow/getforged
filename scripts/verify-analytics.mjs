@@ -32,13 +32,38 @@ async function status(path) {
   return res.status
 }
 
-// ── 1. CODE: the component injects a script pointing at this path ──────
+// ── 1. CODE: is the tracker in the deployed client bundle? ────────────
+//
+// It must be looked for in the JS chunks, NOT the server-rendered HTML.
+// `<Analytics />` injects its <script> tag from client-side JavaScript, so a
+// correct deployment has no `_vercel/insights` string in the HTML at all.
+// The first version of this file grepped the HTML and reported a confident
+// FAIL against a deployment that was working perfectly.
 const html = await fetch(`${BASE}/`).then(r => r.text())
-const mounted = html.includes('/_vercel/insights')
+const chunkPaths = [...new Set(
+  [...html.matchAll(/\/_next\/static\/chunks\/[a-zA-Z0-9._-]+\.js/g)].map(m => m[0])
+)]
+notes.push(`${chunkPaths.length} client chunks referenced by /`)
+
+let bundle = html
+for (const path of chunkPaths) {
+  bundle += await fetch(`${BASE}${path}`).then(r => r.text())
+}
+
+const mounted = bundle.includes('_vercel/insights')
 results.push([
-  'CODE: <Analytics /> is mounted in the deployed build',
+  'CODE: the Vercel Analytics tracker is in the deployed bundle',
   mounted,
-  mounted ? '' : 'no /_vercel/insights reference in the homepage HTML - the build predates AnalyticsProvider, or it is not rendered',
+  mounted ? '' : 'no _vercel/insights reference in any client chunk - the build predates AnalyticsProvider',
+])
+
+// The SDK it replaced must be gone, or the site is shipping two analytics
+// systems and paying the bundle cost of the dead one.
+const posthogGone = !bundle.includes('phc_xxxx')
+results.push([
+  'CODE: the dead PostHog SDK is no longer shipped',
+  posthogGone,
+  posthogGone ? '' : 'posthog-js is still in the bundle - it was removed in the switch, so this build is stale',
 ])
 
 // ── 2. TOGGLE: the collection script is served only when enabled ───────
@@ -63,7 +88,7 @@ results.push([
 ])
 
 // Sentry rides in the same provider and does still need a build-time DSN.
-if (!/https:\/\/[a-zA-Z0-9]+@[a-z0-9.]*sentry\.io/.test(html)) {
+if (!/https:\/\/[a-zA-Z0-9]+@[a-z0-9.]*sentry\.io/.test(bundle)) {
   notes.push('NEXT_PUBLIC_SENTRY_DSN not detected in the page (client errors may go nowhere).')
 }
 
