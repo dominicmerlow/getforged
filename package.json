@@ -11,6 +11,7 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx scripts/migrate.ts",
     "verify:sitemap": "node scripts/verify-sitemap.mjs",
+    "verify:analytics": "node scripts/verify-analytics.mjs",
     "verify:jsonld": "tsx scripts/verify-jsonld-escape.ts",
     "verify:ssrf": "tsx scripts/verify-ssrf-guard.ts",
     "listings:getbrian": "tsx scripts/add-getbrian-listings.ts"
