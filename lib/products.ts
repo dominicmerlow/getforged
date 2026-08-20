@@ -64,6 +64,12 @@ export interface ProductDetail extends ProductListItem {
   repo_url: string | null
   support_terms: string | null
   screenshots: string[]
+  /**
+   * Whether the seller can actually receive money. /api/checkout refuses to
+   * sell for a seller without a payouts-enabled Connect account, so the page
+   * needs to know before it renders a Buy button that can only fail.
+   */
+  sellerPayoutsEnabled: boolean
   seller?: {
     display_name: string
     email: string | null
@@ -103,6 +109,7 @@ function seedToListItem(p: SeedProduct): ProductListItem {
 function seedToDetail(p: SeedProduct): ProductDetail {
   return {
     ...seedToListItem(p),
+    sellerPayoutsEnabled: false,
     id: `seed-${p.slug}`,
     status: 'live',
     isPreview: false,
@@ -394,6 +401,7 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
       repo_url: row.repoUrl ?? null,
       support_terms: row.supportTerms ?? null,
       screenshots: row.screenshots ?? [],
+      sellerPayoutsEnabled: sellerRow?.stripePayoutsEnabled ?? false,
       seller: sellerRow
         ? { display_name: sellerRow.displayName, email: null, verified: sellerRow.verified ?? false }
         : undefined,

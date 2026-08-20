@@ -220,7 +220,7 @@ export default function BuyersPage() {
               {
                 icon: '🛡️',
                 title: 'Stripe-secured',
-                body: 'Refund protection for 14 days on licences. If it doesn&apos;t deploy, you don&apos;t pay.',
+                body: 'Refund protection for 7 days on licences. If it doesn&apos;t deploy, you don&apos;t pay.',
               },
             ]}
           />

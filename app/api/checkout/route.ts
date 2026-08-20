@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
   const session = await auth()
   const customerEmail = session?.user?.email ?? undefined
-  const feePence = applicationFeePence(price)
+  const feePence = await applicationFeePence(price)
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: 'payment',

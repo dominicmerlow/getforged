@@ -28,7 +28,13 @@ export async function updateProductStatus(formData: FormData) {
   if (!session?.user) redirect('/login')
 
   const row = await db
-    .select({ id: products.id, status: products.status, sellerUserId: sellers.userId })
+    .select({
+      id: products.id,
+      status: products.status,
+      sellerUserId: sellers.userId,
+      priceLicensed: products.priceLicensed,
+      priceExclusive: products.priceExclusive,
+    })
     .from(products)
     .innerJoin(sellers, eq(products.sellerId, sellers.id))
     .where(eq(products.id, id))
@@ -43,6 +49,16 @@ export async function updateProductStatus(formData: FormData) {
   const current = row.status as ProductStatus
   if (!ALLOWED_TRANSITIONS[current].includes(next)) {
     throw new Error(`Cannot move product from ${current} to ${next}`)
+  }
+
+  // A listing with no price renders "Buy licence - Contact", and clicking it
+  // POSTs to /api/checkout which 404s with raw JSON. That is the default
+  // end-state of every claimed outreach invite, because createProspectDraft
+  // inserts no price and this action is reachable straight from the dashboard
+  // table without opening the editor. The editor already enforces this on
+  // save; publishing has to enforce it too.
+  if (next === 'live' && row.priceLicensed == null && row.priceExclusive == null) {
+    throw new Error('Set a licensed or exclusive price before publishing this listing.')
   }
 
   await db.update(products).set({ status: next }).where(eq(products.id, id))

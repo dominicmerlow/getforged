@@ -4,7 +4,7 @@ const ITEMS = [
   { icon: ShieldCheck, label: 'Every listing reviewed before it goes live' },
   { icon: CreditCard,  label: 'Payments handled by Stripe' },
   { icon: Clock,       label: 'Most tools install in under a day' },
-  { icon: RotateCcw,   label: '14-day refund window' },
+  { icon: RotateCcw,   label: '7-day refund window' },
 ]
 
 /**

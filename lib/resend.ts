@@ -36,7 +36,10 @@ export async function sendDraftReadyEmail(
   productTitle: string,
   productId: string
 ): Promise<void> {
-  const reviewUrl = `${APP_URL}/dashboard/products/${productId}`
+  // /dashboard/products/[id] has no page — the editor lives at .../edit.
+  // Without the suffix, the CTA in the first email every new seller receives
+  // 404s.
+  const reviewUrl = `${APP_URL}/dashboard/products/${productId}/edit`
 
   if (!resend) {
     mailerUnavailable('draft ready email', { sellerEmail, productTitle, reviewUrl })
