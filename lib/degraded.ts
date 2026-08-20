@@ -20,6 +20,7 @@ export type DegradedScope =
   | 'products.list'
   | 'products.detail'
   | 'products.ratings'
+  | 'products.catalogueCount'
   | 'content'
   | 'settings'
   | 'admin.role'
