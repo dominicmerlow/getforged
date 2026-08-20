@@ -79,7 +79,17 @@ export async function adminRefundPurchase(formData: FormData) {
 
   try {
     const stripe = getStripe()
-    await stripe.refunds.create({ payment_intent: purchase.stripePaymentIntentId })
+    await stripe.refunds.create({
+      payment_intent: purchase.stripePaymentIntentId,
+      // This is a destination charge (app/api/checkout/route.ts sets
+      // transfer_data.destination), so the seller's share left the platform
+      // balance at charge time and the platform kept application_fee_amount.
+      // Refunding without these two flags pays the buyer back out of the
+      // platform balance and reverses neither — every refund would cost the
+      // platform the full order value while the seller keeps their 85%.
+      reverse_transfer: true,
+      refund_application_fee: true,
+    })
   } catch (err) {
     await logAdminAction({
       actor_id: session.user.id,

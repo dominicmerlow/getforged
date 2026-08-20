@@ -10,6 +10,26 @@ const resend = process.env.RESEND_API_KEY
 const FROM = process.env.RESEND_FROM_EMAIL ?? 'getforged@getbrian.xyz'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://getforged.getbrian.xyz'
 
+/**
+ * What to do when RESEND_API_KEY is not set.
+ *
+ * Locally, log and carry on — a dev without a key should still be able to walk
+ * the checkout. In production it is not a degraded mode, it is a silent
+ * delivery failure that the caller then records as a success: the Stripe
+ * webhook stamps `receiptSentAt` / `sellerNotifiedAt` on any non-throwing
+ * return, so the buyer would get no receipt, the seller would never learn the
+ * sale happened, and the purchase row would say both were delivered.
+ *
+ * Throwing leaves the timestamp NULL, writes an `error_log` row, and lets
+ * Stripe's webhook retry re-attempt once the key is back.
+ */
+function mailerUnavailable(what: string, payload: Record<string, unknown>): void {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`RESEND_API_KEY is not set — cannot send ${what}`)
+  }
+  console.log(`[RESEND MOCK] ${what}`, payload)
+}
+
 export async function sendDraftReadyEmail(
   sellerEmail: string,
   sellerName: string,
@@ -19,8 +39,7 @@ export async function sendDraftReadyEmail(
   const reviewUrl = `${APP_URL}/dashboard/products/${productId}`
 
   if (!resend) {
-    // Dev fallback: just log
-    console.log(`[RESEND MOCK] Draft ready email → ${sellerEmail}`, { productTitle, reviewUrl })
+    mailerUnavailable('draft ready email', { sellerEmail, productTitle, reviewUrl })
     return
   }
 
@@ -60,12 +79,7 @@ export async function sendPurchaseReceiptEmail(
         : 'one-time licence'
 
   if (!resend) {
-    console.log(`[RESEND MOCK] Purchase receipt → ${buyerEmail}`, {
-      productTitle,
-      formattedAmount,
-      label,
-      productUrl,
-    })
+    mailerUnavailable('purchase receipt', { buyerEmail, productTitle, formattedAmount, label, productUrl })
     return
   }
 
@@ -97,7 +111,7 @@ export async function sendSellerSaleNotification(
   const label = purchaseType === 'exclusive' ? 'exclusive buy-out' : purchaseType === 'subscription' ? 'subscription' : 'one-time licence'
 
   if (!resend) {
-    console.log(`[RESEND MOCK] Seller sale notification → ${sellerEmail}`, { productTitle, formattedAmount, buyerEmail })
+    mailerUnavailable('seller sale notification', { sellerEmail, productTitle, formattedAmount, buyerEmail })
     return
   }
 
@@ -125,7 +139,7 @@ export async function sendReviewRequestEmail(
   const productUrl = `${APP_URL}/products/${productSlug}`
 
   if (!resend) {
-    console.log(`[RESEND MOCK] Review request → ${buyerEmail}`, { productTitle, productUrl })
+    mailerUnavailable('review request', { buyerEmail, productTitle, productUrl })
     return
   }
 
