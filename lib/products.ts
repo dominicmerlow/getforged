@@ -224,9 +224,30 @@ async function fetchRatings(productIds: string[]): Promise<RatingIndex> {
   return index
 }
 
-export async function listLiveProducts(): Promise<ProductListItem[]> {
+/**
+ * Options for {@link listLiveProducts}.
+ *
+ * `fallback` decides what an empty or broken catalogue looks like:
+ *
+ * - `true` (default) — return {@link SEED_PRODUCTS}. Right for a *page*: a
+ *   shop with nothing in it looks broken to a human, so we show something.
+ * - `false` — return `[]`. Required for every *machine-readable* surface
+ *   (sitemap, prerender manifest, feeds). A crawler told about six products
+ *   that do not exist will index six phantom listings as the whole catalogue,
+ *   and unlike a human it never notices the shop was simply empty.
+ */
+export interface ListLiveProductsOptions {
+  fallback?: boolean
+}
+
+export async function listLiveProducts(
+  options: ListLiveProductsOptions = {}
+): Promise<ProductListItem[]> {
+  const { fallback = true } = options
+  const onFailure = () => (fallback ? SEED_PRODUCTS.map(seedToListItem) : [])
+
   if (!dbConfigured()) {
-    return SEED_PRODUCTS.map(seedToListItem)
+    return onFailure()
   }
   try {
     // Sort featured products first (by featuredPosition ascending), then by
@@ -243,13 +264,42 @@ export async function listLiveProducts(): Promise<ProductListItem[]> {
       .where(eq(products.status, 'live'))
       .orderBy(asc(products.featuredPosition), desc(products.createdAt))
 
-    if (rows.length === 0) return SEED_PRODUCTS.map(seedToListItem)
+    if (rows.length === 0) return onFailure()
 
     const ratings = await fetchRatings(rows.map(r => r.product.id))
     return rows.map(r => dbToListItem(r.product, r.seller, ratings))
   } catch (err) {
-    reportDegraded({ scope: 'products.list', fallback: 'the seed catalogue', error: err })
-    return SEED_PRODUCTS.map(seedToListItem)
+    reportDegraded({
+      scope: 'products.list',
+      fallback: fallback ? 'the seed catalogue' : 'an empty list',
+      error: err,
+    })
+    return onFailure()
+  }
+}
+
+/**
+ * True when there are no live listings at all — i.e. the browse pages are
+ * currently rendering the seed catalogue rather than a real one.
+ *
+ * Only consulted on the detail-page miss path, so it costs nothing on the hot
+ * path. Errs towards `false` (404 the slug) when the count itself fails: a
+ * broken count is not evidence that a phantom product exists.
+ */
+async function catalogueIsEmpty(): Promise<boolean> {
+  try {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(products)
+      .where(eq(products.status, 'live'))
+    return Number(row?.count ?? 0) === 0
+  } catch (err) {
+    reportDegraded({
+      scope: 'products.catalogueCount',
+      fallback: 'a 404 for unknown slugs',
+      error: err,
+    })
+    return false
   }
 }
 
@@ -304,8 +354,16 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
     }
 
     if (!row) {
-      const seed = findSeedBySlug(slug)
-      return seed ? seedToDetail(seed) : null
+      // The database answered, and it has no such live listing. Serve seed
+      // data only if the shop is *actually* running on seed data right now
+      // (zero live rows, so /browse is showing seed cards that have to link
+      // somewhere). With a real catalogue live, an unknown slug is a 404 —
+      // anything else renders a full, plausible, unbuyable product page.
+      if (await catalogueIsEmpty()) {
+        const seed = findSeedBySlug(slug)
+        return seed ? seedToDetail(seed) : null
+      }
+      return null
     }
 
     const list = dbToListItem(row, sellerRow)
@@ -357,7 +415,15 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail | nu
   }
 }
 
+/**
+ * Slugs of the live catalogue, for machine-readable surfaces only.
+ *
+ * Never falls back to seed data: this feeds `app/sitemap.ts` and
+ * `generateStaticParams`, and both would otherwise publish phantom product
+ * URLs to crawlers whenever the catalogue was empty or the query failed.
+ * An empty catalogue must produce an empty product section, not a fiction.
+ */
 export async function listLiveProductSlugs(): Promise<string[]> {
-  const items = await listLiveProducts()
+  const items = await listLiveProducts({ fallback: false })
   return items.map(p => p.slug)
 }

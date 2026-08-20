@@ -3,6 +3,13 @@ import { listLiveProductSlugs } from '@/lib/products'
 
 const BASE = 'https://getforged.getbrian.xyz'
 
+/**
+ * Rebuild hourly. Without this Next prerenders the sitemap once at deploy
+ * time, so every listing published after a deploy stays invisible to crawlers
+ * until the next unrelated push happens to rebuild it.
+ */
+export const revalidate = 3600
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const slugs = await listLiveProductSlugs()
 
@@ -42,12 +49,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.6,
-    },
-    {
-      url: `${BASE}/login`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.5,
     },
     {
       url: `${BASE}/terms`,
