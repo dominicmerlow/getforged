@@ -46,9 +46,9 @@ function Empty({ children }: { children: React.ReactNode }) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ claimed?: string; connect?: string }>
+  searchParams: Promise<{ claimed?: string; connect?: string; connect_error?: string }>
 }) {
-  const { claimed, connect } = await searchParams
+  const { claimed, connect, connect_error: connectError } = await searchParams
 
   if (!dbConfigured()) {
     return (
@@ -120,6 +120,22 @@ export default async function DashboardPage({
           fontSize: 14,
         }}>
           ✓ Stripe connected — you&apos;re set up to receive payouts.
+        </div>
+      )}
+
+      {connectError && (
+        <div style={{
+          marginBottom: 20,
+          padding: '12px 16px',
+          border: '1px solid var(--gf-amber)',
+          background: 'var(--gf-amber-tint)',
+          borderRadius: 'var(--gf-radius)',
+          fontSize: 14,
+        }}>
+          <strong>Stripe couldn&apos;t start payout setup.</strong>{' '}
+          {connectError === 'unconfigured'
+            ? 'Payments aren’t configured on GetForged yet — this is our end, not yours.'
+            : 'Stripe refused the request. The reason has been logged and we’ve been notified — try again shortly, and contact us if it keeps happening.'}
         </div>
       )}
 

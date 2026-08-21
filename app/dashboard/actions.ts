@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { eq } from 'drizzle-orm'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
-import { products, sellers } from '@/db/schema'
+import { products, sellers, errorLog } from '@/db/schema'
 import type { ProductStatus } from '@/lib/types'
 import { getStripe, getOrCreateConnectAccountId, stripeConfigured } from '@/lib/stripe'
 import { getOrigin } from '@/app/actions/auth'
@@ -80,18 +80,40 @@ export async function startStripeOnboarding() {
 
   const sellerRow = await db.query.sellers.findFirst({ where: eq(sellers.userId, session.user.id) })
   if (!sellerRow) redirect('/dashboard')
-  if (!stripeConfigured()) throw new Error('Stripe is not configured.')
+  if (!stripeConfigured()) redirect('/dashboard?connect_error=unconfigured')
 
-  const accountId = await getOrCreateConnectAccountId(sellerRow.id, session.user.email)
-  const stripe = getStripe()
-  const origin = await getOrigin()
+  // Everything Stripe can refuse goes in here. A raw failure used to escape
+  // into the global error boundary, so a seller clicking "Connect Stripe" got
+  // "We hit an unexpected error" and an ID — no cause, no next step, and
+  // nothing they could act on. The real message went only to the platform
+  // logs, which is precisely backwards for an error the seller has to resolve.
+  //
+  // `redirect()` must stay OUT of the try: it signals by throwing, and a
+  // catch-all around it would swallow the redirect and report success as a
+  // failure.
+  let onboardingUrl: string
+  try {
+    const accountId = await getOrCreateConnectAccountId(sellerRow.id, session.user.email)
+    const stripe = getStripe()
+    const origin = await getOrigin()
 
-  const accountLink = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${origin}/api/connect/refresh`,
-    return_url: `${origin}/api/connect/return`,
-    type: 'account_onboarding',
-  })
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${origin}/api/connect/refresh`,
+      return_url: `${origin}/api/connect/return`,
+      type: 'account_onboarding',
+    })
+    onboardingUrl = accountLink.url
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'unknown error'
+    console.error('[connect] onboarding failed:', message)
+    await db.insert(errorLog).values({
+      scenario: 'connect-onboarding',
+      payload: { sellerId: sellerRow.id, userId: session.user.id },
+      errorMessage: message,
+    }).catch(() => {})
+    redirect('/dashboard?connect_error=stripe')
+  }
 
-  redirect(accountLink.url)
+  redirect(onboardingUrl)
 }
