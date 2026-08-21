@@ -3,7 +3,7 @@ import { eq, and } from 'drizzle-orm'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { products, sellers } from '@/db/schema'
-import { getStripe, stripeConfigured, applicationFeePence } from '@/lib/stripe'
+import { getStripe, stripeConfigured, applicationFeePence, syncSellerPayoutStatus } from '@/lib/stripe'
 import { getSetting } from '@/lib/settings'
 import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 
@@ -55,7 +55,44 @@ export async function POST(request: NextRequest) {
   // payouts-enabled account has no destination for their share, so selling
   // would either silently keep 100% on the platform or fail at charge time.
   // Refuse up front with a clear reason instead of either.
-  if (!seller.stripeAccountId || !seller.stripePayoutsEnabled) {
+  if (!seller.stripeAccountId) {
+    return NextResponse.json(
+      { error: 'This seller has not finished payout setup yet — checkout is unavailable until they do.' },
+      { status: 400 }
+    )
+  }
+
+  if (!stripeConfigured()) {
+    return NextResponse.json(
+      { error: 'STRIPE_SECRET_KEY is not configured' },
+      { status: 500 }
+    )
+  }
+
+  // Ask Stripe rather than trusting the cached column. sellers.stripePayoutsEnabled
+  // is only ever written by events — the account.updated webhook and the Connect
+  // return redirect — so when one of those doesn't arrive it keeps a stale value
+  // with nothing to correct it. In production it held `true` while Stripe had the
+  // account under review with payouts disabled, and this gate opened on a sale
+  // whose funds could not reach the seller. syncSellerPayoutStatus also writes
+  // the corrected value back, so the rest of the app stops being wrong too.
+  let payoutsEnabled: boolean
+  try {
+    payoutsEnabled = await syncSellerPayoutStatus(seller)
+  } catch (err) {
+    // Fail CLOSED — deliberately the opposite of the checkout-pause read below.
+    // A settings read failing must not lock revenue; being unable to confirm the
+    // seller can be paid is a reason not to take the buyer's money.
+    console.error(
+      '[checkout] payout status check failed:',
+      err instanceof Error ? err.message : err
+    )
+    return NextResponse.json(
+      { error: 'Could not confirm this seller’s payout status. Please try again shortly.' },
+      { status: 503 }
+    )
+  }
+  if (!payoutsEnabled) {
     return NextResponse.json(
       { error: 'This seller has not finished payout setup yet — checkout is unavailable until they do.' },
       { status: 400 }
@@ -75,13 +112,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'checkout temporarily paused' },
       { status: 503 }
-    )
-  }
-
-  if (!stripeConfigured()) {
-    return NextResponse.json(
-      { error: 'STRIPE_SECRET_KEY is not configured' },
-      { status: 500 }
     )
   }
 

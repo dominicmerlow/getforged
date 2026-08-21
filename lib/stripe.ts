@@ -88,3 +88,50 @@ export async function getOrCreateConnectAccountId(
   await db.update(sellers).set({ stripeAccountId: account.id }).where(eq(sellers.id, sellerId))
   return account.id
 }
+
+/**
+ * The single definition of "this seller can be paid".
+ *
+ * All three of charges_enabled, payouts_enabled and details_submitted have to
+ * hold: charges alone means money can be taken but not settled to the seller,
+ * which is precisely the state that must never gate a sale open.
+ */
+export function payoutsReady(account: Stripe.Account): boolean {
+  return !!(account.charges_enabled && account.payouts_enabled && account.details_submitted)
+}
+
+/**
+ * Re-reads the seller's payout eligibility from Stripe and writes it back to
+ * sellers.stripePayoutsEnabled, returning the live answer.
+ *
+ * `stripePayoutsEnabled` is a cache, and its only writers used to be the
+ * account.updated webhook and the Connect return redirect. Both are events —
+ * if either fails to arrive, the cache keeps its last value forever with
+ * nothing to correct it. That happened in production: Stripe put the connected
+ * account under review (payouts_enabled false, disabled_reason "other",
+ * nothing currently_due), the cached column stayed true, and the site went on
+ * offering a Buy button for a sale whose funds could not reach the seller.
+ *
+ * So callers on the money path resolve the truth themselves rather than
+ * trusting the column. Throws if Stripe cannot be reached — the caller decides
+ * whether that means "don't sell" or "render what we last knew"; there is no
+ * safe default that suits both.
+ */
+export async function syncSellerPayoutStatus(seller: {
+  id: string
+  stripeAccountId: string | null
+  stripePayoutsEnabled: boolean
+}): Promise<boolean> {
+  if (!seller.stripeAccountId) return false
+
+  const account = await getStripe().accounts.retrieve(seller.stripeAccountId)
+  const enabled = payoutsReady(account)
+
+  if (enabled !== seller.stripePayoutsEnabled) {
+    await db.update(sellers).set({ stripePayoutsEnabled: enabled }).where(eq(sellers.id, seller.id))
+    console.warn(
+      `[stripe] payout cache corrected for seller ${seller.id}: ${seller.stripePayoutsEnabled} -> ${enabled}`
+    )
+  }
+  return enabled
+}

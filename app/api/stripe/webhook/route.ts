@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import type Stripe from 'stripe'
 import { eq } from 'drizzle-orm'
-import { getStripe, stripeConfigured } from '@/lib/stripe'
+import { getStripe, stripeConfigured, payoutsReady } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { errorLog, purchases, products, sellers, users } from '@/db/schema'
 import { sendPurchaseReceiptEmail, sendSellerSaleNotification, sendReviewRequestEmail } from '@/lib/resend'
@@ -264,13 +264,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
 /**
  * Keeps sellers.stripePayoutsEnabled in sync with the account's real Stripe
- * status. This is the authoritative path — /api/connect/return also syncs
- * on redirect, but a seller can complete outstanding requirements (e.g.
- * Stripe asks for more verification later) without ever hitting that route
- * again, and checkout gates directly on this cached column.
+ * status. This is the fastest path, not the authoritative one: it only runs if
+ * the event is actually delivered, and connected-account events reach this
+ * endpoint only while it is registered to receive them. Checkout therefore
+ * re-reads the truth from Stripe itself rather than depending on this having
+ * arrived — see syncSellerPayoutStatus in lib/stripe.ts.
  */
 async function handleAccountUpdated(account: Stripe.Account) {
-  const enabled = !!(account.charges_enabled && account.payouts_enabled && account.details_submitted)
+  const enabled = payoutsReady(account)
   try {
     await db.update(sellers).set({ stripePayoutsEnabled: enabled }).where(eq(sellers.stripeAccountId, account.id))
   } catch (err) {

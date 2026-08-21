@@ -7,6 +7,7 @@ import { db, dbConfigured } from '@/lib/db'
 import { products, sellers, salesPages, messages } from '@/db/schema'
 import type { ProductStatus } from '@/lib/types'
 import { formatPrice } from '@/lib/utils'
+import { stripeConfigured, syncSellerPayoutStatus } from '@/lib/stripe'
 import { updateProductStatus, startStripeOnboarding } from './actions'
 
 export const metadata: Metadata = {
@@ -78,6 +79,24 @@ export default async function DashboardPage({
     )
   }
 
+  // Refresh the payout cache from Stripe while the seller is on the one page
+  // where it is the headline fact. Left to the webhook alone, a Stripe-side
+  // change — an account put under review, say — never reaches this page, and
+  // the panel below goes on telling the seller they are set up to be paid when
+  // they are not. Falls back to the cached value if Stripe is unreachable:
+  // this is a status panel, not the money path, so a stale read beats an error.
+  let payoutsEnabled = sellerRow.stripePayoutsEnabled
+  if (sellerRow.stripeAccountId && stripeConfigured()) {
+    try {
+      payoutsEnabled = await syncSellerPayoutStatus(sellerRow)
+    } catch (err) {
+      console.error(
+        '[dashboard] payout status refresh failed:',
+        err instanceof Error ? err.message : err
+      )
+    }
+  }
+
   const [rows, messageCountRow] = await Promise.all([
     db
       .select({ product: products, salesPage: salesPages })
@@ -110,7 +129,7 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {connect === '1' && sellerRow.stripePayoutsEnabled && (
+      {connect === '1' && payoutsEnabled && (
         <div style={{
           marginBottom: 20,
           padding: '12px 16px',
@@ -139,7 +158,7 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {!sellerRow.stripePayoutsEnabled && (
+      {!payoutsEnabled && (
         <div className="gf-panel" style={{ marginBottom: 20 }}>
           <div className="gf-panel-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
             <div>
