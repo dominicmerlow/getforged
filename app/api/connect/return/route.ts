@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { sellers } from '@/db/schema'
-import { getStripe, stripeConfigured } from '@/lib/stripe'
+import { stripeConfigured, syncSellerPayoutStatus } from '@/lib/stripe'
 import { getOrigin } from '@/app/actions/auth'
 
 /**
@@ -25,10 +25,7 @@ export async function GET() {
   }
 
   try {
-    const stripe = getStripe()
-    const account = await stripe.accounts.retrieve(sellerRow.stripeAccountId)
-    const enabled = !!(account.charges_enabled && account.payouts_enabled && account.details_submitted)
-    await db.update(sellers).set({ stripePayoutsEnabled: enabled }).where(eq(sellers.id, sellerRow.id))
+    await syncSellerPayoutStatus(sellerRow)
   } catch (err) {
     console.error('[connect-return] account status sync failed:', err instanceof Error ? err.message : err)
   }
