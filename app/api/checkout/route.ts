@@ -4,6 +4,7 @@ import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { products, sellers } from '@/db/schema'
 import { getStripe, stripeConfigured, applicationFeePence } from '@/lib/stripe'
+import { APP } from '@/lib/app-tag'
 import { getSetting } from '@/lib/settings'
 import { checkRateLimit, getClientIp } from '@/lib/ratelimit'
 
@@ -124,6 +125,9 @@ export async function POST(request: NextRequest) {
     success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/products/${slug}`,
     metadata: {
+      // Lets the other app on this Stripe account ignore our events, and us
+      // ignore theirs. See lib/app-tag.ts.
+      app: APP,
       product_id: product.id,
       product_slug: slug,
       purchase_type: purchaseType,

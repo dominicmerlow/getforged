@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type Stripe from 'stripe'
 import { eq } from 'drizzle-orm'
 import { getStripe, stripeConfigured } from '@/lib/stripe'
+import { belongsToAnotherApp } from '@/lib/app-tag'
 import { db } from '@/lib/db'
 import { errorLog, purchases, products, sellers, users } from '@/db/schema'
 import { sendPurchaseReceiptEmail, sendSellerSaleNotification, sendReviewRequestEmail } from '@/lib/resend'
@@ -80,10 +81,24 @@ export async function POST(request: NextRequest) {
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const metadata = session.metadata ?? {}
+  const app = metadata.app
   const productId = metadata.product_id
   const purchaseType = metadata.purchase_type as 'licensed' | 'exclusive' | undefined
   const buyerId = metadata.buyer_id || null
   const productSlug = metadata.product_slug
+
+  // ── Another app on the same Stripe account. MERLOW (merlow.space) sells
+  //    through this account too, and a webhook endpoint subscribes to an event
+  //    type for the *whole* account, so its completed checkouts arrive here.
+  //
+  //    The validation below already turns them away with a 200, which is right.
+  //    What it also does is write an error_log row — and that log exists so a
+  //    real GetForged session arriving without metadata gets noticed. One
+  //    t-shirt sale a day would bury the signal it is there to give. So a
+  //    session that says whose it is, and isn't ours, is ignored quietly.
+  if (belongsToAnotherApp(metadata)) {
+    return NextResponse.json({ received: true, ignored: `another app: ${app}` })
+  }
 
   // ── Validation failure on event payload: permanent. 200 + ignored so Stripe
   //    stops retrying. Log to error_log so we notice if real events lack metadata.
