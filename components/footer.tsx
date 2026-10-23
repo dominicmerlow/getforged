@@ -68,7 +68,15 @@ export default function Footer() {
 
         <div className="gf-footer-bottom">
           <span className="gf-footer-copy">
-            © {new Date().getFullYear()} GetForged. Built by builders, made for business.
+            © {new Date().getFullYear()} GetForged. Built by builders, made for business.{' '}
+            <a
+              href="https://getbrian.xyz"
+              target="_blank"
+              rel="noopener"
+              aria-label="Built by GetBrian — opens getbrian.xyz"
+            >
+              Built by <strong>GetBrian</strong>
+            </a>
           </span>
           <nav className="gf-footer-legal" aria-label="Legal">
             <Link href="/privacy">Privacy</Link>
